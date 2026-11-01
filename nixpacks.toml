@@ -1,8 +1,9 @@
+
 [phases.setup]
-nixPkgs = ["python312", "python312Packages.pip", "postgresql_16.dev", "gcc"]
+nixPkgs = ["python312", "python312Packages.pip"]
 
 [phases.install]
-cmds = ["pip3.12 install -r requirements.txt"]
+cmds = ["python3 -m pip install -r requirements.txt"]
 
 [start]
 cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
