@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python3", "python3Packages.pip", "postgresql_16.dev", "gcc"]
+
+[phases.install]
+cmds = ["python3 -m pip install -r requirements.txt"]
+
+[start]
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
