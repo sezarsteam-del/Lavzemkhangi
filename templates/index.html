@@ -1,1 +1,56 @@
 
+{% extends "base.html" %}
+{% block content %}
+
+<form class="search" method="get" action="{{ url_for('index') }}">
+  <input name="q" value="{{ q }}" placeholder="جستجوی محصول یا دسته‌بندی...">
+  {% if selected_category %}
+  <input type="hidden" name="category" value="{{ selected_category }}">
+  {% endif %}
+  <button type="submit">جستجو</button>
+</form>
+
+<section>
+  <h2 class="section-title">دسته‌بندی‌ها</h2>
+  <div class="chips">
+    <a class="chip active" href="{{ url_for('index', q=q) }}">همه</a>
+    {% for category in categories %}
+    <a class="chip" href="{{ url_for('index', category=category.id, q=q) }}">
+      {{ category.name }}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <h2 class="section-title">لیست قیمت محصولات</h2>
+
+  {% if products %}
+  <div class="product-list">
+    {% for product in products %}
+    <article class="product">
+      {% if product.image_url %}
+      <img class="product-image" src="{{ product.image_url }}" alt="{{ product.name }}">
+      {% else %}
+      <div class="product-placeholder">بدون تصویر</div>
+      {% endif %}
+
+      <div class="product-info">
+        <div class="product-category">{{ product.category_name }}</div>
+        <h3>{{ product.name }}</h3>
+        {% if product.description %}
+        <p>{{ product.description }}</p>
+        {% endif %}
+        <div class="price">
+          {{ "{:,}".format(product.price) }} تومان
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">محصولی پیدا نشد.</div>
+  {% endif %}
+</section>
+
+{% endblock %}
