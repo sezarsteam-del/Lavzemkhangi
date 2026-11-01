@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}پنل مدیریت | فروشگاه لوازم خانگی{% endblock %}
+{% block content %}
+<div class="admin-head">
+  <h2>پنل مدیریت</h2>
+  <form method="post" action="{{ url_for('logout') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button class="secondary" type="submit">خروج</button>
+  </form>
+</div>
+
+<section class="form-card">
+  <h3>افزودن دسته‌بندی</h3>
+  <form class="inline-form" method="post" action="{{ url_for('add_category') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <input name="name" placeholder="مثلاً سرخ‌کن" required>
+    <button type="submit">افزودن</button>
+  </form>
+  <h3 class="subheading">دسته‌بندی‌های موجود</h3>
+  {% for c in categories %}
+    <div class="manage-row">
+      <form class="edit-category" method="post" action="{{ url_for('edit_category', category_id=c.id) }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input name="name" value="{{ c.name }}" required>
+        <button class="secondary" type="submit">ذخیره</button>
+      </form>
+      <span class="muted">{{ c.product_count }} محصول</span>
+      <form method="post" action="{{ url_for('delete_category', category_id=c.id) }}" onsubmit="return confirm('این دسته و تمام محصولات داخل آن حذف شود؟')">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="danger" type="submit">حذف</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="muted">هنوز دسته‌بندی ثبت نشده است.</p>
+  {% endfor %}
+</section>
+
+<section class="form-card">
+  <h3>افزودن محصول</h3>
+  {% if categories %}
+  <form method="post" action="{{ url_for('add_product') }}" class="stack-form">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label>نام محصول</label><input name="name" required placeholder="مثلاً سرخ‌کن بدون روغن">
+    <label>دسته‌بندی</label>
+    <select name="category_id" required>
+      {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+    </select>
+    <label>قیمت (تومان)</label><input name="price" type="number" min="0" step="1" required>
+    <label>توضیحات (اختیاری)</label><textarea name="description" rows="2"></textarea>
+    <label>آدرس تصویر (اختیاری)</label><input name="image_url" type="url" placeholder="https://...">
+    <button type="submit">ثبت محصول</button>
+  </form>
+  {% else %}
+    <p class="muted">ابتدا یک دسته‌بندی بسازید.</p>
+  {% endif %}
+</section>
+
+<section class="form-card">
+  <h3>مدیریت محصولات</h3>
+  {% for p in products %}
+    <details class="product-edit">
+      <summary>{{ p.name }} — {{ "{:,}".format(p.price) }} تومان <span class="muted">({{ p.category_name }})</span></summary>
+      <form method="post" action="{{ url_for('edit_product', product_id=p.id) }}" class="stack-form edit-form">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <label>نام محصول</label><input name="name" value="{{ p.name }}" required>
+        <label>دسته‌بندی</label>
+        <select name="category_id" required>
+          {% for c in categories %}<option value="{{ c.id }}" {% if c.name == p.category_name %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+        <label>قیمت (تومان)</label><input name="price" type="number" min="0" value="{{ p.price }}" required>
+        <label>توضیحات</label><textarea name="description" rows="2">{{ p.description }}</textarea>
+        <label>آدرس تصویر</label><input name="image_url" type="url" value="{{ p.image_url or '' }}" placeholder="https://...">
+        <button type="submit">ذخیره تغییرات</button>
+      </form>
+      <form method="post" action="{{ url_for('delete_product', product_id=p.id) }}" onsubmit="return confirm('محصول حذف شود؟')">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="danger" type="submit">حذف محصول</button>
+      </form>
+    </details>
+  {% else %}
+    <p class="muted">هنوز محصولی ثبت نشده است.</p>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}ورود مدیر | فروشگاه لوازم خانگی{% endblock %}
+{% block content %}
+<div class="form-card narrow">
+  <h2>ورود مدیر</h2>
+  <form method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label>نام کاربری</label>
+    <input name="username" autocomplete="username" required>
+    <label>رمز عبور</label>
+    <input type="password" name="password" autocomplete="current-password" required>
+    <button class="full" type="submit">ورود به پنل</button>
+  </form>
+</div>
+{% endblock %}
