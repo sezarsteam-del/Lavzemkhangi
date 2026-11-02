@@ -202,7 +202,10 @@ app.jinja_env.globals["csrf_token"] = csrf_token
 @app.before_request
 def check_csrf():
     if request.method == "POST":
-        sent = request.form.get("_csrf", "")
+        sent = (
+            request.form.get("_csrf", "")
+            or request.form.get("csrf_token", "")
+        )
         saved = session.get("_csrf", "")
 
         if not saved or not sent or not hmac.compare_digest(sent, saved):
