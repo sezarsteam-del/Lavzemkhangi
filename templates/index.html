@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}همراه‌یار | لیست قیمت لوازم خانگی{% endblock %}
+{% block title %}لوازم خانگی | لیست قیمت محصولات{% endblock %}
 
 {% block head %}
 <style>
@@ -23,6 +23,128 @@
         font-size: 13px;
     }
 
+    .category-section {
+        margin: 25px 0 30px;
+    }
+
+    .category-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .category-heading .section-title {
+        margin: 0;
+    }
+
+    .category-total {
+        font-size: 11px;
+        color: #64748b;
+        background: #eaf0f8;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .category-card {
+        min-width: 0;
+        min-height: 76px;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 11px;
+        background: #fff;
+        border: 1px solid #e5eaf1;
+        border-radius: 13px;
+        text-decoration: none;
+        transition: .2s ease;
+        box-shadow: 0 3px 12px rgba(15,23,42,.025);
+    }
+
+    .category-card:hover {
+        border-color: #93c5fd;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(37,99,235,.08);
+    }
+
+    .category-card.selected {
+        background: #eff6ff;
+        border-color: #2563eb;
+    }
+
+    .category-icon {
+        width: 49px;
+        height: 49px;
+        flex: 0 0 49px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        border-radius: 11px;
+        color: #2563eb;
+        font-size: 21px;
+        overflow: hidden;
+    }
+
+    .category-card.selected .category-icon {
+        background: #dbeafe;
+    }
+
+    .category-details {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .category-name {
+        display: block;
+        color: #1e293b;
+        font-size: 12px;
+        font-weight: bold;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+
+    .category-count {
+        display: block;
+        color: #94a3b8;
+        font-size: 10px;
+        margin-top: 3px;
+    }
+
+    .category-arrow {
+        color: #94a3b8;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .category-card.selected .category-name,
+    .category-card.selected .category-arrow {
+        color: #1d4ed8;
+    }
+
+    .all-category .category-icon {
+        background: #eff6ff;
+        font-size: 22px;
+    }
+
+    .search {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 22px;
+    }
+
+    .search input {
+        flex: 1;
+        min-width: 0;
+    }
+
     .catalog-heading {
         display: flex;
         justify-content: space-between;
@@ -36,12 +158,6 @@
         font-size: 12px;
     }
 
-    .chip.selected {
-        background: #2563eb;
-        color: white;
-        border-color: #2563eb;
-    }
-
     .product {
         position: relative;
     }
@@ -49,6 +165,8 @@
     .product-image {
         height: 190px;
         padding: 10px;
+        object-fit: contain;
+        background: #f8fafc;
     }
 
     .product-info {
@@ -113,6 +231,12 @@
         margin-top: 12px;
     }
 
+    @media(max-width: 900px) {
+        .category-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     @media(max-width: 600px) {
         .hero {
             padding: 22px 17px;
@@ -122,8 +246,53 @@
             font-size: 19px;
         }
 
+        .category-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+        }
+
+        .category-card {
+            min-height: 68px;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            flex-basis: 40px;
+            border-radius: 9px;
+            font-size: 18px;
+        }
+
+        .category-name {
+            font-size: 11px;
+        }
+
+        .category-count {
+            font-size: 9px;
+        }
+
+        .category-arrow {
+            display: none;
+        }
+
         .product-image {
             height: 135px;
+        }
+
+        .search {
+            flex-direction: column;
+        }
+
+        .search button {
+            width: 100%;
+        }
+    }
+
+    @media(max-width: 350px) {
+        .category-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -132,14 +301,13 @@
 {% block content %}
 
 <section class="hero">
-    <h1>به همراه‌یار خوش آمدید</h1>
+    <h1>به فروشگاه لوازم خانگی خوش آمدید</h1>
     <p>
         مشاهده قیمت روز، بررسی موجودی و استعلام محصولات لوازم خانگی
     </p>
 </section>
 
 <form class="search" method="GET" action="{{ url_for('index') }}">
-
     <input
         type="search"
         name="q"
@@ -156,30 +324,55 @@
     {% endif %}
 
     <button type="submit">جستجو</button>
-
 </form>
 
-<section>
-    <h2 class="section-title">دسته‌بندی محصولات</h2>
+<section class="category-section">
 
-    <div class="chips">
+    <div class="category-heading">
+        <h2 class="section-title">دسته‌بندی محصولات</h2>
+
+        <span class="category-total">
+            {{ categories|length }} دسته
+        </span>
+    </div>
+
+    <div class="category-grid">
 
         <a
-            class="chip {% if not selected_category %}selected{% endif %}"
+            class="category-card all-category {% if not selected_category %}selected{% endif %}"
             href="{{ url_for('index', q=q) }}"
         >
-            همه محصولات
+            <div class="category-icon">▦</div>
+
+            <div class="category-details">
+                <span class="category-name">همه محصولات</span>
+                <span class="category-count">مشاهده کل محصولات</span>
+            </div>
+
+            <span class="category-arrow">‹</span>
         </a>
 
         {% for category in categories %}
-
             <a
-                class="chip {% if selected_category|string == category.id|string %}selected{% endif %}"
+                class="category-card {% if selected_category|string == category.id|string %}selected{% endif %}"
                 href="{{ url_for('index', category=category.id, q=q) }}"
             >
-                {{ category.name }}
-            </a>
+                <div class="category-icon">
+                    <span>▤</span>
+                </div>
 
+                <div class="category-details">
+                    <span class="category-name">
+                        {{ category.name }}
+                    </span>
+
+                    <span class="category-count">
+                        مشاهده محصولات
+                    </span>
+                </div>
+
+                <span class="category-arrow">‹</span>
+            </a>
         {% endfor %}
 
     </div>
@@ -200,24 +393,19 @@
         <div class="product-list">
 
             {% for product in products %}
-
                 <article class="product">
 
                     {% if product.image_url %}
-
                         <img
                             class="product-image"
                             src="{{ product.image_url }}"
                             alt="{{ product.name }}"
                             loading="lazy"
                         >
-
                     {% else %}
-
                         <div class="product-placeholder">
                             بدون تصویر
                         </div>
-
                     {% endif %}
 
                     <div class="product-info">
@@ -247,31 +435,22 @@
                             </div>
 
                             {% if product.stock <= 0 %}
-
                                 <span class="stock-badge stock-empty">
                                     ناموجود
                                 </span>
-
                             {% elif product.stock <= product.min_stock %}
-
                                 <span class="stock-badge stock-low">
                                     موجودی محدود | {{ product.stock }} عدد
                                 </span>
-
                             {% else %}
-
                                 <span class="stock-badge stock-available">
                                     موجود | {{ product.stock }} عدد
                                 </span>
-
                             {% endif %}
 
                         </div>
-
                     </div>
-
                 </article>
-
             {% endfor %}
 
         </div>
@@ -279,7 +458,6 @@
     {% else %}
 
         <div class="empty">
-
             <h3>محصولی پیدا نشد!</h3>
 
             <p>
@@ -289,7 +467,6 @@
             <a class="clear-search" href="{{ url_for('index') }}">
                 مشاهده همه محصولات
             </a>
-
         </div>
 
     {% endif %}
