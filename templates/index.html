@@ -23,6 +23,27 @@
         font-size: 13px;
     }
 
+    .hero-contact-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 16px;
+        padding: 9px 17px;
+        border: 1px solid rgba(255,255,255,.75);
+        border-radius: 9px;
+        color: #fff;
+        background: rgba(255,255,255,.12);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        transition: background .2s, transform .2s;
+    }
+
+    .hero-contact-link:hover {
+        background: rgba(255,255,255,.23);
+        transform: translateY(-1px);
+    }
+
     /* جستجو */
     .search {
         display: flex;
@@ -337,6 +358,7 @@
     <p>
         مشاهده قیمت روز، بررسی موجودی و استعلام محصولات لوازم خانگی
     </p>
+    <a class="hero-contact-link" href="#contact">تماس با ما</a>
 </section>
 
 <form class="search" method="GET" action="{{ url_for('index') }}">
