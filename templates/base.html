@@ -136,6 +136,26 @@
             width: 100%;
         }
 
+        .contact-footer {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,.15);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 24px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .contact-footer a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .contact-footer a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 600px) {
             .topbar-inner {
                 padding-top: 10px;
@@ -184,6 +204,7 @@
             <nav class="top-navigation" id="mainNavigation">
 
                 <a href="{{ url_for('index') }}">صفحه اصلی</a>
+                <a href="{{ url_for('contact') }}">تماس با ما</a>
 
                 {% if session.get('admin') %}
 
@@ -230,10 +251,15 @@
 
 </main>
 
-<footer class="footer">
+<footer class="footer" id="contact">
     <div class="footer-inner">
         <strong>لوازم خانگی</strong>
         <small>تمام حقوق محفوظ است.</small>
+        <div class="contact-footer">
+            <strong>تماس با ما:</strong>
+            <a href="tel:09199223403" dir="ltr">09199223403</a>
+            <a href="mailto:m4hdisalari2343@gmail.com" dir="ltr">m4hdisalari2343@gmail.com</a>
+        </div>
     </div>
 </footer>
 
