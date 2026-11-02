@@ -1,87 +1,353 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل مدیریت | همراه‌یار</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .admin-wrap{max-width:1250px;margin:30px auto;padding:16px}
-        .admin-head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:25px}
-        .admin-head h1{margin:0;font-size:25px}
-        .admin-nav{display:flex;gap:9px;flex-wrap:wrap;margin:20px 0}
-        .admin-nav a,.action-btn{display:inline-block;padding:10px 15px;border-radius:10px;background:#172554;color:white;text-decoration:none;border:0;cursor:pointer;font:inherit}
-        .admin-nav a:hover,.action-btn:hover{opacity:.85}
-        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:20px 0}
-        .stat-card,.panel{background:white;border:1px solid #e5e7eb;border-radius:15px;padding:18px;margin-bottom:20px}
-        .stat-card strong{display:block;font-size:26px;margin-top:8px}
-        .panel h2{font-size:19px;margin:0 0 18px}
-        .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px}
-        .field{display:flex;flex-direction:column;gap:7px}
-        .field input,.field select,.field textarea{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit;box-sizing:border-box;background:#fff}
-        .field textarea{min-height:75px}
-        .primary-btn{background:#2563eb;color:white;border:0;padding:11px 18px;border-radius:9px;font:inherit;cursor:pointer;margin-top:14px}
-        .danger-btn{background:#dc2626;color:white;border:0;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
-        .secondary-btn{background:#475569;color:white;border:0;padding:8px 12px;border-radius:8px;font:inherit;cursor:pointer}
-        .table-wrap{overflow-x:auto}
-        table{width:100%;border-collapse:collapse;min-width:650px}
-        th,td{padding:12px;text-align:right;border-bottom:1px solid #e5e7eb;vertical-align:middle}
-        th{background:#f8fafc}
-        .product-img{width:55px;height:55px;object-fit:cover;border-radius:9px}
-        .muted{color:#64748b;font-size:13px}
-        .inline-form{display:inline-block;margin:3px}
-        details{padding:12px;background:#f8fafc;border-radius:10px;margin-top:8px}
-        summary{cursor:pointer;font-weight:bold}
-        .status{display:inline-block;padding:5px 9px;border-radius:20px;background:#dcfce7;color:#166534;font-size:12px}
-        .status.off{background:#fee2e2;color:#991b1b}
-        @media(max-width:600px){.admin-wrap{padding:10px}.admin-head h1{font-size:21px}.panel{padding:13px}}
-    </style>
-</head>
-<body>
+{% block title %}پنل مدیریت | همراه‌یار{% endblock %}
+
+{% block head %}
+<style>
+.admin-wrap {
+    max-width: 1250px;
+    margin: 10px auto 35px;
+}
+
+.admin-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 22px;
+}
+
+.admin-head h1 {
+    margin: 0;
+    font-size: 23px;
+}
+
+.admin-head p {
+    margin: 8px 0 0;
+}
+
+.admin-nav {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.admin-nav a {
+    display: inline-block;
+    padding: 10px 15px;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.admin-nav a:hover {
+    background: #dbeafe;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin: 20px 0;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e5eaf1;
+    border-radius: 14px;
+    padding: 19px;
+}
+
+.stat-card small {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.stat-card strong {
+    display: block;
+    font-size: 25px;
+    margin-top: 10px;
+    color: #1e293b;
+}
+
+.stat-blue strong { color: #2563eb; }
+.stat-green strong { color: #15803d; }
+.stat-red strong { color: #dc2626; }
+
+.panel {
+    background: white;
+    border: 1px solid #e5eaf1;
+    border-radius: 15px;
+    padding: 21px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(15,23,42,.035);
+}
+
+.panel h2 {
+    font-size: 17px;
+    margin: 0 0 19px;
+}
+
+.panel-description {
+    color: #64748b;
+    font-size: 11px;
+    margin: -10px 0 18px;
+    line-height: 1.9;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.field label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #475569;
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #dbe1ea;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 12px;
+    box-sizing: border-box;
+    background: white;
+    color: #1e293b;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.field textarea {
+    min-height: 75px;
+    resize: vertical;
+}
+
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+    display: inline-block;
+    padding: 10px 15px;
+    border: 0;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 12px;
+}
+
+.primary-btn {
+    background: #2563eb;
+    color: white;
+}
+
+.secondary-btn {
+    background: #475569;
+    color: white;
+}
+
+.danger-btn {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover,
+.danger-btn:hover {
+    opacity: .85;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    min-width: 650px;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 13px 10px;
+    text-align: right;
+    border-bottom: 1px solid #edf0f5;
+    vertical-align: middle;
+    font-size: 12px;
+}
+
+.admin-table th {
+    background: #f8fafc;
+    color: #475569;
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.product-img {
+    width: 55px;
+    height: 55px;
+    object-fit: cover;
+    border-radius: 9px;
+    background: #f1f5f9;
+}
+
+.muted {
+    color: #64748b;
+    font-size: 11px;
+}
+
+.inline-form {
+    display: inline-block;
+    margin: 3px;
+}
+
+details {
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #edf0f5;
+    border-radius: 10px;
+    margin-top: 7px;
+}
+
+summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+    color: #334155;
+}
+
+.edit-form {
+    padding-top: 15px;
+}
+
+.status {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 11px;
+}
+
+.status.off {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.section-space {
+    margin-top: 18px;
+}
+
+@media(max-width:600px) {
+    .admin-wrap {
+        margin-top: 5px;
+    }
+
+    .admin-head h1 {
+        font-size: 20px;
+    }
+
+    .panel {
+        padding: 14px;
+    }
+
+    .stat-card {
+        padding: 15px;
+    }
+
+    .stat-card strong {
+        font-size: 22px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
 
 <div class="admin-wrap">
 
     <header class="admin-head">
         <div>
             <h1>پنل مدیریت همراه‌یار</h1>
-            <p class="muted">مدیریت محصولات، دسته‌بندی‌ها و برندها</p>
+            <p class="muted">
+                مدیریت محصولات، دسته‌بندی‌ها، برندها و فروشگاه
+            </p>
         </div>
-        <a class="action-btn" href="/">مشاهده سایت</a>
+
+        <a class="btn" href="/">مشاهده سایت</a>
     </header>
 
     <nav class="admin-nav">
         <a href="/admin">داشبورد</a>
         <a href="/admin/inventory">مدیریت انبار</a>
         <a href="/admin/sales">دفتر فروش</a>
-        <a href="/admin/reports">گزارش‌ها</a>
+        <a href="/admin/reports">گزارش‌های فروش</a>
     </nav>
 
     <section class="stats-grid">
-        <div class="stat-card">
-            <span class="muted">تعداد محصولات</span>
+
+        <div class="stat-card stat-blue">
+            <small>تعداد محصولات</small>
             <strong>{{ products|length }}</strong>
         </div>
+
         <div class="stat-card">
-            <span class="muted">دسته‌بندی‌ها</span>
+            <small>دسته‌بندی‌ها</small>
             <strong>{{ categories|length }}</strong>
         </div>
+
         <div class="stat-card">
-            <span class="muted">برندها</span>
+            <small>برندها</small>
             <strong>{{ brands|length }}</strong>
         </div>
-        <div class="stat-card">
-            <span class="muted">محصولات کم‌موجودی</span>
-            <strong>{{ products|selectattr('stock', 'le', 0)|list|length }}</strong>
+
+        <div class="stat-card stat-red">
+            <small>محصولات ناموجود</small>
+            <strong>
+                {{ products|selectattr('stock', 'le', 0)|list|length }}
+            </strong>
         </div>
+
     </section>
 
     <section class="panel">
+
         <h2>افزودن محصول جدید</h2>
+
+        <p class="panel-description">
+            اطلاعات محصول را وارد کن تا به فهرست محصولات فروشگاه اضافه شود.
+        </p>
+
         <form action="/admin/product/add" method="POST">
+
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="form-grid">
+
                 <div class="field">
                     <label>نام محصول</label>
                     <input type="text" name="name" required>
@@ -131,17 +397,29 @@
                     <label>توضیحات</label>
                     <textarea name="description"></textarea>
                 </div>
+
             </div>
 
-            <button class="primary-btn" type="submit">ثبت محصول</button>
+            <button class="primary-btn" type="submit">
+                ثبت محصول جدید
+            </button>
+
         </form>
+
     </section>
 
     <section class="panel">
+
         <h2>مدیریت محصولات</h2>
 
+        <p class="panel-description">
+            برای ویرایش یا غیرفعال کردن هر محصول، بخش مدیریت همان ردیف را باز کن.
+        </p>
+
         <div class="table-wrap">
-            <table>
+
+            <table class="admin-table">
+
                 <thead>
                     <tr>
                         <th>تصویر</th>
@@ -152,22 +430,38 @@
                         <th>مدیریت</th>
                     </tr>
                 </thead>
+
                 <tbody>
+
                     {% for product in products %}
+
                     <tr>
+
                         <td>
                             {% if product.image_url %}
-                            <img class="product-img" src="{{ product.image_url }}" alt="{{ product.name }}">
+                            <img
+                                class="product-img"
+                                src="{{ product.image_url }}"
+                                alt="{{ product.name }}"
+                            >
                             {% else %}
                             <span class="muted">بدون تصویر</span>
                             {% endif %}
                         </td>
+
                         <td>
                             <strong>{{ product.name }}</strong>
-                            <div class="muted">{{ product.category_name or '' }}</div>
+                            <div class="muted">
+                                {{ product.category_name or '' }}
+                            </div>
                         </td>
-                        <td>{{ "{:,.0f}".format(product.price) }} تومان</td>
+
+                        <td>
+                            {{ "{:,.0f}".format(product.price) }} تومان
+                        </td>
+
                         <td>{{ product.stock }}</td>
+
                         <td>
                             {% if product.is_active %}
                             <span class="status">فعال</span>
@@ -175,24 +469,45 @@
                             <span class="status off">غیرفعال</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <details>
-                                <summary>ویرایش محصول</summary>
 
-                                <form action="/admin/product/{{ product.id }}/edit" method="POST">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <td>
+
+                            <details>
+
+                                <summary>مدیریت محصول</summary>
+
+                                <form
+                                    class="edit-form"
+                                    action="/admin/product/{{ product.id }}/edit"
+                                    method="POST"
+                                >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="{{ csrf_token() }}"
+                                    >
 
                                     <div class="form-grid">
+
                                         <div class="field">
                                             <label>نام محصول</label>
-                                            <input type="text" name="name" value="{{ product.name }}" required>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value="{{ product.name }}"
+                                                required
+                                            >
                                         </div>
 
                                         <div class="field">
                                             <label>دسته‌بندی</label>
                                             <select name="category_id" required>
                                                 {% for category in categories %}
-                                                <option value="{{ category.id }}" {% if category.id == product.category_id %}selected{% endif %}>
+                                                <option
+                                                    value="{{ category.id }}"
+                                                    {% if category.id == product.category_id %}selected{% endif %}
+                                                >
                                                     {{ category.name }}
                                                 </option>
                                                 {% endfor %}
@@ -204,7 +519,10 @@
                                             <select name="brand_id">
                                                 <option value="">بدون برند</option>
                                                 {% for brand in brands %}
-                                                <option value="{{ brand.id }}" {% if product.brand_id == brand.id %}selected{% endif %}>
+                                                <option
+                                                    value="{{ brand.id }}"
+                                                    {% if product.brand_id == brand.id %}selected{% endif %}
+                                                >
                                                     {{ brand.name }}
                                                 </option>
                                                 {% endfor %}
@@ -213,141 +531,268 @@
 
                                         <div class="field">
                                             <label>قیمت فروش</label>
-                                            <input type="number" name="price" min="0" value="{{ product.price }}" required>
+                                            <input
+                                                type="number"
+                                                name="price"
+                                                min="0"
+                                                value="{{ product.price }}"
+                                                required
+                                            >
                                         </div>
 
                                         <div class="field">
                                             <label>حداقل موجودی</label>
-                                            <input type="number" name="min_stock" min="0" value="{{ product.min_stock }}">
+                                            <input
+                                                type="number"
+                                                name="min_stock"
+                                                min="0"
+                                                value="{{ product.min_stock }}"
+                                            >
                                         </div>
 
                                         <div class="field">
                                             <label>آدرس تصویر</label>
-                                            <input type="url" name="image_url" value="{{ product.image_url or '' }}">
+                                            <input
+                                                type="url"
+                                                name="image_url"
+                                                value="{{ product.image_url or '' }}"
+                                            >
                                         </div>
 
                                         <div class="field">
                                             <label>توضیحات</label>
                                             <textarea name="description">{{ product.description or '' }}</textarea>
                                         </div>
+
                                     </div>
 
-                                    <button class="secondary-btn" type="submit">ذخیره تغییرات</button>
+                                    <button class="secondary-btn" type="submit">
+                                        ذخیره تغییرات
+                                    </button>
+
                                 </form>
 
-                                <form class="inline-form" action="/admin/product/{{ product.id }}/delete" method="POST" onsubmit="return confirm('این محصول غیرفعال شود؟')">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button class="danger-btn" type="submit">غیرفعال کردن محصول</button>
+                                <form
+                                    class="inline-form"
+                                    action="/admin/product/{{ product.id }}/delete"
+                                    method="POST"
+                                    onsubmit="return confirm('این محصول غیرفعال شود؟')"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="{{ csrf_token() }}"
+                                    >
+
+                                    <button class="danger-btn" type="submit">
+                                        غیرفعال کردن محصول
+                                    </button>
                                 </form>
+
                             </details>
+
+                        </td>
+
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="6" style="text-align:center;padding:25px">
+                            هنوز محصولی ثبت نشده است.
                         </td>
                     </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6">هنوز محصولی ثبت نشده است.</td>
-                    </tr>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
+
     </section>
 
     <section class="panel">
-        <h2>افزودن دسته‌بندی</h2>
+
+        <h2>مدیریت دسته‌بندی‌ها</h2>
+
         <form action="/admin/category/add" method="POST">
+
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
             <div class="form-grid">
                 <div class="field">
-                    <label>نام دسته‌بندی</label>
+                    <label>نام دسته‌بندی جدید</label>
                     <input type="text" name="name" required>
                 </div>
             </div>
-            <button class="primary-btn" type="submit">افزودن دسته‌بندی</button>
+
+            <button class="primary-btn" type="submit">
+                افزودن دسته‌بندی
+            </button>
+
         </form>
 
-        <div class="table-wrap">
-            <table>
+        <div class="section-space table-wrap">
+
+            <table class="admin-table">
+
                 <thead>
                     <tr>
                         <th>نام دسته‌بندی</th>
                         <th>مدیریت</th>
                     </tr>
                 </thead>
+
                 <tbody>
+
                     {% for category in categories %}
+
                     <tr>
                         <td>{{ category.name }}</td>
+
                         <td>
-                            <form class="inline-form" action="/admin/category/{{ category.id }}/edit" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="text" name="name" value="{{ category.name }}" required>
-                                <button class="secondary-btn" type="submit">ویرایش نام</button>
+
+                            <form
+                                class="inline-form"
+                                action="/admin/category/{{ category.id }}/edit"
+                                method="POST"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value="{{ category.name }}"
+                                    required
+                                >
+
+                                <button class="secondary-btn" type="submit">
+                                    ویرایش نام
+                                </button>
                             </form>
 
-                            <form class="inline-form" action="/admin/category/{{ category.id }}/delete" method="POST" onsubmit="return confirm('دسته‌بندی حذف شود؟')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="danger-btn" type="submit">حذف</button>
+                            <form
+                                class="inline-form"
+                                action="/admin/category/{{ category.id }}/delete"
+                                method="POST"
+                                onsubmit="return confirm('دسته‌بندی حذف شود؟')"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <button class="danger-btn" type="submit">
+                                    حذف
+                                </button>
                             </form>
+
                         </td>
                     </tr>
+
                     {% else %}
+
                     <tr>
                         <td colspan="2">دسته‌بندی‌ای وجود ندارد.</td>
                     </tr>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
+
     </section>
 
     <section class="panel">
+
         <h2>مدیریت برندها</h2>
 
         <form action="/admin/brand/add" method="POST">
+
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
             <div class="form-grid">
                 <div class="field">
                     <label>نام برند جدید</label>
                     <input type="text" name="name" required>
                 </div>
             </div>
-            <button class="primary-btn" type="submit">افزودن برند</button>
+
+            <button class="primary-btn" type="submit">
+                افزودن برند
+            </button>
+
         </form>
 
-        <div class="table-wrap">
-            <table>
+        <div class="section-space table-wrap">
+
+            <table class="admin-table">
+
                 <thead>
                     <tr>
                         <th>نام برند</th>
                         <th>مدیریت</th>
                     </tr>
                 </thead>
+
                 <tbody>
+
                     {% for brand in brands %}
+
                     <tr>
                         <td>{{ brand.name }}</td>
+
                         <td>
-                            <form action="/admin/brand/{{ brand.id }}/delete" method="POST" onsubmit="return confirm('برند حذف شود؟')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="danger-btn" type="submit">حذف برند</button>
+
+                            <form
+                                action="/admin/brand/{{ brand.id }}/delete"
+                                method="POST"
+                                onsubmit="return confirm('برند حذف شود؟')"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <button class="danger-btn" type="submit">
+                                    حذف برند
+                                </button>
                             </form>
+
                         </td>
                     </tr>
+
                     {% else %}
+
                     <tr>
                         <td colspan="2">هنوز برندی ثبت نشده است.</td>
                     </tr>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
+
     </section>
 
-    <footer class="muted" style="text-align:center;padding:20px">
+    <div class="muted" style="text-align:center;padding:20px">
         همراه‌یار | پنل مدیریت فروش و موجودی
-    </footer>
+    </div>
 
 </div>
 
-</body>
-</html>
+{% endblock %}
