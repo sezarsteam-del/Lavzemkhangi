@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گزارش‌های همراه‌یار</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f1f5f9;
+            color: #1e293b;
+            font-family: Tahoma, Arial, sans-serif;
+        }
+        .container {
+            max-width: 1150px;
+            margin: auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        h1 { font-size: 23px; margin: 0; }
+        h2 { font-size: 18px; margin: 25px 0 15px; }
+        .btn {
+            display: inline-block;
+            padding: 10px 16px;
+            background: #334155;
+            color: white;
+            text-decoration: none;
+            border-radius: 9px;
+            font-size: 13px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 14px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.04);
+        }
+        .card small {
+            display: block;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+        .card strong {
+            font-size: 23px;
+            overflow-wrap: anywhere;
+        }
+        .green { color: #15803d; }
+        .blue { color: #2563eb; }
+        .section {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            margin-top: 22px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.04);
+        }
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 520px;
+        }
+        th, td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: right;
+            font-size: 13px;
+        }
+        th {
+            background: #f8fafc;
+            color: #475569;
+        }
+        .rank {
+            display: inline-flex;
+            width: 27px;
+            height: 27px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-weight: bold;
+        }
+        .empty {
+            padding: 25px;
+            text-align: center;
+            color: #94a3b8;
+        }
+        .note {
+            margin-top: 18px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 2;
+        }
+        @media(max-width:600px) {
+            body { padding: 10px; }
+            .card { padding: 17px; }
+            .card strong { font-size: 20px; }
+            h1 { font-size: 19px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>📊 گزارش‌های همراه‌یار</h1>
+        <a class="btn" href="{{ url_for('admin') }}">بازگشت به مدیریت</a>
+    </div>
+
+    <div class="stats">
+        <div class="card">
+            <small>تعداد کل فاکتورهای فروش</small>
+            <strong class="blue">
+                {{ "{:,}".format(summary.invoice_count or 0) }}
+            </strong>
+        </div>
+
+        <div class="card">
+            <small>مجموع فروش ثبت‌شده</small>
+            <strong class="green">
+                {{ "{:,.0f}".format(summary.total_sales or 0) }}
+                <small>تومان</small>
+            </strong>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📅 فروش روزانه</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ردیف</th>
+                        <th>تاریخ</th>
+                        <th>تعداد فاکتور</th>
+                        <th>مجموع فروش</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in daily %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            {{ row.sale_date.strftime('%Y/%m/%d') if row.sale_date else '—' }}
+                        </td>
+                        <td>{{ "{:,}".format(row.invoice_count or 0) }}</td>
+                        <td>
+                            {{ "{:,.0f}".format(row.total or 0) }}
+                            تومان
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="empty">
+                            هنوز فروشی ثبت نشده است.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="note">
+            این جدول آخرین ۳۰ روز دارای فروش را نمایش می‌دهد.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>🏆 ده محصول پرفروش</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>رتبه</th>
+                        <th>نام محصول</th>
+                        <th>تعداد فروخته‌شده</th>
+                        <th>مجموع مبلغ فروش</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in best_products %}
+                    <tr>
+                        <td><span class="rank">{{ loop.index }}</span></td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ "{:,}".format(product.sold_quantity or 0) }}</td>
+                        <td>
+                            {{ "{:,.0f}".format(product.total or 0) }}
+                            تومان
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="empty">
+                            هنوز اطلاعاتی برای محصولات پرفروش وجود ندارد.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="note">
+        گزارش‌ها بر اساس فاکتورهای تکمیل‌شده محاسبه می‌شوند.
+        فاکتورهای لغوشده در محاسبات لحاظ نمی‌شوند.
+    </p>
+
+</div>
+</body>
+</html>
