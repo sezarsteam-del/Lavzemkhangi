@@ -35,7 +35,7 @@
         min-width: 0;
     }
 
-    /* منوی اصلی دسته بندی */
+    /* منوی دسته بندی */
     .category-section {
         margin: 18px 0 25px;
     }
@@ -82,9 +82,17 @@
         align-items: center;
         justify-content: center;
         background: #eff6ff;
-        color: #2563eb;
         border-radius: 11px;
-        font-size: 21px;
+    }
+
+    .main-category-icon svg {
+        width: 23px;
+        height: 23px;
+        fill: none;
+        stroke: #2563eb;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 
     .category-title {
@@ -124,7 +132,7 @@
         transform: rotate(180deg);
     }
 
-    /* دسته های داخل منو */
+    /* کارت های دسته بندی */
     .category-content {
         border-top: 1px solid #edf0f5;
         padding: 12px;
@@ -162,22 +170,31 @@
     }
 
     .category-icon {
-        width: 30px;
-        height: 30px;
-        flex: 0 0 30px;
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #f1f5f9;
-        border-radius: 8px;
-        font-size: 16px;
+        background: #eff6ff;
+        border-radius: 9px;
+    }
+
+    .category-icon svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: #2563eb;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 
     .category-name {
         font-size: 11px;
         font-weight: bold;
         color: #334155;
-        line-height: 1.6;
+        line-height: 1.7;
         overflow-wrap: anywhere;
     }
 
@@ -300,10 +317,14 @@
         }
 
         .category-icon {
-            width: 27px;
-            height: 27px;
-            flex-basis: 27px;
-            font-size: 14px;
+            width: 29px;
+            height: 29px;
+            flex-basis: 29px;
+        }
+
+        .category-icon svg {
+            width: 18px;
+            height: 18px;
         }
 
         .category-name {
@@ -369,7 +390,13 @@
         <summary class="category-summary">
 
             <div class="category-summary-right">
-                <div class="main-category-icon">▦</div>
+
+                <div class="main-category-icon">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="3"/>
+                        <path d="M8 8h8M8 12h8M8 16h5"/>
+                    </svg>
+                </div>
 
                 <div>
                     <div class="category-title">
@@ -380,6 +407,7 @@
                         برای مشاهده دسته‌ها کلیک کنید
                     </div>
                 </div>
+
             </div>
 
             <div class="category-summary-left">
@@ -396,11 +424,18 @@
 
             <div class="category-grid">
 
+                <!-- همه محصولات -->
                 <a
                     class="category-card {% if not selected_category %}selected{% endif %}"
                     href="{{ url_for('index', q=q) }}"
                 >
-                    <span class="category-icon">▦</span>
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24">
+                            <rect x="3" y="3" width="18" height="18" rx="3"/>
+                            <path d="M8 8h8M8 12h8M8 16h5"/>
+                        </svg>
+                    </span>
+
                     <span class="category-name">همه محصولات</span>
                 </a>
 
@@ -412,25 +447,80 @@
                     >
 
                         <span class="category-icon">
-                            {% if 'تلویزیون' in category.name %}
-                                📺
-                            {% elif 'یخچال' in category.name %}
-                                🧊
-                            {% elif 'لباسشویی' in category.name %}
-                                🧺
-                            {% elif 'ظرفشویی' in category.name %}
-                                🍽️
-                            {% elif 'جارو' in category.name %}
-                                🧹
-                            {% elif 'آشپزخانه' in category.name %}
-                                🍳
-                            {% elif 'کولر' in category.name %}
-                                ❄️
-                            {% elif 'چای' in category.name or 'قهوه' in category.name %}
-                                ☕
+
+                            {% set name = category.name %}
+
+                            {% if 'تلویزیون' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="3" y="4" width="18" height="13" rx="2"/>
+                                    <path d="M8 21h8M12 17v4"/>
+                                </svg>
+
+                            {% elif 'یخچال' in name or 'فریزر' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="6" y="2" width="12" height="20" rx="2"/>
+                                    <path d="M6 10h12M9 6v2M9 13v3"/>
+                                </svg>
+
+                            {% elif 'لباسشویی' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                    <circle cx="12" cy="13" r="5"/>
+                                    <path d="M8 6h.01M11 6h.01"/>
+                                </svg>
+
+                            {% elif 'ظرفشویی' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="4" y="2" width="16" height="20" rx="2"/>
+                                    <path d="M4 7h16M8 4h.01M12 4h.01M8 13h8"/>
+                                </svg>
+
+                            {% elif 'جارو' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M9 3l5 2-5 11-5-2z"/>
+                                    <path d="M14 5l5 2M9 16l-2 4M3 21h15"/>
+                                </svg>
+
+                            {% elif 'کولر' in name or 'تهویه' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="2" y="5" width="20" height="10" rx="2"/>
+                                    <path d="M6 10h12M7 19l2-2M15 17l2 2"/>
+                                </svg>
+
+                            {% elif 'چای' in name or 'قهوه' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M5 8h12v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/>
+                                    <path d="M17 10h2a2 2 0 0 1 0 4h-2M8 3v2M12 2v3"/>
+                                </svg>
+
+                            {% elif 'آشپزخانه' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 12h16l-2 8H6z"/>
+                                    <path d="M7 12V5M12 12V3M17 12V5"/>
+                                </svg>
+
+                            {% elif 'اجاق' in name or 'گاز' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                    <circle cx="8" cy="9" r="2"/>
+                                    <circle cx="16" cy="9" r="2"/>
+                                    <path d="M7 16h10"/>
+                                </svg>
+
+                            {% elif 'مایکرو' in name or 'ماکرو' in name %}
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                                    <rect x="5" y="8" width="12" height="8" rx="1"/>
+                                    <path d="M19 9v.01M19 12v.01M19 15v.01"/>
+                                </svg>
+
                             {% else %}
-                                ▤
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="3" y="3" width="18" height="18" rx="3"/>
+                                    <path d="M8 8h8M8 12h8M8 16h5"/>
+                                </svg>
                             {% endif %}
+
                         </span>
 
                         <span class="category-name">
