@@ -1,146 +1,261 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>گزارش‌های همراه‌یار</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #f1f5f9;
-            color: #1e293b;
-            font-family: Tahoma, Arial, sans-serif;
-        }
-        .container {
-            max-width: 1150px;
-            margin: auto;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 25px;
-        }
-        h1 { font-size: 23px; margin: 0; }
-        h2 { font-size: 18px; margin: 25px 0 15px; }
-        .btn {
-            display: inline-block;
-            padding: 10px 16px;
-            background: #334155;
-            color: white;
-            text-decoration: none;
-            border-radius: 9px;
-            font-size: 13px;
-        }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-        }
-        .card {
-            background: white;
-            padding: 22px;
-            border-radius: 14px;
-            box-shadow: 0 3px 15px rgba(0,0,0,.04);
-        }
-        .card small {
-            display: block;
-            color: #64748b;
-            margin-bottom: 12px;
-        }
-        .card strong {
-            font-size: 23px;
-            overflow-wrap: anywhere;
-        }
-        .green { color: #15803d; }
-        .blue { color: #2563eb; }
-        .section {
-            background: white;
-            border-radius: 14px;
-            padding: 20px;
-            margin-top: 22px;
-            box-shadow: 0 3px 15px rgba(0,0,0,.04);
-        }
-        .table-wrap { overflow-x: auto; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 520px;
-        }
-        th, td {
-            padding: 14px 12px;
-            border-bottom: 1px solid #e5e7eb;
-            text-align: right;
-            font-size: 13px;
-        }
-        th {
-            background: #f8fafc;
-            color: #475569;
-        }
-        .rank {
-            display: inline-flex;
-            width: 27px;
-            height: 27px;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            background: #e0e7ff;
-            color: #3730a3;
-            font-weight: bold;
-        }
-        .empty {
-            padding: 25px;
-            text-align: center;
-            color: #94a3b8;
-        }
-        .note {
-            margin-top: 18px;
-            color: #64748b;
-            font-size: 12px;
-            line-height: 2;
-        }
-        @media(max-width:600px) {
-            body { padding: 10px; }
-            .card { padding: 17px; }
-            .card strong { font-size: 20px; }
-            h1 { font-size: 19px; }
-        }
-    </style>
-</head>
-<body>
-<div class="container">
+{% extends "base.html" %}
 
-    <div class="header">
-        <h1>📊 گزارش‌های همراه‌یار</h1>
-        <a class="btn" href="{{ url_for('admin') }}">بازگشت به مدیریت</a>
-    </div>
+{% block title %}گزارش‌های همراه‌یار{% endblock %}
 
-    <div class="stats">
-        <div class="card">
+{% block head %}
+<style>
+.reports-page {
+    max-width: 1150px;
+    margin: 10px auto 35px;
+}
+
+.reports-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.reports-header h1 {
+    font-size: 22px;
+    margin: 0;
+}
+
+.reports-subtitle {
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 7px;
+}
+
+.report-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.report-card {
+    background: white;
+    border: 1px solid #e5eaf1;
+    border-radius: 15px;
+    padding: 22px;
+    box-shadow: 0 4px 16px rgba(15,23,42,.035);
+}
+
+.report-card small {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-bottom: 13px;
+}
+
+.report-card strong {
+    display: block;
+    font-size: 25px;
+    overflow-wrap: anywhere;
+}
+
+.report-card .unit {
+    display: inline;
+    font-size: 12px;
+    font-weight: normal;
+    color: #64748b;
+}
+
+.report-card .blue {
+    color: #2563eb;
+}
+
+.report-card .green {
+    color: #15803d;
+}
+
+.report-section {
+    background: white;
+    border: 1px solid #e5eaf1;
+    border-radius: 15px;
+    padding: 21px;
+    margin-top: 22px;
+    box-shadow: 0 4px 16px rgba(15,23,42,.035);
+}
+
+.report-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 17px;
+}
+
+.report-section h2 {
+    font-size: 17px;
+    margin: 0;
+}
+
+.section-description {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.report-table-wrap {
+    overflow-x: auto;
+}
+
+.report-table {
+    width: 100%;
+    min-width: 540px;
+    border-collapse: collapse;
+}
+
+.report-table th,
+.report-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #edf0f5;
+    text-align: right;
+    font-size: 12px;
+}
+
+.report-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: bold;
+}
+
+.report-table tr:last-child td {
+    border-bottom: none;
+}
+
+.rank {
+    display: inline-flex;
+    width: 29px;
+    height: 29px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: bold;
+}
+
+.empty-state {
+    padding: 28px !important;
+    text-align: center !important;
+    color: #94a3b8;
+}
+
+.report-note {
+    margin-top: 20px;
+    padding: 13px 15px;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 2;
+}
+
+.report-footer {
+    margin-top: 20px;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 2;
+}
+
+@media(max-width:600px) {
+    .reports-header h1 {
+        font-size: 19px;
+    }
+
+    .report-card {
+        padding: 18px;
+    }
+
+    .report-card strong {
+        font-size: 22px;
+    }
+
+    .report-section {
+        padding: 15px;
+    }
+}
+
+@media print {
+    .topbar,
+    footer,
+    .reports-header .back-button {
+        display: none !important;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    .container,
+    .reports-page {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .report-card,
+    .report-section {
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="reports-page">
+
+    <header class="reports-header">
+        <div>
+            <h1>گزارش‌های فروش</h1>
+            <div class="reports-subtitle">
+                نمای کلی عملکرد فروش و محصولات پرفروش
+            </div>
+        </div>
+
+        <a class="btn back-button" href="{{ url_for('admin') }}">
+            بازگشت به مدیریت
+        </a>
+    </header>
+
+    <section class="report-stats">
+
+        <div class="report-card">
             <small>تعداد کل فاکتورهای فروش</small>
             <strong class="blue">
                 {{ "{:,}".format(summary.invoice_count or 0) }}
             </strong>
         </div>
 
-        <div class="card">
+        <div class="report-card">
             <small>مجموع فروش ثبت‌شده</small>
             <strong class="green">
                 {{ "{:,.0f}".format(summary.total_sales or 0) }}
-                <small>تومان</small>
+                <span class="unit">تومان</span>
             </strong>
         </div>
-    </div>
 
-    <div class="section">
-        <h2>📅 فروش روزانه</h2>
+    </section>
 
-        <div class="table-wrap">
-            <table>
+    <section class="report-section">
+
+        <div class="report-section-header">
+            <h2>فروش روزانه</h2>
+            <span class="section-description">
+                روند فروش در روزهای اخیر
+            </span>
+        </div>
+
+        <div class="report-table-wrap">
+
+            <table class="report-table">
+
                 <thead>
                     <tr>
                         <th>ردیف</th>
@@ -149,39 +264,65 @@
                         <th>مجموع فروش</th>
                     </tr>
                 </thead>
+
                 <tbody>
+
                     {% for row in daily %}
+
                     <tr>
                         <td>{{ loop.index }}</td>
+
                         <td>
                             {{ row.sale_date.strftime('%Y/%m/%d') if row.sale_date else '—' }}
                         </td>
-                        <td>{{ "{:,}".format(row.invoice_count or 0) }}</td>
+
                         <td>
-                            {{ "{:,.0f}".format(row.total or 0) }}
+                            {{ "{:,}".format(row.invoice_count or 0) }}
+                        </td>
+
+                        <td>
+                            <strong>
+                                {{ "{:,.0f}".format(row.total or 0) }}
+                            </strong>
                             تومان
                         </td>
                     </tr>
+
                     {% else %}
+
                     <tr>
-                        <td colspan="4" class="empty">
+                        <td colspan="4" class="empty-state">
                             هنوز فروشی ثبت نشده است.
                         </td>
                     </tr>
+
                     {% endfor %}
+
                 </tbody>
+
             </table>
+
         </div>
-        <p class="note">
+
+        <div class="report-note">
             این جدول آخرین ۳۰ روز دارای فروش را نمایش می‌دهد.
-        </p>
-    </div>
+        </div>
 
-    <div class="section">
-        <h2>🏆 ده محصول پرفروش</h2>
+    </section>
 
-        <div class="table-wrap">
-            <table>
+    <section class="report-section">
+
+        <div class="report-section-header">
+            <h2>ده محصول پرفروش</h2>
+            <span class="section-description">
+                رتبه‌بندی بر اساس تعداد فروش
+            </span>
+        </div>
+
+        <div class="report-table-wrap">
+
+            <table class="report-table">
+
                 <thead>
                     <tr>
                         <th>رتبه</th>
@@ -190,34 +331,53 @@
                         <th>مجموع مبلغ فروش</th>
                     </tr>
                 </thead>
+
                 <tbody>
+
                     {% for product in best_products %}
+
                     <tr>
-                        <td><span class="rank">{{ loop.index }}</span></td>
-                        <td>{{ product.name }}</td>
-                        <td>{{ "{:,}".format(product.sold_quantity or 0) }}</td>
+                        <td>
+                            <span class="rank">{{ loop.index }}</span>
+                        </td>
+
+                        <td>
+                            <strong>{{ product.name }}</strong>
+                        </td>
+
+                        <td>
+                            {{ "{:,}".format(product.sold_quantity or 0) }}
+                        </td>
+
                         <td>
                             {{ "{:,.0f}".format(product.total or 0) }}
                             تومان
                         </td>
                     </tr>
+
                     {% else %}
+
                     <tr>
-                        <td colspan="4" class="empty">
+                        <td colspan="4" class="empty-state">
                             هنوز اطلاعاتی برای محصولات پرفروش وجود ندارد.
                         </td>
                     </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <p class="note">
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    <div class="report-footer">
         گزارش‌ها بر اساس فاکتورهای تکمیل‌شده محاسبه می‌شوند.
         فاکتورهای لغوشده در محاسبات لحاظ نمی‌شوند.
-    </p>
+    </div>
 
 </div>
-</body>
-</html>
+
+{% endblock %}
