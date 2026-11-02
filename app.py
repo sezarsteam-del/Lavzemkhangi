@@ -549,6 +549,36 @@ def admin():
 
 
 # ==================================================
+# صفحه مستقل مدیریت محصولات
+# ==================================================
+
+@app.route("/admin/products")
+@admin_required
+def manage_products():
+
+    with db() as conn:
+
+        products = conn.execute("""
+            SELECT
+                p.*,
+                c.name AS category_name,
+                b.name AS brand_name
+            FROM products p
+            LEFT JOIN categories c
+                ON c.id = p.category_id
+            LEFT JOIN brands b
+                ON b.id = p.brand_id
+            WHERE p.is_active = TRUE
+            ORDER BY p.created_at DESC
+        """).fetchall()
+
+    return render_template(
+        "manage_products.html",
+        products=products
+    )
+
+
+# ==================================================
 # جست‌وجو و جایگزینی متن
 # ==================================================
 
@@ -992,7 +1022,7 @@ def add_product():
             "success"
         )
 
-        return redirect(url_for("admin"))
+        return redirect(url_for("manage_products"))
 
     except (ValueError, TypeError):
 
@@ -1033,7 +1063,6 @@ def add_product():
 @admin_required
 def edit_product(product_id):
 
-    # نمایش صفحه ویرایش
     if request.method == "GET":
 
         with db() as conn:
@@ -1074,7 +1103,6 @@ def edit_product(product_id):
             brands=brands
         )
 
-    # ذخیره ویرایش‌ها
     try:
 
         name = request.form.get(
@@ -1197,7 +1225,7 @@ def edit_product(product_id):
             "success"
         )
 
-        return redirect(url_for("admin"))
+        return redirect(url_for("manage_products"))
 
     except (ValueError, TypeError):
 
@@ -1229,7 +1257,7 @@ def edit_product(product_id):
 
 
 # ==================================================
-# حذف محصول - فقط غیرفعال‌سازی
+# حذف محصول - غیرفعال‌سازی
 # ==================================================
 
 @app.route(
@@ -1241,18 +1269,29 @@ def delete_product(product_id):
 
     with db() as conn:
 
-        conn.execute("""
+        result = conn.execute("""
             UPDATE products
             SET is_active = FALSE
             WHERE id = %s
-        """, (product_id,))
+              AND is_active = TRUE
+            RETURNING id
+        """, (product_id,)).fetchone()
 
-    flash(
-        "محصول از فهرست فعال خارج شد.",
-        "success"
-    )
+    if result:
 
-    return redirect(url_for("admin"))
+        flash(
+            "محصول از فهرست فعال خارج شد.",
+            "success"
+        )
+
+    else:
+
+        flash(
+            "محصول پیدا نشد یا قبلاً غیرفعال شده است.",
+            "error"
+        )
+
+    return redirect(url_for("manage_products"))
 
 
 # ==================================================
