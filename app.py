@@ -93,4 +93,4 @@ def jalali_date(value, fmt=None):
         value = value.astimezone(TEHRAN)
         value = value.replace(tzinfo=None)
 
-        result = jdatetime.datetime.fromgregorian(
+        result = jdatetime.datetime.fromgregorian(datetime=value)
