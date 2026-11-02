@@ -1,8 +1,8 @@
-
 import os
 import hmac
 import secrets
 import threading
+import re
 
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
@@ -44,13 +44,25 @@ if not DATABASE_URL:
 
 
 # ==================================================
-# تاریخ شمسی و ساعت تهران
+# اعداد فارسی و انگلیسی
 # ==================================================
 
 PERSIAN_DIGITS = str.maketrans(
     "0123456789",
     "۰۱۲۳۴۵۶۷۸۹"
 )
+
+ENGLISH_DIGITS = str.maketrans(
+    "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩",
+    "01234567890123456789"
+)
+
+
+def normalize_digits(value):
+    if value is None:
+        return ""
+
+    return str(value).translate(ENGLISH_DIGITS)
 
 
 def persian_numbers(value):
@@ -63,6 +75,10 @@ def persian_numbers(value):
 def tehran_now():
     return datetime.now(TEHRAN)
 
+
+# ==================================================
+# تاریخ شمسی و ساعت تهران
+# ==================================================
 
 def jalali_date(value, fmt=None):
 
@@ -241,6 +257,29 @@ def init_db():
                     CHECK (status IN ('completed', 'cancelled')),
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
+        """)
+
+        # ستون‌های اطلاعات مشتری
+        # برای فاکتورهای قدیمی مقدار این ستون‌ها NULL باقی می‌ماند.
+
+        conn.execute("""
+            ALTER TABLE sales
+            ADD COLUMN IF NOT EXISTS customer_first_name TEXT
+        """)
+
+        conn.execute("""
+            ALTER TABLE sales
+            ADD COLUMN IF NOT EXISTS customer_last_name TEXT
+        """)
+
+        conn.execute("""
+            ALTER TABLE sales
+            ADD COLUMN IF NOT EXISTS customer_phone TEXT
+        """)
+
+        conn.execute("""
+            ALTER TABLE sales
+            ADD COLUMN IF NOT EXISTS customer_national_id TEXT
         """)
 
         conn.execute("""
@@ -925,24 +964,24 @@ def add_product():
     try:
 
         category_id = int(
-            request.form.get("category_id", "")
+            normalize_digits(request.form.get("category_id", ""))
         )
 
         price = int(
-            request.form.get("price", "0")
+            normalize_digits(request.form.get("price", "0"))
         )
 
         stock = int(
-            request.form.get("stock", "0")
+            normalize_digits(request.form.get("stock", "0"))
         )
 
         min_stock = int(
-            request.form.get("min_stock", "2")
+            normalize_digits(request.form.get("min_stock", "2"))
         )
 
-        brand_value = request.form.get(
-            "brand_id", ""
-        ).strip()
+        brand_value = normalize_digits(
+            request.form.get("brand_id", "").strip()
+        )
 
         brand_id = (
             int(brand_value)
@@ -1110,20 +1149,20 @@ def edit_product(product_id):
         ).strip()
 
         category_id = int(
-            request.form.get("category_id", "")
+            normalize_digits(request.form.get("category_id", ""))
         )
 
         price = int(
-            request.form.get("price", "0")
+            normalize_digits(request.form.get("price", "0"))
         )
 
         min_stock = int(
-            request.form.get("min_stock", "2")
+            normalize_digits(request.form.get("min_stock", "2"))
         )
 
-        brand_value = request.form.get(
-            "brand_id", ""
-        ).strip()
+        brand_value = normalize_digits(
+            request.form.get("brand_id", "").strip()
+        )
 
         brand_id = (
             int(brand_value)
@@ -1293,7 +1332,6 @@ def delete_product(product_id):
 
     return redirect(url_for("manage_products"))
 
-
 # ==================================================
 # مدیریت برندها
 # ==================================================
@@ -1461,7 +1499,9 @@ def inventory():
         try:
 
             product_id = int(
-                request.form.get("product_id", "")
+                normalize_digits(
+                    request.form.get("product_id", "")
+                )
             )
 
             movement_type = request.form.get(
@@ -1469,7 +1509,9 @@ def inventory():
             )
 
             quantity = int(
-                request.form.get("quantity", "0")
+                normalize_digits(
+                    request.form.get("quantity", "0")
+                )
             )
 
             note = request.form.get(
@@ -1610,6 +1652,80 @@ def inventory():
 
 
 # ==================================================
+# اعتبارسنجی اطلاعات مشتری
+# ==================================================
+
+def validate_customer_data(form):
+
+    first_name = form.get(
+        "customer_first_name", ""
+    ).strip()
+
+    last_name = form.get(
+        "customer_last_name", ""
+    ).strip()
+
+    phone = normalize_digits(
+        form.get("customer_phone", "")
+    )
+
+    national_id = normalize_digits(
+        form.get("customer_national_id", "")
+    ).strip()
+
+    if not first_name:
+        raise ValueError("نام مشتری را وارد کنید.")
+
+    if not last_name:
+        raise ValueError("نام خانوادگی مشتری را وارد کنید.")
+
+    # حذف فاصله و خط تیره و پرانتز از شماره تماس
+    phone = re.sub(r"[\s\-\(\)]", "", phone)
+
+    if not re.fullmatch(r"\+?\d{10,15}", phone):
+        raise ValueError(
+            "شماره تماس مشتری معتبر نیست."
+        )
+
+    # کد ملی اختیاری است
+    if national_id:
+
+        if not national_id.isdigit() or len(national_id) != 10:
+            raise ValueError(
+                "کد ملی باید دقیقاً ۱۰ رقم باشد."
+            )
+
+        # اعتبارسنجی رقم کنترل کد ملی ایران
+        digits = [int(x) for x in national_id]
+
+        if len(set(digits)) == 1:
+            raise ValueError("کد ملی معتبر نیست.")
+
+        checksum = sum(
+            digits[i] * (10 - i)
+            for i in range(9)
+        ) % 11
+
+        control = digits[9]
+
+        expected = (
+            checksum
+            if checksum < 2
+            else 11 - checksum
+        )
+
+        if control != expected:
+            raise ValueError("کد ملی معتبر نیست.")
+
+    return {
+        "first_name": first_name,
+        "last_name": last_name,
+        "phone": phone,
+        "national_id": national_id or None
+    }
+
+
+# ==================================================
 # دفتر فروش
 # ==================================================
 
@@ -1630,8 +1746,8 @@ def sales():
             "quantity"
         )
 
-        discount_text = request.form.get(
-            "discount", "0"
+        discount_text = normalize_digits(
+            request.form.get("discount", "0")
         ).strip()
 
         description = request.form.get(
@@ -1640,10 +1756,16 @@ def sales():
 
         try:
 
+            customer = validate_customer_data(
+                request.form
+            )
+
             discount = int(discount_text)
 
             if discount < 0:
-                raise ValueError("مبلغ تخفیف معتبر نیست.")
+                raise ValueError(
+                    "مبلغ تخفیف معتبر نیست."
+                )
 
             if len(product_ids) != len(quantities):
                 raise ValueError(
@@ -1657,8 +1779,13 @@ def sales():
                 quantities
             ):
 
-                raw_pid = raw_pid.strip()
-                raw_qty = raw_qty.strip()
+                raw_pid = normalize_digits(
+                    raw_pid.strip()
+                )
+
+                raw_qty = normalize_digits(
+                    raw_qty.strip()
+                )
 
                 if not raw_pid and not raw_qty:
                     continue
@@ -1747,21 +1874,30 @@ def sales():
 
                 final_amount = total_amount - discount
 
+                # ثبت فاکتور همراه با مشخصات مشتری
                 sale = conn.execute("""
                     INSERT INTO sales
                         (
                             total_amount,
                             discount,
                             final_amount,
-                            description
+                            description,
+                            customer_first_name,
+                            customer_last_name,
+                            customer_phone,
+                            customer_national_id
                         )
-                    VALUES (%s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id, invoice_number
                 """, (
                     total_amount,
                     discount,
                     final_amount,
-                    description
+                    description,
+                    customer["first_name"],
+                    customer["last_name"],
+                    customer["phone"],
+                    customer["national_id"]
                 )).fetchone()
 
                 for item in items:
@@ -1966,7 +2102,7 @@ def cancel_sale(sale_id):
 
 
 # ==================================================
-# حذف کامل فاکتور و بازگشت موجودی
+# حذف فاکتور و بازگشت موجودی
 # ==================================================
 
 @app.route(
@@ -2164,3 +2300,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000))
     )
+    
