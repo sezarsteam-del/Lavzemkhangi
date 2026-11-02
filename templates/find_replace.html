@@ -1,1 +1,63 @@
 
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" dir="rtl" style="max-width:1100px;margin:30px auto;padding:20px;color:#222">
+
+    <h2>🔎 جستجو و جایگزینی اطلاعات</h2>
+    <p>عبارت موردنظر را جستجو کن و موارد دلخواه را برای جایگزینی انتخاب کن.</p>
+
+    <form method="POST">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+        <label>محل جستجو</label>
+        <select name="scope" required>
+            <option value="product_name">نام محصولات</option>
+            <option value="product_description">توضیحات محصولات</option>
+            <option value="category_name">نام دسته‌بندی‌ها</option>
+            <option value="brand_name">نام برندها</option>
+        </select>
+
+        <label>عبارت جستجو</label>
+        <input type="text" name="term" value="{{ term or '' }}" required>
+
+        <label>عبارت جایگزین</label>
+        <input type="text" name="replacement" value="{{ replacement or '' }}" required>
+
+        <button type="submit" name="action" value="search">جستجو</button>
+    </form>
+
+    {% if results is defined and results %}
+    <hr>
+    <h3>نتایج جستجو: {{ count }}</h3>
+
+    <form method="POST">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="scope" value="{{ scope }}">
+        <input type="hidden" name="term" value="{{ term }}">
+        <input type="hidden" name="replacement" value="{{ replacement }}">
+
+        <p>موارد موردنظر را انتخاب کن:</p>
+
+        {% for item in results %}
+        <label style="display:block;padding:12px;margin:8px 0;background:#f3f4f6;border-radius:8px">
+            <input type="checkbox" name="ids" value="{{ item.id }}">
+            <strong>{{ item.name }}</strong>
+            {% if item.description is defined and item.description %}
+                <br>{{ item.description }}
+            {% endif %}
+        </label>
+        {% endfor %}
+
+        <button type="submit" name="action" value="apply"
+                onclick="return confirm('آیا از جایگزینی موارد انتخاب‌شده مطمئن هستی؟')">
+            جایگزینی موارد انتخاب‌شده
+        </button>
+    </form>
+    {% elif results is defined %}
+        <p>نتیجه‌ای پیدا نشد.</p>
+    {% endif %}
+
+</div>
+{% endblock %}
