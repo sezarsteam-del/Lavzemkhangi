@@ -1,0 +1,320 @@
+
+{% extends "base.html" %}
+
+{% block title %}مدیریت محصول | همراه‌یار{% endblock %}
+
+{% block content %}
+
+<style>
+.product-edit-page {
+    max-width: 950px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+.product-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.product-edit-header h1 {
+    font-size: 24px;
+    margin: 0;
+}
+
+.product-edit-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 16px;
+    padding: 25px;
+}
+
+.product-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.product-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.product-edit-field.full {
+    grid-column: 1 / -1;
+}
+
+.product-edit-field label {
+    font-weight: 600;
+}
+
+.product-edit-field input,
+.product-edit-field select,
+.product-edit-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    font: inherit;
+    background: transparent;
+    color: inherit;
+}
+
+.product-edit-field textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.product-edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.product-edit-btn {
+    border: none;
+    border-radius: 9px;
+    padding: 12px 22px;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-edit-save {
+    background: #2563eb;
+    color: white;
+}
+
+.product-edit-back {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.product-edit-info {
+    margin-top: 20px;
+    padding: 14px;
+    background: #eff6ff;
+    color: #1e40af;
+    border-radius: 10px;
+    line-height: 1.9;
+}
+
+.product-edit-stock {
+    padding: 12px;
+    border-radius: 9px;
+    background: #f3f4f6;
+    color: #374151;
+}
+
+@media(max-width: 650px) {
+    .product-edit-page {
+        padding: 12px;
+    }
+
+    .product-edit-card {
+        padding: 17px;
+    }
+
+    .product-edit-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-edit-field.full {
+        grid-column: auto;
+    }
+
+    .product-edit-header h1 {
+        font-size: 20px;
+    }
+
+    .product-edit-actions {
+        flex-direction: column;
+    }
+
+    .product-edit-btn {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+</style>
+
+<div class="product-edit-page">
+
+    <div class="product-edit-header">
+        <div>
+            <h1>مدیریت محصول</h1>
+            <p>ویرایش اطلاعات محصول فروشگاه</p>
+        </div>
+
+        <a
+            href="{{ url_for('admin') }}"
+            class="product-edit-btn product-edit-back"
+        >
+            بازگشت به داشبورد
+        </a>
+    </div>
+
+    <div class="product-edit-card">
+
+        <form
+            method="POST"
+            action="{{ url_for('edit_product', product_id=product.id) }}"
+        >
+
+            <input
+                type="hidden"
+                name="_csrf"
+                value="{{ csrf_token() }}"
+            >
+
+            <div class="product-edit-grid">
+
+                <div class="product-edit-field full">
+                    <label for="name">نام محصول</label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value="{{ product.name }}"
+                        required
+                    >
+                </div>
+
+                <div class="product-edit-field">
+                    <label for="category_id">دسته‌بندی</label>
+
+                    <select
+                        id="category_id"
+                        name="category_id"
+                        required
+                    >
+                        {% for category in categories %}
+                        <option
+                            value="{{ category.id }}"
+                            {% if category.id == product.category_id %}selected{% endif %}
+                        >
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="product-edit-field">
+                    <label for="brand_id">برند</label>
+
+                    <select id="brand_id" name="brand_id">
+                        <option value="">بدون برند</option>
+
+                        {% for brand in brands %}
+                        <option
+                            value="{{ brand.id }}"
+                            {% if brand.id == product.brand_id %}selected{% endif %}
+                        >
+                            {{ brand.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="product-edit-field">
+                    <label for="price">قیمت (تومان)</label>
+
+                    <input
+                        type="number"
+                        id="price"
+                        name="price"
+                        min="0"
+                        value="{{ product.price }}"
+                        required
+                    >
+                </div>
+
+                <div class="product-edit-field">
+                    <label for="min_stock">حداقل موجودی</label>
+
+                    <input
+                        type="number"
+                        id="min_stock"
+                        name="min_stock"
+                        min="0"
+                        value="{{ product.min_stock }}"
+                        required
+                    >
+                </div>
+
+                <div class="product-edit-field full">
+                    <label>موجودی فعلی انبار</label>
+
+                    <div class="product-edit-stock">
+                        {{ product.stock }} عدد
+
+                        <br>
+
+                        برای تغییر موجودی به صفحه مدیریت انبار بروید.
+                    </div>
+                </div>
+
+                <div class="product-edit-field full">
+                    <label for="image_url">لینک تصویر محصول</label>
+
+                    <input
+                        type="url"
+                        id="image_url"
+                        name="image_url"
+                        value="{{ product.image_url or '' }}"
+                        placeholder="https://example.com/image.jpg"
+                    >
+                </div>
+
+                <div class="product-edit-field full">
+                    <label for="description">توضیحات محصول</label>
+
+                    <textarea
+                        id="description"
+                        name="description"
+                    >{{ product.description or '' }}</textarea>
+                </div>
+
+            </div>
+
+            <div class="product-edit-info">
+                موجودی محصول در این صفحه قابل تغییر نیست.
+                برای ثبت ورود، خروج یا اصلاح موجودی از بخش مدیریت انبار استفاده کن.
+            </div>
+
+            <div class="product-edit-actions">
+
+                <button
+                    type="submit"
+                    class="product-edit-btn product-edit-save"
+                >
+                    ذخیره تغییرات
+                </button>
+
+                <a
+                    href="{{ url_for('admin') }}"
+                    class="product-edit-btn product-edit-back"
+                >
+                    انصراف
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
