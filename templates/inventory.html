@@ -1,0 +1,263 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت انبار | همراه‌یار</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        *{box-sizing:border-box}
+        body{background:#f5f7fb}
+        .inventory-wrap{max-width:1200px;margin:25px auto;padding:15px}
+        .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:25px}
+        .topbar h1{margin:0;font-size:25px}
+        .muted{color:#64748b;font-size:13px}
+        .nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+        .nav a{background:#172554;color:white;text-decoration:none;padding:10px 14px;border-radius:9px}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:13px;margin:20px 0}
+        .stat,.panel{background:#fff;border:1px solid #e5e7eb;border-radius:15px;padding:18px}
+        .stat strong{display:block;font-size:25px;margin-top:8px}
+        .panel{margin-bottom:20px}
+        .panel h2{font-size:19px;margin:0 0 18px}
+        .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+        .field{display:flex;flex-direction:column;gap:7px}
+        .field label{font-size:14px}
+        .field input,.field select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:9px;font:inherit;background:#fff}
+        .btn{border:0;border-radius:9px;padding:11px 18px;background:#2563eb;color:#fff;font:inherit;cursor:pointer;margin-top:15px}
+        .table-wrap{overflow-x:auto}
+        table{width:100%;min-width:650px;border-collapse:collapse}
+        th,td{padding:13px;text-align:right;border-bottom:1px solid #e5e7eb}
+        th{background:#f8fafc}
+        .pill{display:inline-block;padding:5px 10px;border-radius:20px;font-size:12px}
+        .good{background:#dcfce7;color:#166534}
+        .warning{background:#fef3c7;color:#92400e}
+        .bad{background:#fee2e2;color:#991b1b}
+        .hint{background:#eff6ff;color:#1e40af;padding:12px;border-radius:9px;margin-top:14px;font-size:13px}
+        @media(max-width:600px){.inventory-wrap{padding:10px}.panel{padding:13px}.topbar h1{font-size:21px}}
+    </style>
+</head>
+<body>
+
+<div class="inventory-wrap">
+
+    <header class="topbar">
+        <div>
+            <h1>مدیریت انبار</h1>
+            <p class="muted">کنترل موجودی و ثبت گردش کالا</p>
+        </div>
+        <a class="nav-link" href="/admin" style="background:#172554;color:white;padding:10px 15px;border-radius:9px;text-decoration:none">
+            بازگشت به پنل مدیریت
+        </a>
+    </header>
+
+    <nav class="nav">
+        <a href="/admin">داشبورد</a>
+        <a href="/admin/inventory">انبار</a>
+        <a href="/admin/sales">دفتر فروش</a>
+        <a href="/admin/reports">گزارش‌ها</a>
+        <a href="/">صفحه فروشگاه</a>
+    </nav>
+
+    {% set total_stock = namespace(value=0) %}
+    {% set low_stock = namespace(value=0) %}
+    {% set empty_stock = namespace(value=0) %}
+
+    {% for product in products %}
+        {% set total_stock.value = total_stock.value + product.stock %}
+        {% if product.stock == 0 %}
+            {% set empty_stock.value = empty_stock.value + 1 %}
+        {% elif product.stock <= product.min_stock %}
+            {% set low_stock.value = low_stock.value + 1 %}
+        {% endif %}
+    {% endfor %}
+
+    <section class="stats">
+        <div class="stat">
+            <span class="muted">تعداد کل کالاها</span>
+            <strong>{{ products|length }}</strong>
+        </div>
+        <div class="stat">
+            <span class="muted">مجموع تعداد موجودی</span>
+            <strong>{{ total_stock.value }}</strong>
+        </div>
+        <div class="stat">
+            <span class="muted">کالاهای کم‌موجودی</span>
+            <strong>{{ low_stock.value }}</strong>
+        </div>
+        <div class="stat">
+            <span class="muted">کالاهای ناموجود</span>
+            <strong>{{ empty_stock.value }}</strong>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>ثبت گردش موجودی</h2>
+
+        <form action="/admin/inventory" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-grid">
+
+                <div class="field">
+                    <label>انتخاب محصول</label>
+                    <select name="product_id" required>
+                        <option value="">یک محصول انتخاب کنید</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}">
+                            {{ product.name }} | موجودی فعلی: {{ product.stock }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>نوع عملیات</label>
+                    <select name="movement_type" id="movement_type" required>
+                        <option value="in">ورود کالا به انبار</option>
+                        <option value="out">خروج کالا از انبار</option>
+                        <option value="adjustment">اصلاح موجودی</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label id="quantity_label">تعداد کالا</label>
+                    <input type="number" name="quantity" id="quantity" min="1" required>
+                </div>
+
+            </div>
+
+            <div class="hint" id="operation_hint">
+                تعداد کالایی را که وارد انبار شده است وارد کن.
+            </div>
+
+            <button class="btn" type="submit">ثبت عملیات انبار</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>وضعیت موجودی محصولات</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>نام محصول</th>
+                        <th>موجودی فعلی</th>
+                        <th>حداقل موجودی</th>
+                        <th>وضعیت</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td><strong>{{ product.name }}</strong></td>
+                        <td>{{ product.stock }} عدد</td>
+                        <td>{{ product.min_stock }} عدد</td>
+                        <td>
+                            {% if product.stock == 0 %}
+                                <span class="pill bad">ناموجود</span>
+                            {% elif product.stock <= product.min_stock %}
+                                <span class="pill warning">نیاز به تأمین</span>
+                            {% else %}
+                                <span class="pill good">موجود</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">هنوز محصولی ثبت نشده است.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>تاریخچه گردش انبار</h2>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>محصول</th>
+                        <th>نوع عملیات</th>
+                        <th>تعداد تغییر</th>
+                        <th>تاریخ ثبت</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for movement in movements %}
+                    <tr>
+                        <td>{{ movement.product_name or 'محصول' }}</td>
+
+                        <td>
+                            {% if movement.movement_type == 'in' %}
+                                <span class="pill good">ورود کالا</span>
+                            {% elif movement.movement_type == 'out' %}
+                                <span class="pill bad">خروج کالا</span>
+                            {% elif movement.movement_type == 'adjustment' %}
+                                <span class="pill warning">اصلاح موجودی</span>
+                            {% elif movement.movement_type == 'sale' %}
+                                <span class="pill bad">ثبت فروش</span>
+                            {% elif movement.movement_type == 'return' %}
+                                <span class="pill good">برگشت کالا</span>
+                            {% else %}
+                                <span class="pill">{{ movement.movement_type }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ movement.quantity }}</td>
+
+                        <td>
+                            {% if movement.created_at %}
+                                {{ movement.created_at.strftime('%Y/%m/%d - %H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">هنوز گردش انباری ثبت نشده است.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer class="muted" style="text-align:center;padding:20px">
+        همراه‌یار | سیستم مدیریت موجودی
+    </footer>
+
+</div>
+
+<script>
+    const typeSelect = document.getElementById('movement_type');
+    const quantityLabel = document.getElementById('quantity_label');
+    const quantityInput = document.getElementById('quantity');
+    const operationHint = document.getElementById('operation_hint');
+
+    function updateOperation() {
+        if (typeSelect.value === 'in') {
+            quantityLabel.textContent = 'تعداد کالای ورودی';
+            operationHint.textContent = 'تعداد کالایی را که وارد انبار شده است وارد کن.';
+        } else if (typeSelect.value === 'out') {
+            quantityLabel.textContent = 'تعداد کالای خروجی';
+            operationHint.textContent = 'تعداد کالایی را که از انبار خارج شده است وارد کن.';
+        } else {
+            quantityLabel.textContent = 'موجودی صحیح و نهایی';
+            operationHint.textContent = 'عدد واردشده، موجودی نهایی محصول خواهد بود؛ نه مقدار افزایش یا کاهش.';
+        }
+    }
+
+    typeSelect.addEventListener('change', updateOperation);
+    updateOperation();
+</script>
+
+</body>
+</html>
