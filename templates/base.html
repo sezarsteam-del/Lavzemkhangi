@@ -5,11 +5,154 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta name="theme-color" content="#111827">
-    <meta name="description" content="همراه‌یار؛ سامانه قیمت‌گذاری، مدیریت محصولات و استعلام لوازم خانگی">
+    <meta name="description" content="لوازم خانگی؛ سامانه قیمت‌گذاری، مدیریت محصولات و استعلام لوازم خانگی">
 
-    <title>{% block title %}همراه‌یار | فروشگاه لوازم خانگی{% endblock %}</title>
+    <title>{% block title %}لوازم خانگی{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        .topbar {
+            position: relative;
+            z-index: 1000;
+        }
+
+        .topbar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .brand-icon {
+            display: none !important;
+        }
+
+        .brand strong {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .brand small {
+            display: none !important;
+        }
+
+        .menu-wrapper {
+            position: relative;
+        }
+
+        .menu-toggle {
+            width: 46px;
+            height: 42px;
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 10px;
+            background: #1f2937;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: .2s;
+        }
+
+        .menu-toggle:hover {
+            background: #374151;
+        }
+
+        .menu-toggle span {
+            display: block;
+            width: 21px;
+            height: 2px;
+            background: currentColor;
+            border-radius: 5px;
+            transition: .2s;
+        }
+
+        .menu-toggle.active span:first-child {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-toggle.active span:last-child {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        .top-navigation {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 190px;
+            display: none;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 4px;
+            padding: 10px;
+            background: #1f2937;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.25);
+        }
+
+        .top-navigation.open {
+            display: flex;
+        }
+
+        .top-navigation a,
+        .top-navigation .logout-link {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 11px 13px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: white;
+            text-align: right;
+            text-decoration: none;
+            font: inherit;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .top-navigation a:hover,
+        .top-navigation .logout-link:hover {
+            background: rgba(255,255,255,.1);
+        }
+
+        .top-navigation form {
+            margin: 0;
+            width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            .topbar-inner {
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+
+            .brand strong {
+                font-size: 20px;
+            }
+
+            .top-navigation {
+                left: 0;
+                right: auto;
+                min-width: 180px;
+            }
+        }
+    </style>
 
     {% block head %}{% endblock %}
 </head>
@@ -20,32 +163,51 @@
     <div class="topbar-inner">
 
         <a class="brand" href="{{ url_for('index') }}">
-            <span class="brand-icon">ه</span>
-            <span>
-                <strong>همراه‌یار</strong>
-                <small>سامانه هوشمند لوازم خانگی</small>
-            </span>
+            <strong>لوازم خانگی</strong>
         </a>
 
-        <nav class="top-navigation">
-            <a href="{{ url_for('index') }}">صفحه اصلی</a>
+        <div class="menu-wrapper">
 
-            {% if session.get('admin') %}
-                <a href="{{ url_for('admin') }}">مدیریت</a>
-                <a href="{{ url_for('inventory') }}">انبار</a>
-                <a href="{{ url_for('sales') }}">فروش</a>
-                <a href="{{ url_for('reports') }}">گزارش‌ها</a>
+            <button
+                type="button"
+                class="menu-toggle"
+                id="menuToggle"
+                aria-label="باز کردن منو"
+                aria-expanded="false"
+                aria-controls="mainNavigation"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
 
-                <form method="POST" action="{{ url_for('logout') }}">
-                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                    <button type="submit" class="logout-link">خروج</button>
-                </form>
-            {% else %}
-                <a href="{{ url_for('login') }}" class="login-link">
-                    ورود مدیر
-                </a>
-            {% endif %}
-        </nav>
+            <nav class="top-navigation" id="mainNavigation">
+
+                <a href="{{ url_for('index') }}">صفحه اصلی</a>
+
+                {% if session.get('admin') %}
+
+                    <a href="{{ url_for('admin') }}">مدیریت</a>
+                    <a href="{{ url_for('inventory') }}">انبار</a>
+                    <a href="{{ url_for('sales') }}">فروش</a>
+                    <a href="{{ url_for('reports') }}">گزارش‌ها</a>
+
+                    <form method="POST" action="{{ url_for('logout') }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                        <button type="submit" class="logout-link">خروج</button>
+                    </form>
+
+                {% else %}
+
+                    <a href="{{ url_for('login') }}" class="login-link">
+                        ورود مدیر
+                    </a>
+
+                {% endif %}
+
+            </nav>
+
+        </div>
 
     </div>
 </header>
@@ -70,11 +232,41 @@
 
 <footer class="footer">
     <div class="footer-inner">
-        <strong>همراه‌یار</strong>
-        <span>مدیریت هوشمند فروشگاه لوازم خانگی</span>
+        <strong>لوازم خانگی</strong>
         <small>تمام حقوق محفوظ است.</small>
     </div>
 </footer>
+
+<script>
+    const menuToggle = document.getElementById('menuToggle');
+    const mainNavigation = document.getElementById('mainNavigation');
+
+    menuToggle.addEventListener('click', function () {
+        const isOpen = mainNavigation.classList.toggle('open');
+
+        menuToggle.classList.toggle('active', isOpen);
+        menuToggle.setAttribute('aria-expanded', isOpen);
+    });
+
+    document.addEventListener('click', function (event) {
+        if (
+            !menuToggle.contains(event.target) &&
+            !mainNavigation.contains(event.target)
+        ) {
+            mainNavigation.classList.remove('open');
+            menuToggle.classList.remove('active');
+            menuToggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            mainNavigation.classList.remove('open');
+            menuToggle.classList.remove('active');
+            menuToggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+</script>
 
 {% block scripts %}{% endblock %}
 
