@@ -860,7 +860,6 @@ def delete_category(category_id):
 @admin_required
 def add_product():
 
-    # نمایش صفحه مستقل افزودن محصول
     if request.method == "GET":
 
         with db() as conn:
@@ -883,7 +882,6 @@ def add_product():
             brands=brands
         )
 
-    # ثبت محصول جدید
     name = request.form.get("name", "").strip()
 
     description = request.form.get(
@@ -1136,7 +1134,7 @@ def delete_product(product_id):
 
 
 # ==================================================
-# برندها
+# مدیریت برندها
 # ==================================================
 
 @app.route("/admin/brand/add", methods=["POST"])
@@ -1158,13 +1156,13 @@ def add_brand():
 
         with db() as conn:
 
-            conn.execute(
-                "INSERT INTO brands (name) VALUES (%s)",
-                (name,)
-            )
+            conn.execute("""
+                INSERT INTO brands (name)
+                VALUES (%s)
+            """, (name,))
 
         flash(
-            "برند اضافه شد.",
+            "برند با موفقیت اضافه شد.",
             "success"
         )
 
@@ -1172,6 +1170,62 @@ def add_brand():
 
         flash(
             "این برند قبلاً ثبت شده است.",
+            "error"
+        )
+
+    return redirect(url_for("admin"))
+
+
+@app.route(
+    "/admin/brand/<int:brand_id>/edit",
+    methods=["POST"]
+)
+@admin_required
+def edit_brand(brand_id):
+
+    name = request.form.get("name", "").strip()
+
+    if not name:
+
+        flash(
+            "نام برند نمی‌تواند خالی باشد.",
+            "error"
+        )
+
+        return redirect(url_for("admin"))
+
+    try:
+
+        with db() as conn:
+
+            result = conn.execute("""
+                UPDATE brands
+                SET name = %s
+                WHERE id = %s
+                RETURNING id
+            """, (
+                name,
+                brand_id
+            )).fetchone()
+
+            if not result:
+
+                flash(
+                    "برند موردنظر پیدا نشد.",
+                    "error"
+                )
+
+                return redirect(url_for("admin"))
+
+        flash(
+            "برند با موفقیت ویرایش شد.",
+            "success"
+        )
+
+    except psycopg.errors.UniqueViolation:
+
+        flash(
+            "این نام برند قبلاً ثبت شده است.",
             "error"
         )
 
@@ -1187,15 +1241,46 @@ def delete_brand(brand_id):
 
     with db() as conn:
 
-        conn.execute(
-            "DELETE FROM brands WHERE id = %s",
-            (brand_id,)
-        )
+        # بررسی وابستگی برند به تمام محصولات
+        count = conn.execute("""
+            SELECT COUNT(*) AS total
+            FROM products
+            WHERE brand_id = %s
+        """, (
+            brand_id,
+        )).fetchone()["total"]
 
-    flash(
-        "برند حذف شد.",
-        "success"
-    )
+        if count > 0:
+
+            flash(
+                "این برند به محصول متصل است. "
+                "ابتدا برند محصولات مربوطه را تغییر دهید.",
+                "error"
+            )
+
+            return redirect(url_for("admin"))
+
+        result = conn.execute("""
+            DELETE FROM brands
+            WHERE id = %s
+            RETURNING id
+        """, (
+            brand_id,
+        )).fetchone()
+
+        if result:
+
+            flash(
+                "برند با موفقیت حذف شد.",
+                "success"
+            )
+
+        else:
+
+            flash(
+                "برند موردنظر پیدا نشد.",
+                "error"
+            )
 
     return redirect(url_for("admin"))
 
