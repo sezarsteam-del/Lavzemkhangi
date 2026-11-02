@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block title %}مدیریت همراه‌یار{% endblock %}
@@ -8,39 +9,45 @@
     <div class="admin-header">
         <div>
             <h1>پنل مدیریت</h1>
-            <p>مدیریت محصولات و عملیات فروشگاه</p>
+            <p>مدیریت محصولات، انبار و عملیات فروشگاه</p>
         </div>
     </div>
 
     <nav class="admin-nav">
-        <a href="{{ url_for('admin') }}" class="active">
-            🏠 داشبورد
-        </a>
-        <a href="{{ url_for('inventory') }}">
-            📦 انبار
-        </a>
-        <a href="{{ url_for('sales') }}">
-            🧾 فروش و فاکتورها
-        </a>
-        <a href="{{ url_for('reports') }}">
-            📊 گزارش‌ها
-        </a>
-        <a href="{{ url_for('find_replace') }}">
-            🔎 جست‌وجو و جایگزینی
-        </a>
-        <a href="{{ url_for('logout') }}" class="logout-link">
-            🚪 خروج
-        </a>
+        <a href="{{ url_for('admin') }}" class="active">🏠 داشبورد</a>
+        <a href="{{ url_for('products') }}">🛍️ محصولات</a>
+        <a href="{{ url_for('add_product') }}">➕ افزودن محصول</a>
+        <a href="{{ url_for('inventory') }}">📦 انبار</a>
+        <a href="{{ url_for('sales') }}">🧾 فروش و فاکتورها</a>
+        <a href="{{ url_for('reports') }}">📊 گزارش‌ها</a>
+        <a href="{{ url_for('find_replace') }}">🔎 جست‌وجو و جایگزینی</a>
+
+        <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button type="submit" class="logout-link">🚪 خروج</button>
+        </form>
     </nav>
 
     <section class="admin-welcome">
         <h2>به پنل مدیریت خوش آمدید</h2>
-        <p>
-            از بخش‌های زیر برای مدیریت فروشگاه استفاده کنید.
-        </p>
+        <p>تمام بخش‌های فروشگاه را از این قسمت مدیریت کنید.</p>
     </section>
 
     <div class="admin-cards">
+
+        <a href="{{ url_for('products') }}" class="admin-card">
+            <div class="admin-card-icon">🛍️</div>
+            <h3>مدیریت محصولات</h3>
+            <p>مشاهده، ویرایش و مدیریت محصولات فروشگاه</p>
+            <span>مشاهده محصولات ←</span>
+        </a>
+
+        <a href="{{ url_for('add_product') }}" class="admin-card add-card">
+            <div class="admin-card-icon">➕</div>
+            <h3>افزودن محصول جدید</h3>
+            <p>ثبت محصول جدید همراه با نام، قیمت، دسته‌بندی، برند و موجودی</p>
+            <span>افزودن محصول ←</span>
+        </a>
 
         <a href="{{ url_for('inventory') }}" class="admin-card">
             <div class="admin-card-icon">📦</div>
@@ -66,12 +73,11 @@
         <a href="{{ url_for('find_replace') }}" class="admin-card">
             <div class="admin-card-icon">🔎</div>
             <h3>جست‌وجو و جایگزینی</h3>
-            <p>اصلاح دسته‌جمعی غلط‌های املایی در نام محصولات، توضیحات، دسته‌بندی‌ها و برندها</p>
+            <p>اصلاح دسته‌جمعی غلط‌های املایی در محصولات، دسته‌بندی‌ها و برندها</p>
             <span>ورود به ابزار ←</span>
         </a>
 
     </div>
-
 </div>
 
 <style>
@@ -82,9 +88,6 @@
 }
 
 .admin-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     margin-bottom: 25px;
 }
 
@@ -93,8 +96,7 @@
     font-size: 28px;
 }
 
-.admin-header p,
-.admin-welcome p {
+.admin-header p {
     color: #777;
     margin: 0;
 }
@@ -110,23 +112,30 @@
     border-radius: 14px;
 }
 
-.admin-nav a {
+.admin-nav a,
+.admin-nav .logout-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 11px 16px;
+    border: none;
     border-radius: 9px;
     background: #f4f6f8;
     color: #333;
     text-decoration: none;
     font-size: 14px;
-    transition: 0.2s;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .admin-nav a:hover,
 .admin-nav a.active {
     background: #263b60;
     color: #fff;
+}
+
+.logout-form {
+    margin: 0;
 }
 
 .admin-nav .logout-link {
@@ -154,6 +163,7 @@
 
 .admin-welcome p {
     color: #e8edf5;
+    margin: 0;
 }
 
 .admin-cards {
@@ -177,6 +187,11 @@
     transform: translateY(-3px);
     border-color: #426b9d;
     box-shadow: 0 8px 25px rgba(0,0,0,0.07);
+}
+
+.add-card {
+    border-color: #b8d9c5;
+    background: #f7fcf8;
 }
 
 .admin-card-icon {
@@ -219,7 +234,8 @@
         padding: 10px;
     }
 
-    .admin-nav a {
+    .admin-nav a,
+    .admin-nav .logout-link {
         padding: 12px 7px;
         font-size: 12px;
         text-align: center;
