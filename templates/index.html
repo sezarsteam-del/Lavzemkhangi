@@ -9,7 +9,7 @@
         color: white;
         padding: 28px 24px;
         border-radius: 18px;
-        margin-bottom: 25px;
+        margin-bottom: 22px;
     }
 
     .hero h1 {
@@ -23,16 +23,17 @@
         font-size: 13px;
     }
 
+    /* دسته بندی جمع و جور */
     .category-section {
-        margin: 25px 0 30px;
+        margin: 20px 0 26px;
     }
 
     .category-heading {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 12px;
         gap: 10px;
-        margin-bottom: 14px;
     }
 
     .category-heading .section-title {
@@ -49,89 +50,63 @@
 
     .category-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 9px;
     }
 
     .category-card {
         min-width: 0;
-        min-height: 76px;
+        min-height: 58px;
         display: flex;
         align-items: center;
-        gap: 11px;
-        padding: 11px;
+        justify-content: center;
+        gap: 8px;
+        padding: 9px;
         background: #fff;
         border: 1px solid #e5eaf1;
-        border-radius: 13px;
+        border-radius: 12px;
         text-decoration: none;
         transition: .2s ease;
-        box-shadow: 0 3px 12px rgba(15,23,42,.025);
+        box-shadow: 0 2px 8px rgba(15,23,42,.03);
     }
 
     .category-card:hover {
         border-color: #93c5fd;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(37,99,235,.08);
+        background: #f8fbff;
     }
 
     .category-card.selected {
         background: #eff6ff;
-        border-color: #2563eb;
+        border: 1.5px solid #2563eb;
     }
 
     .category-icon {
-        width: 49px;
-        height: 49px;
-        flex: 0 0 49px;
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: #f1f5f9;
-        border-radius: 11px;
-        color: #2563eb;
-        font-size: 21px;
-        overflow: hidden;
+        border-radius: 9px;
+        font-size: 17px;
     }
 
     .category-card.selected .category-icon {
         background: #dbeafe;
     }
 
-    .category-details {
-        min-width: 0;
-        flex: 1;
-    }
-
     .category-name {
-        display: block;
         color: #1e293b;
         font-size: 12px;
         font-weight: bold;
-        line-height: 1.7;
+        line-height: 1.6;
         overflow-wrap: anywhere;
+        text-align: center;
     }
 
-    .category-count {
-        display: block;
-        color: #94a3b8;
-        font-size: 10px;
-        margin-top: 3px;
-    }
-
-    .category-arrow {
-        color: #94a3b8;
-        font-size: 15px;
-        flex-shrink: 0;
-    }
-
-    .category-card.selected .category-name,
-    .category-card.selected .category-arrow {
+    .category-card.selected .category-name {
         color: #1d4ed8;
-    }
-
-    .all-category .category-icon {
-        background: #eff6ff;
-        font-size: 22px;
     }
 
     .search {
@@ -233,7 +208,7 @@
 
     @media(max-width: 900px) {
         .category-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
     }
 
@@ -248,33 +223,24 @@
 
         .category-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 9px;
-        }
-
-        .category-card {
-            min-height: 68px;
-            padding: 8px;
             gap: 8px;
         }
 
+        .category-card {
+            min-height: 53px;
+            padding: 7px;
+            gap: 7px;
+        }
+
         .category-icon {
-            width: 40px;
-            height: 40px;
-            flex-basis: 40px;
-            border-radius: 9px;
-            font-size: 18px;
+            width: 29px;
+            height: 29px;
+            flex-basis: 29px;
+            font-size: 15px;
         }
 
         .category-name {
             font-size: 11px;
-        }
-
-        .category-count {
-            font-size: 9px;
-        }
-
-        .category-arrow {
-            display: none;
         }
 
         .product-image {
@@ -287,12 +253,6 @@
 
         .search button {
             width: 100%;
-        }
-    }
-
-    @media(max-width: 350px) {
-        .category-grid {
-            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -339,17 +299,11 @@
     <div class="category-grid">
 
         <a
-            class="category-card all-category {% if not selected_category %}selected{% endif %}"
+            class="category-card {% if not selected_category %}selected{% endif %}"
             href="{{ url_for('index', q=q) }}"
         >
-            <div class="category-icon">▦</div>
-
-            <div class="category-details">
-                <span class="category-name">همه محصولات</span>
-                <span class="category-count">مشاهده کل محصولات</span>
-            </div>
-
-            <span class="category-arrow">‹</span>
+            <span class="category-icon">▦</span>
+            <span class="category-name">همه محصولات</span>
         </a>
 
         {% for category in categories %}
@@ -357,21 +311,33 @@
                 class="category-card {% if selected_category|string == category.id|string %}selected{% endif %}"
                 href="{{ url_for('index', category=category.id, q=q) }}"
             >
-                <div class="category-icon">
-                    <span>▤</span>
-                </div>
 
-                <div class="category-details">
-                    <span class="category-name">
-                        {{ category.name }}
-                    </span>
+                <span class="category-icon">
+                    {% if 'تلویزیون' in category.name %}
+                        📺
+                    {% elif 'یخچال' in category.name %}
+                        🧊
+                    {% elif 'لباسشویی' in category.name %}
+                        🧺
+                    {% elif 'ظرفشویی' in category.name %}
+                        🍽️
+                    {% elif 'جارو' in category.name %}
+                        🧹
+                    {% elif 'آشپزخانه' in category.name %}
+                        🍳
+                    {% elif 'کولر' in category.name %}
+                        ❄️
+                    {% elif 'چای' in category.name or 'قهوه' in category.name %}
+                        ☕
+                    {% else %}
+                        ▤
+                    {% endif %}
+                </span>
 
-                    <span class="category-count">
-                        مشاهده محصولات
-                    </span>
-                </div>
+                <span class="category-name">
+                    {{ category.name }}
+                </span>
 
-                <span class="category-arrow">‹</span>
             </a>
         {% endfor %}
 
