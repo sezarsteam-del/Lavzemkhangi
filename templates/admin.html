@@ -98,6 +98,7 @@
 
     <!-- مدیریت دسته‌بندی‌ها -->
     <section class="panel-section">
+
         <div class="section-heading">
             <div>
                 <h2>📁 مدیریت دسته‌بندی‌ها</h2>
@@ -105,108 +106,207 @@
             </div>
         </div>
 
-        <form action="{{ url_for('add_category') }}" method="POST" class="create-form">
+        <form action="{{ url_for('add_category') }}"
+              method="POST"
+              class="create-form">
+
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-            <input type="text" name="name" required maxlength="150"
+
+            <input type="text"
+                   name="name"
+                   required
+                   maxlength="150"
                    placeholder="نام دسته‌بندی جدید">
+
             <button type="submit">➕ افزودن دسته‌بندی</button>
         </form>
 
         <div class="management-list">
+
             {% for category in categories %}
+
             <div class="management-item">
+
                 <div class="item-info">
                     <strong>{{ category.name }}</strong>
                     <small>{{ category.product_count }} محصول</small>
                 </div>
 
                 <div class="item-actions">
+
                     <form action="{{ url_for('edit_category', category_id=category.id) }}"
-                          method="POST" class="edit-form">
+                          method="POST"
+                          class="edit-form">
+
                         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                        <input type="text" name="name" value="{{ category.name }}"
-                               required maxlength="150">
+
+                        <input type="text"
+                               name="name"
+                               value="{{ category.name }}"
+                               required
+                               maxlength="150">
+
                         <button type="submit" class="edit-btn">ذخیره</button>
                     </form>
 
                     <form action="{{ url_for('delete_category', category_id=category.id) }}"
                           method="POST"
                           onsubmit="return confirm('آیا از حذف این دسته‌بندی مطمئن هستید؟')">
+
                         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
                         <button type="submit" class="delete-btn">حذف</button>
                     </form>
+
                 </div>
             </div>
+
             {% else %}
+
             <div class="empty-state">
                 هنوز دسته‌بندی ثبت نشده است.
             </div>
+
             {% endfor %}
+
         </div>
     </section>
 
     <!-- مدیریت برندها -->
     <section class="panel-section">
+
         <div class="section-heading">
             <div>
                 <h2>🏷️ مدیریت برندها</h2>
-                <p>ثبت و مشاهده برندهای محصولات</p>
+                <p>افزودن، ویرایش و حذف برندهای فروشگاه</p>
             </div>
         </div>
 
-        <form action="{{ url_for('add_brand') }}" method="POST" class="create-form">
+        <!-- افزودن برند -->
+        <form action="{{ url_for('add_brand') }}"
+              method="POST"
+              class="create-form">
+
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-            <input type="text" name="name" required maxlength="150"
+
+            <input type="text"
+                   name="name"
+                   required
+                   maxlength="150"
                    placeholder="نام برند جدید">
+
             <button type="submit">➕ افزودن برند</button>
         </form>
 
-        <div class="brand-grid">
+        <!-- فهرست برندها -->
+        <div class="management-list">
+
             {% for brand in brands %}
-            <div class="brand-item">
-                <span>🏷️ {{ brand.name }}</span>
+
+            <div class="management-item">
+
+                <div class="item-info">
+                    <strong>🏷️ {{ brand.name }}</strong>
+                </div>
+
+                <div class="item-actions">
+
+                    <!-- ویرایش برند -->
+                    <form action="{{ url_for('edit_brand', brand_id=brand.id) }}"
+                          method="POST"
+                          class="edit-form">
+
+                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+                        <input type="text"
+                               name="name"
+                               value="{{ brand.name }}"
+                               required
+                               maxlength="150">
+
+                        <button type="submit" class="edit-btn">
+                            💾 ذخیره
+                        </button>
+
+                    </form>
+
+                    <!-- حذف برند -->
+                    <form action="{{ url_for('delete_brand', brand_id=brand.id) }}"
+                          method="POST"
+                          onsubmit="return confirm('آیا از حذف این برند مطمئن هستید؟')">
+
+                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+                        <button type="submit" class="delete-btn">
+                            🗑️ حذف
+                        </button>
+
+                    </form>
+
+                </div>
+
             </div>
+
             {% else %}
+
             <div class="empty-state">
                 هنوز برندی ثبت نشده است.
             </div>
+
             {% endfor %}
+
         </div>
+
     </section>
 
     <!-- فهرست محصولات -->
     <section class="panel-section">
+
         <div class="section-heading">
             <div>
                 <h2>🛍️ مدیریت محصولات</h2>
                 <p>مشاهده و ویرایش اطلاعات محصولات ثبت‌شده</p>
             </div>
+
             <a href="{{ url_for('add_product') }}" class="heading-button">
                 ➕ محصول جدید
             </a>
         </div>
 
         <div class="product-list">
+
             {% for product in products %}
+
             <details class="product-item">
+
                 <summary>
+
                     <div class="product-summary">
+
                         {% if product.image_url %}
-                        <img src="{{ product.image_url }}" alt="{{ product.name }}"
+
+                        <img src="{{ product.image_url }}"
+                             alt="{{ product.name }}"
                              class="product-thumb">
+
                         {% else %}
+
                         <div class="product-thumb-placeholder">📦</div>
+
                         {% endif %}
 
                         <div class="product-summary-info">
                             <strong>{{ product.name }}</strong>
+
                             <small>
                                 {{ product.category_name or 'بدون دسته‌بندی' }}
+
                                 {% if product.brand_name %}
                                 · {{ product.brand_name }}
                                 {% endif %}
                             </small>
                         </div>
+
                     </div>
 
                     <div class="product-summary-left">
@@ -214,9 +314,11 @@
                         <small>تومان</small>
                         <span class="details-label">ویرایش اطلاعات ⌄</span>
                     </div>
+
                 </summary>
 
                 <div class="product-edit-content">
+
                     <form action="{{ url_for('edit_product', product_id=product.id) }}"
                           method="POST">
 
@@ -226,78 +328,117 @@
 
                             <div class="form-group">
                                 <label>نام محصول</label>
-                                <input type="text" name="name"
-                                       value="{{ product.name }}" required>
+                                <input type="text"
+                                       name="name"
+                                       value="{{ product.name }}"
+                                       required>
                             </div>
 
                             <div class="form-group">
                                 <label>دسته‌بندی</label>
+
                                 <select name="category_id" required>
+
                                     {% for category in categories %}
+
                                     <option value="{{ category.id }}"
                                         {% if category.id == product.category_id %}selected{% endif %}>
                                         {{ category.name }}
                                     </option>
+
                                     {% endfor %}
+
                                 </select>
                             </div>
 
                             <div class="form-group">
                                 <label>برند</label>
+
                                 <select name="brand_id">
+
                                     <option value="">بدون برند</option>
+
                                     {% for brand in brands %}
+
                                     <option value="{{ brand.id }}"
                                         {% if brand.id == product.brand_id %}selected{% endif %}>
                                         {{ brand.name }}
                                     </option>
+
                                     {% endfor %}
+
                                 </select>
                             </div>
 
                             <div class="form-group">
                                 <label>قیمت (تومان)</label>
-                                <input type="number" name="price"
-                                       value="{{ product.price }}" min="0" required>
+
+                                <input type="number"
+                                       name="price"
+                                       value="{{ product.price }}"
+                                       min="0"
+                                       required>
                             </div>
 
                             <div class="form-group">
                                 <label>حداقل موجودی</label>
-                                <input type="number" name="min_stock"
-                                       value="{{ product.min_stock }}" min="0" required>
+
+                                <input type="number"
+                                       name="min_stock"
+                                       value="{{ product.min_stock }}"
+                                       min="0"
+                                       required>
                             </div>
 
                             <div class="form-group">
                                 <label>لینک تصویر</label>
-                                <input type="url" name="image_url"
+
+                                <input type="url"
+                                       name="image_url"
                                        value="{{ product.image_url or '' }}">
                             </div>
 
                             <div class="form-group full-width">
                                 <label>توضیحات</label>
-                                <textarea name="description" rows="4">{{ product.description or '' }}</textarea>
+
+                                <textarea name="description"
+                                          rows="4">{{ product.description or '' }}</textarea>
                             </div>
 
                         </div>
 
                         <div class="stock-information">
+
                             📦 موجودی فعلی:
+
                             <strong>{{ product.stock }}</strong>
-                            <span>برای تغییر موجودی از بخش مدیریت انبار استفاده کنید.</span>
+
+                            <span>
+                                برای تغییر موجودی از بخش مدیریت انبار استفاده کنید.
+                            </span>
+
                         </div>
 
                         <button type="submit" class="save-product-btn">
                             💾 ذخیره تغییرات محصول
                         </button>
+
                     </form>
+
                 </div>
+
             </details>
+
             {% else %}
+
             <div class="empty-state">
                 هنوز محصولی ثبت نشده است.
             </div>
+
             {% endfor %}
+
         </div>
+
     </section>
 
     <footer class="admin-footer">
