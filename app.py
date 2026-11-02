@@ -853,7 +853,7 @@ def delete_category(category_id):
 
 
 # ==================================================
-# محصولات
+# افزودن محصول
 # ==================================================
 
 @app.route("/admin/product/add", methods=["GET", "POST"])
@@ -1022,16 +1022,64 @@ def add_product():
         return redirect(url_for("add_product"))
 
 
+# ==================================================
+# ویرایش محصول - صفحه مستقل
+# ==================================================
+
 @app.route(
     "/admin/product/<int:product_id>/edit",
-    methods=["POST"]
+    methods=["GET", "POST"]
 )
 @admin_required
 def edit_product(product_id):
 
+    # نمایش صفحه ویرایش
+    if request.method == "GET":
+
+        with db() as conn:
+
+            product = conn.execute("""
+                SELECT
+                    p.*,
+                    c.name AS category_name,
+                    b.name AS brand_name
+                FROM products p
+                LEFT JOIN categories c
+                    ON c.id = p.category_id
+                LEFT JOIN brands b
+                    ON b.id = p.brand_id
+                WHERE p.id = %s
+                  AND p.is_active = TRUE
+            """, (product_id,)).fetchone()
+
+            if not product:
+                abort(404)
+
+            categories = conn.execute("""
+                SELECT id, name
+                FROM categories
+                ORDER BY name
+            """).fetchall()
+
+            brands = conn.execute("""
+                SELECT id, name
+                FROM brands
+                ORDER BY name
+            """).fetchall()
+
+        return render_template(
+            "edit_product.html",
+            product=product,
+            categories=categories,
+            brands=brands
+        )
+
+    # ذخیره ویرایش‌ها
     try:
 
-        name = request.form.get("name", "").strip()
+        name = request.form.get(
+            "name", ""
+        ).strip()
 
         category_id = int(
             request.form.get("category_id", "")
@@ -1060,19 +1108,64 @@ def edit_product(product_id):
         ).strip()
 
         image_url = (
-            request.form.get("image_url", "").strip() or None
+            request.form.get(
+                "image_url", ""
+            ).strip() or None
         )
 
         if (
             not name
             or price < 0
             or min_stock < 0
+            or category_id <= 0
         ):
             raise ValueError
 
         with db() as conn:
 
-            conn.execute("""
+            category = conn.execute("""
+                SELECT id
+                FROM categories
+                WHERE id = %s
+            """, (category_id,)).fetchone()
+
+            if not category:
+
+                flash(
+                    "دسته‌بندی انتخاب‌شده معتبر نیست.",
+                    "error"
+                )
+
+                return redirect(
+                    url_for(
+                        "edit_product",
+                        product_id=product_id
+                    )
+                )
+
+            if brand_id is not None:
+
+                brand = conn.execute("""
+                    SELECT id
+                    FROM brands
+                    WHERE id = %s
+                """, (brand_id,)).fetchone()
+
+                if not brand:
+
+                    flash(
+                        "برند انتخاب‌شده معتبر نیست.",
+                        "error"
+                    )
+
+                    return redirect(
+                        url_for(
+                            "edit_product",
+                            product_id=product_id
+                        )
+                    )
+
+            result = conn.execute("""
                 UPDATE products
                 SET
                     name = %s,
@@ -1084,6 +1177,7 @@ def edit_product(product_id):
                     image_url = %s
                 WHERE id = %s
                   AND is_active = TRUE
+                RETURNING id
             """, (
                 name,
                 category_id,
@@ -1093,12 +1187,17 @@ def edit_product(product_id):
                 description,
                 image_url,
                 product_id
-            ))
+            )).fetchone()
+
+            if not result:
+                abort(404)
 
         flash(
-            "محصول ویرایش شد.",
+            "اطلاعات محصول با موفقیت ذخیره شد.",
             "success"
         )
+
+        return redirect(url_for("admin"))
 
     except (ValueError, TypeError):
 
@@ -1107,8 +1206,31 @@ def edit_product(product_id):
             "error"
         )
 
-    return redirect(url_for("admin"))
+        return redirect(
+            url_for(
+                "edit_product",
+                product_id=product_id
+            )
+        )
 
+    except psycopg.errors.ForeignKeyViolation:
+
+        flash(
+            "دسته‌بندی یا برند انتخاب‌شده معتبر نیست.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "edit_product",
+                product_id=product_id
+            )
+        )
+
+
+# ==================================================
+# حذف محصول - فقط غیرفعال‌سازی
+# ==================================================
 
 @app.route(
     "/admin/product/<int:product_id>/delete",
@@ -1241,7 +1363,6 @@ def delete_brand(brand_id):
 
     with db() as conn:
 
-        # بررسی وابستگی برند به تمام محصولات
         count = conn.execute("""
             SELECT COUNT(*) AS total
             FROM products
