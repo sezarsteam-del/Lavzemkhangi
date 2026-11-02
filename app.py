@@ -36,6 +36,7 @@ TEHRAN = ZoneInfo("Asia/Tehran")
 if not DATABASE_URL:
     raise RuntimeError("متغیر DATABASE_URL تنظیم نشده است.")
 
+
 # --------------------------------------------------
 # اتصال دیتابیس
 # --------------------------------------------------
@@ -50,7 +51,7 @@ def db():
 
 
 # --------------------------------------------------
-# ساخت و به‌روزرسانی امن جداول
+# ساخت و به‌روزرسانی جداول
 # --------------------------------------------------
 
 _schema_ready = False
@@ -186,7 +187,7 @@ def prepare_database():
 
 
 # --------------------------------------------------
-# ابزارهای امنیتی
+# امنیت و CSRF
 # --------------------------------------------------
 
 def csrf_token():
@@ -293,9 +294,7 @@ def login():
         username = request.form.get("username", "")
         password = request.form.get("password", "")
 
-        username_ok = hmac.compare_digest(
-            username, ADMIN_USERNAME
-        )
+        username_ok = hmac.compare_digest(username, ADMIN_USERNAME)
 
         password_ok = bool(ADMIN_PASSWORD) and hmac.compare_digest(
             password, ADMIN_PASSWORD
@@ -390,7 +389,7 @@ def admin():
 
 
 # --------------------------------------------------
-# مدیریت دسته‌بندی‌ها
+# دسته‌بندی‌ها
 # --------------------------------------------------
 
 @app.route("/admin/category/add", methods=["POST"])
@@ -460,7 +459,7 @@ def delete_category(category_id):
 
 
 # --------------------------------------------------
-# مدیریت محصولات
+# محصولات
 # --------------------------------------------------
 
 @app.route("/admin/product/add", methods=["POST"])
@@ -475,6 +474,7 @@ def add_product():
         price = int(request.form.get("price", "0"))
         stock = int(request.form.get("stock", "0"))
         min_stock = int(request.form.get("min_stock", "2"))
+
         brand_value = request.form.get("brand_id", "").strip()
         brand_id = int(brand_value) if brand_value.isdigit() else None
 
@@ -508,8 +508,10 @@ def edit_product(product_id):
         category_id = int(request.form.get("category_id", ""))
         price = int(request.form.get("price", "0"))
         min_stock = int(request.form.get("min_stock", "2"))
+
         brand_value = request.form.get("brand_id", "").strip()
         brand_id = int(brand_value) if brand_value.isdigit() else None
+
         description = request.form.get("description", "").strip()
         image_url = request.form.get("image_url", "").strip() or None
 
@@ -555,7 +557,7 @@ def delete_product(product_id):
 
 
 # --------------------------------------------------
-# مدیریت برندها
+# برندها
 # --------------------------------------------------
 
 @app.route("/admin/brand/add", methods=["POST"])
@@ -594,7 +596,7 @@ def delete_brand(brand_id):
 
 
 # --------------------------------------------------
-# انبار: ورود، خروج و اصلاح موجودی
+# انبار
 # --------------------------------------------------
 
 @app.route("/admin/inventory", methods=["GET", "POST"])
@@ -652,10 +654,8 @@ def inventory():
                         (product_id, movement_type, quantity, note)
                     VALUES (%s, %s, %s, %s)
                 """, (
-                    product_id,
-                    movement_type,
-                    movement_quantity,
-                    note
+                    product_id, movement_type,
+                    movement_quantity, note
                 ))
 
             flash("تغییر موجودی ثبت شد.", "success")
@@ -691,38 +691,71 @@ def inventory():
 
 
 # --------------------------------------------------
-# دفتر فروش و فاکتور چندمحصولی
+# دفتر فروش - نسخه اصلاح‌شده
 # --------------------------------------------------
 
 @app.route("/admin/sales", methods=["GET", "POST"])
 @admin_required
 def sales():
+
     if request.method == "POST":
+
         product_ids = request.form.getlist("product_id")
         quantities = request.form.getlist("quantity")
-        discount = request.form.get("discount", "0")
+
+        discount_text = request.form.get("discount", "0").strip()
         description = request.form.get("description", "").strip()
 
         try:
-            discount = int(discount)
+            discount = int(discount_text)
 
-            if discount < 0 or len(product_ids) == 0:
-                raise ValueError
+            if discount < 0:
+                raise ValueError("مبلغ تخفیف معتبر نیست.")
 
             if len(product_ids) != len(quantities):
-                raise ValueError
+                raise ValueError("اطلاعات ردیف‌های فاکتور ناقص است.")
+
+            # تجمیع محصولات تکراری
+            grouped_items = {}
+
+            for raw_pid, raw_qty in zip(product_ids, quantities):
+
+                raw_pid = raw_pid.strip()
+                raw_qty = raw_qty.strip()
+
+                # رد کردن ردیف کاملاً خالی
+                if not raw_pid and not raw_qty:
+                    continue
+
+                if not raw_pid or not raw_qty:
+                    raise ValueError(
+                        "برای هر ردیف فاکتور، محصول و تعداد را وارد کنید."
+                    )
+
+                pid = int(raw_pid)
+                qty = int(raw_qty)
+
+                if pid <= 0 or qty <= 0:
+                    raise ValueError("محصول یا تعداد معتبر نیست.")
+
+                grouped_items[pid] = grouped_items.get(pid, 0) + qty
+
+            if not grouped_items:
+                raise ValueError("حداقل یک محصول به فاکتور اضافه کنید.")
+
+            if any(qty <= 0 for qty in grouped_items.values()):
+                raise ValueError("تعداد محصولات معتبر نیست.")
 
             items = []
             total_amount = 0
 
             with db() as conn:
-                # اعتبارسنجی و قفل موجودی کالاها
-                for pid, qty in zip(product_ids, quantities):
-                    pid = int(pid)
-                    qty = int(qty)
 
-                    if qty <= 0:
-                        raise ValueError
+                # قفل محصولات همیشه با ترتیب شناسه
+                # برای کاهش احتمال بن‌بست دیتابیس
+                locked_products = {}
+
+                for pid in sorted(grouped_items.keys()):
 
                     product = conn.execute("""
                         SELECT id, name, price, stock
@@ -731,36 +764,61 @@ def sales():
                         FOR UPDATE
                     """, (pid,)).fetchone()
 
-                    if not product or product["stock"] < qty:
+                    if not product:
                         raise ValueError(
-                            "محصول ناموجود است یا موجودی کافی ندارد."
+                            f"محصول با شناسه {pid} پیدا نشد."
                         )
 
-                    line_total = product["price"] * qty
+                    requested_qty = grouped_items[pid]
+
+                    if product["stock"] < requested_qty:
+                        raise ValueError(
+                            f"موجودی محصول «{product['name']}» کافی نیست. "
+                            f"موجودی فعلی: {product['stock']}، "
+                            f"تعداد درخواستی: {requested_qty}"
+                        )
+
+                    locked_products[pid] = product
+
+                # محاسبه مبالغ پس از بررسی همه موجودی‌ها
+                for pid, requested_qty in grouped_items.items():
+
+                    product = locked_products[pid]
+
+                    line_total = product["price"] * requested_qty
                     total_amount += line_total
 
                     items.append({
                         "id": pid,
-                        "quantity": qty,
+                        "name": product["name"],
+                        "quantity": requested_qty,
                         "price": product["price"],
                         "line_total": line_total
                     })
 
                 if discount > total_amount:
-                    raise ValueError
+                    raise ValueError(
+                        "تخفیف نمی‌تواند از مبلغ کل فاکتور بیشتر باشد."
+                    )
 
                 final_amount = total_amount - discount
 
+                # ثبت فاکتور
                 sale = conn.execute("""
                     INSERT INTO sales
                         (total_amount, discount, final_amount, description)
                     VALUES (%s, %s, %s, %s)
                     RETURNING id, invoice_number
                 """, (
-                    total_amount, discount, final_amount, description
+                    total_amount,
+                    discount,
+                    final_amount,
+                    description
                 )).fetchone()
 
+                # ثبت اقلام و کاهش موجودی
                 for item in items:
+
                     conn.execute("""
                         INSERT INTO sale_items
                             (sale_id, product_id, quantity,
@@ -778,7 +836,10 @@ def sales():
                         UPDATE products
                         SET stock = stock - %s
                         WHERE id = %s
-                    """, (item["quantity"], item["id"]))
+                    """, (
+                        item["quantity"],
+                        item["id"]
+                    ))
 
                     conn.execute("""
                         INSERT INTO stock_movements
@@ -791,7 +852,8 @@ def sales():
                     ))
 
             flash(
-                f"فاکتور شماره {sale['invoice_number']} ثبت شد.",
+                f"فاکتور شماره {sale['invoice_number']} "
+                "با موفقیت ثبت شد.",
                 "success"
             )
 
@@ -804,6 +866,7 @@ def sales():
         return redirect(url_for("sales"))
 
     with db() as conn:
+
         products = conn.execute("""
             SELECT id, name, price, stock
             FROM products
@@ -832,7 +895,9 @@ def sales():
 @app.route("/admin/sales/<int:sale_id>")
 @admin_required
 def sale_detail(sale_id):
+
     with db() as conn:
+
         sale = conn.execute("""
             SELECT * FROM sales WHERE id = %s
         """, (sale_id,)).fetchone()
@@ -863,7 +928,9 @@ def sale_detail(sale_id):
 @app.route("/admin/sales/<int:sale_id>/cancel", methods=["POST"])
 @admin_required
 def cancel_sale(sale_id):
+
     with db() as conn:
+
         sale = conn.execute("""
             SELECT *
             FROM sales
@@ -882,14 +949,19 @@ def cancel_sale(sale_id):
             SELECT product_id, quantity
             FROM sale_items
             WHERE sale_id = %s
+            ORDER BY product_id
         """, (sale_id,)).fetchall()
 
         for item in items:
+
             conn.execute("""
                 UPDATE products
                 SET stock = stock + %s
                 WHERE id = %s
-            """, (item["quantity"], item["product_id"]))
+            """, (
+                item["quantity"],
+                item["product_id"]
+            ))
 
             conn.execute("""
                 INSERT INTO stock_movements
@@ -918,7 +990,9 @@ def cancel_sale(sale_id):
 @app.route("/admin/reports")
 @admin_required
 def reports():
+
     with db() as conn:
+
         summary = conn.execute("""
             SELECT
                 COUNT(*) AS invoice_count,
@@ -962,7 +1036,7 @@ def reports():
 
 
 # --------------------------------------------------
-# صفحه خطاها
+# صفحات خطا
 # --------------------------------------------------
 
 @app.errorhandler(400)
