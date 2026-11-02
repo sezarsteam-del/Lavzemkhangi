@@ -1,15 +1,158 @@
 {% extends "base.html" %}
-{% block title %}ورود مدیر | فروشگاه لوازم خانگی{% endblock %}
+
+{% block title %}ورود مدیر | همراه‌یار{% endblock %}
+
+{% block head %}
+<style>
+    .login-wrapper {
+        min-height: 65vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 25px 12px;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        background: white;
+        border: 1px solid #e5eaf1;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 12px 35px rgba(15, 23, 42, .07);
+    }
+
+    .login-icon {
+        width: 65px;
+        height: 65px;
+        margin: 0 auto 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eff6ff;
+        color: #2563eb;
+        border-radius: 18px;
+        font-size: 29px;
+    }
+
+    .login-card h2 {
+        text-align: center;
+        margin: 0 0 8px;
+        font-size: 22px;
+    }
+
+    .login-description {
+        text-align: center;
+        color: #64748b;
+        font-size: 13px;
+        margin-bottom: 25px;
+    }
+
+    .login-card label {
+        display: block;
+        margin: 15px 0 7px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .login-card input {
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 48px;
+        border: 1px solid #dbe2ea;
+        border-radius: 10px;
+        padding: 10px 13px;
+        font: inherit;
+        outline: none;
+    }
+
+    .login-card input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+    }
+
+    .login-button {
+        width: 100%;
+        margin-top: 23px;
+        min-height: 48px;
+        border: none;
+        border-radius: 10px;
+        background: #2563eb;
+        color: white;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .login-button:hover {
+        background: #1d4ed8;
+    }
+
+    .login-footer {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 11px;
+        margin-top: 22px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="form-card narrow">
-  <h2>ورود مدیر</h2>
-  <form method="post">
-    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-    <label>نام کاربری</label>
-    <input name="username" autocomplete="username" required>
-    <label>رمز عبور</label>
-    <input type="password" name="password" autocomplete="current-password" required>
-    <button class="full" type="submit">ورود به پنل</button>
-  </form>
+
+<div class="login-wrapper">
+
+    <div class="login-card">
+
+        <div class="login-icon">🔐</div>
+
+        <h2>ورود مدیر</h2>
+
+        <p class="login-description">
+            برای مدیریت فروشگاه همراه‌یار وارد حساب خود شوید.
+        </p>
+
+        <form method="post">
+
+            <input
+                type="hidden"
+                name="_csrf"
+                value="{{ csrf_token() }}"
+            >
+
+            <label for="username">نام کاربری</label>
+
+            <input
+                id="username"
+                name="username"
+                type="text"
+                autocomplete="username"
+                placeholder="نام کاربری مدیر"
+                required
+            >
+
+            <label for="password">رمز عبور</label>
+
+            <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="رمز عبور خود را وارد کنید"
+                required
+            >
+
+            <button class="login-button" type="submit">
+                ورود به پنل مدیریت
+            </button>
+
+        </form>
+
+        <div class="login-footer">
+            دسترسی اختصاصی مدیریت همراه‌یار
+        </div>
+
+    </div>
+
 </div>
+
 {% endblock %}
