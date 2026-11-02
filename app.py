@@ -548,6 +548,206 @@ def admin():
 
 
 # ==================================================
+# جست‌وجو و جایگزینی متن
+# ==================================================
+
+@app.route("/admin/find-replace", methods=["GET", "POST"])
+@admin_required
+def find_replace():
+
+    # فقط این جدول‌ها و ستون‌ها اجازه تغییر دارند.
+    # نام جدول و ستون از ورودی کاربر گرفته نمی‌شود.
+
+    allowed_scopes = {
+        "product_name": (
+            "products", "name", "نام محصول"
+        ),
+        "product_description": (
+            "products", "description", "توضیحات محصول"
+        ),
+        "category_name": (
+            "categories", "name", "نام دسته‌بندی"
+        ),
+        "brand_name": (
+            "brands", "name", "نام برند"
+        )
+    }
+
+    term = request.values.get("term", "").strip()
+    replacement = request.values.get("replacement", "")
+    scope = request.values.get("scope", "product_name")
+
+    if scope not in allowed_scopes:
+        scope = "product_name"
+
+    table, column, scope_label = allowed_scopes[scope]
+
+    results = []
+    total_found = 0
+
+    # ----------------------------------------------
+    # اعمال جایگزینی روی موارد انتخاب‌شده
+    # ----------------------------------------------
+
+    if (
+        request.method == "POST"
+        and request.form.get("action") == "apply"
+    ):
+
+        selected_ids = request.form.getlist("selected_ids")
+
+        if not term:
+
+            flash(
+                "عبارت جست‌وجو نمی‌تواند خالی باشد.",
+                "error"
+            )
+
+        elif not selected_ids:
+
+            flash(
+                "حداقل یک مورد را انتخاب کن.",
+                "error"
+            )
+
+        else:
+
+            try:
+
+                # اعتبارسنجی کامل شناسه‌ها
+
+                if any(
+                    not item.isdigit()
+                    for item in selected_ids
+                ):
+                    raise ValueError
+
+                ids = sorted(set(
+                    int(item)
+                    for item in selected_ids
+                ))
+
+                if not ids:
+                    raise ValueError
+
+                changed_count = 0
+
+                with db() as conn:
+
+                    current_rows = conn.execute(
+                        f"""
+                        SELECT id, {column} AS old_value
+                        FROM {table}
+                        WHERE id = ANY(%s)
+                          AND POSITION(%s IN COALESCE({column}, '')) > 0
+                        FOR UPDATE
+                        """,
+                        (ids, term)
+                    ).fetchall()
+
+                    for row in current_rows:
+
+                        old_value = row["old_value"] or ""
+
+                        new_value = old_value.replace(
+                            term,
+                            replacement
+                        )
+
+                        if new_value == old_value:
+                            continue
+
+                        conn.execute(
+                            f"""
+                            UPDATE {table}
+                            SET {column} = %s
+                            WHERE id = %s
+                            """,
+                            (new_value, row["id"])
+                        )
+
+                        changed_count += 1
+
+                flash(
+                    f"{changed_count} مورد با موفقیت اصلاح شد.",
+                    "success"
+                )
+
+            except (ValueError, TypeError):
+
+                flash(
+                    "شناسه‌های انتخاب‌شده معتبر نیستند.",
+                    "error"
+                )
+
+            except psycopg.errors.UniqueViolation:
+
+                flash(
+                    "این جایگزینی باعث تکراری شدن نام دسته‌بندی یا برند می‌شود. "
+                    "تغییرات اعمال نشدند.",
+                    "error"
+                )
+
+            except Exception:
+
+                app.logger.exception(
+                    "Find and replace failed"
+                )
+
+                flash(
+                    "هنگام جایگزینی خطایی رخ داد. تغییرات ثبت نشدند.",
+                    "error"
+                )
+
+        return redirect(url_for(
+            "find_replace",
+            term=term,
+            replacement=replacement,
+            scope=scope
+        ))
+
+    # ----------------------------------------------
+    # جست‌وجو و نمایش پیش‌نمایش
+    # ----------------------------------------------
+
+    if term:
+
+        with db() as conn:
+
+            count_result = conn.execute(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM {table}
+                WHERE POSITION(%s IN COALESCE({column}, '')) > 0
+                """,
+                (term,)
+            ).fetchone()
+
+            total_found = count_result["total"]
+
+            results = conn.execute(
+                f"""
+                SELECT id, {column} AS old_value
+                FROM {table}
+                WHERE POSITION(%s IN COALESCE({column}, '')) > 0
+                ORDER BY id
+                LIMIT 200
+                """,
+                (term,)
+            ).fetchall()
+
+    return render_template(
+        "find_replace.html",
+        term=term,
+        replacement=replacement,
+        scope=scope,
+        scope_label=scope_label,
+        results=results,
+        total_found=total_found
+    )
+
+
+# ==================================================
 # دسته‌بندی‌ها
 # ==================================================
 
@@ -1518,7 +1718,6 @@ def delete_sale(sale_id):
                     item["product_id"]
                 ))
 
-                # سابقه برگشت موجودی با شماره فاکتور ثبت می‌شود.
                 conn.execute("""
                     INSERT INTO stock_movements
                         (
@@ -1534,9 +1733,6 @@ def delete_sale(sale_id):
                     f"بازگشت کالا بابت حذف فاکتور {invoice_number}"
                 ))
 
-        # حذف گردش‌های فروش و برگشت مربوط به فاکتور
-        # سابقه جدید بازگشت موجودی حذف نمی‌شود.
-
         conn.execute("""
             DELETE FROM stock_movements
             WHERE note IN (%s, %s)
@@ -1544,8 +1740,6 @@ def delete_sale(sale_id):
             f"فروش فاکتور {invoice_number}",
             f"برگشت از فاکتور {invoice_number}"
         ))
-
-        # ابتدا ردیف‌های فاکتور حذف می‌شوند تا محدودیت FK رعایت شود.
 
         conn.execute("""
             DELETE FROM sale_items
