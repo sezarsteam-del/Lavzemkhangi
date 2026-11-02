@@ -1,218 +1,406 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جزئیات فاکتور {{ sale.invoice_number }}</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #f3f5f9;
-            color: #202938;
-            font-family: Tahoma, Arial, sans-serif;
-        }
-        .container {
-            max-width: 950px;
-            margin: 20px auto;
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 5px 25px rgba(0,0,0,.06);
-        }
-        .top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 25px;
-        }
-        h1 { font-size: 22px; margin: 0; }
-        .btn {
-            display: inline-block;
-            padding: 10px 16px;
-            border: 0;
-            border-radius: 9px;
-            text-decoration: none;
-            cursor: pointer;
-            font-size: 14px;
-            color: white;
-            background: #334155;
-        }
-        .danger { background: #dc2626; }
-        .info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-bottom: 22px;
-        }
-        .info div {
-            background: #f8fafc;
-            padding: 14px;
-            border-radius: 10px;
-        }
-        .info small {
-            display: block;
-            color: #64748b;
-            margin-bottom: 7px;
-        }
-        .info strong { overflow-wrap: anywhere; }
-        .table-wrap { overflow-x: auto; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 550px;
-        }
-        th, td {
-            padding: 13px 10px;
-            text-align: right;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 14px;
-        }
-        th { background: #f8fafc; }
-        .totals {
-            max-width: 350px;
-            margin: 22px 0 0 auto;
-        }
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .final {
-            font-size: 18px;
-            font-weight: bold;
-            color: #15803d;
-        }
-        .description {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8fafc;
-            border-radius: 10px;
-            white-space: pre-wrap;
-        }
-        .status {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            background: #dcfce7;
-            color: #166534;
-        }
-        .cancelled {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .actions {
-            margin-top: 25px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        @media (max-width: 600px) {
-            body { padding: 8px; }
-            .container { padding: 16px; margin: 8px auto; }
-            h1 { font-size: 18px; }
-        }
-        @media print {
-            body { background: white; padding: 0; }
-            .container { box-shadow: none; margin: 0; }
-            .actions, .top .btn { display: none; }
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="top">
-        <h1>فاکتور فروش شماره {{ sale.invoice_number }}</h1>
-        <a class="btn" href="{{ url_for('sales') }}">بازگشت به دفتر فروش</a>
-    </div>
+{% extends "base.html" %}
 
-    <div class="info">
-        <div>
-            <small>شماره فاکتور</small>
-            <strong>{{ sale.invoice_number }}</strong>
-        </div>
-        <div>
-            <small>تاریخ ثبت</small>
-            <strong>{{ sale.created_at.strftime('%Y/%m/%d %H:%M') if sale.created_at else '—' }}</strong>
-        </div>
-        <div>
-            <small>وضعیت</small>
-            {% if sale.status == 'cancelled' %}
-                <strong class="status cancelled">لغو شده</strong>
-            {% else %}
-                <strong class="status">ثبت شده</strong>
-            {% endif %}
-        </div>
-    </div>
+{% block title %}فاکتور شماره {{ sale.invoice_number }} | همراه‌یار{% endblock %}
 
-    <h3>اقلام فاکتور</h3>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>ردیف</th>
-                    <th>نام محصول</th>
-                    <th>تعداد</th>
-                    <th>قیمت واحد</th>
-                    <th>جمع</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in items %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td>{{ item.product_name }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ "{:,.0f}".format(item.unit_price) }} تومان</td>
-                    <td>{{ "{:,.0f}".format(item.line_total) }} تومان</td>
-                </tr>
+{% block head %}
+<style>
+.invoice-page {
+    max-width: 950px;
+    margin: 10px auto 35px;
+}
+
+.invoice-card {
+    background: white;
+    border: 1px solid #e5eaf1;
+    border-radius: 17px;
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(15, 23, 42, .04);
+}
+
+.invoice-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 25px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #edf0f5;
+}
+
+.invoice-heading h1 {
+    font-size: 22px;
+    margin: 0;
+}
+
+.invoice-subtitle {
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 7px;
+}
+
+.invoice-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.info-item {
+    background: #f8fafc;
+    border: 1px solid #edf0f5;
+    border-radius: 11px;
+    padding: 14px;
+}
+
+.info-item small {
+    display: block;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-size: 11px;
+}
+
+.info-item strong {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.status {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 20px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 11px;
+}
+
+.status.cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.invoice-section-title {
+    font-size: 17px;
+    margin: 25px 0 15px;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.invoice-table {
+    width: 100%;
+    min-width: 570px;
+    border-collapse: collapse;
+}
+
+.invoice-table th,
+.invoice-table td {
+    padding: 13px 10px;
+    text-align: right;
+    border-bottom: 1px solid #edf0f5;
+    font-size: 12px;
+}
+
+.invoice-table th {
+    background: #f8fafc;
+    color: #475569;
+}
+
+.invoice-table tr:last-child td {
+    border-bottom: none;
+}
+
+.invoice-totals {
+    max-width: 370px;
+    margin: 22px 0 0 auto;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e5eaf1;
+    font-size: 13px;
+}
+
+.total-row:last-child {
+    border-bottom: none;
+}
+
+.final-row {
+    color: #166534;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+.invoice-description {
+    margin-top: 22px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 11px;
+    white-space: pre-wrap;
+    line-height: 2;
+    font-size: 13px;
+}
+
+.invoice-actions {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-top: 25px;
+}
+
+.invoice-btn {
+    display: inline-block;
+    padding: 11px 17px;
+    border: 0;
+    border-radius: 9px;
+    text-decoration: none;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.print-btn {
+    background: #2563eb;
+    color: white;
+}
+
+.back-btn {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.cancel-btn {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+@media(max-width: 600px) {
+    .invoice-card {
+        padding: 15px;
+    }
+
+    .invoice-heading h1 {
+        font-size: 18px;
+    }
+
+    .invoice-totals {
+        max-width: none;
+    }
+}
+
+@media print {
+    body {
+        background: white !important;
+    }
+
+    .topbar,
+    footer,
+    .invoice-actions,
+    .invoice-heading .back-btn {
+        display: none !important;
+    }
+
+    .container,
+    .invoice-page {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .invoice-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 10px !important;
+    }
+
+    .invoice-table {
+        min-width: 0 !important;
+    }
+
+    .invoice-table th,
+    .invoice-table td {
+        font-size: 11px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="invoice-page">
+
+    <div class="invoice-card">
+
+        <header class="invoice-heading">
+
+            <div>
+                <h1>فاکتور فروش شماره {{ sale.invoice_number }}</h1>
+                <div class="invoice-subtitle">
+                    همراه‌یار | فاکتور فروش محصولات
+                </div>
+            </div>
+
+            <a class="invoice-btn back-btn" href="{{ url_for('sales') }}">
+                بازگشت به دفتر فروش
+            </a>
+
+        </header>
+
+        <section class="invoice-info">
+
+            <div class="info-item">
+                <small>شماره فاکتور</small>
+                <strong>{{ sale.invoice_number }}</strong>
+            </div>
+
+            <div class="info-item">
+                <small>تاریخ ثبت</small>
+                <strong>
+                    {{ sale.created_at.strftime('%Y/%m/%d %H:%M') if sale.created_at else '—' }}
+                </strong>
+            </div>
+
+            <div class="info-item">
+                <small>وضعیت فاکتور</small>
+
+                {% if sale.status == 'cancelled' %}
+                    <strong class="status cancelled">لغو شده</strong>
                 {% else %}
-                <tr>
-                    <td colspan="5">موردی برای نمایش وجود ندارد.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                    <strong class="status">ثبت شده</strong>
+                {% endif %}
+            </div>
 
-    <div class="totals">
-        <div class="total-row">
-            <span>جمع کل</span>
-            <strong>{{ "{:,.0f}".format(sale.total_amount) }} تومان</strong>
+        </section>
+
+        <h2 class="invoice-section-title">اقلام فاکتور</h2>
+
+        <div class="table-wrap">
+
+            <table class="invoice-table">
+
+                <thead>
+                    <tr>
+                        <th>ردیف</th>
+                        <th>نام محصول</th>
+                        <th>تعداد</th>
+                        <th>قیمت واحد</th>
+                        <th>جمع</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in items %}
+
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ "{:,.0f}".format(item.unit_price) }} تومان</td>
+                        <td>{{ "{:,.0f}".format(item.line_total) }} تومان</td>
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="5" style="text-align:center;padding:25px">
+                            موردی برای نمایش وجود ندارد.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
         </div>
-        <div class="total-row">
-            <span>تخفیف</span>
-            <strong>{{ "{:,.0f}".format(sale.discount) }} تومان</strong>
+
+        <section class="invoice-totals">
+
+            <div class="total-row">
+                <span>جمع کل</span>
+                <strong>
+                    {{ "{:,.0f}".format(sale.total_amount) }} تومان
+                </strong>
+            </div>
+
+            <div class="total-row">
+                <span>تخفیف</span>
+                <strong>
+                    {{ "{:,.0f}".format(sale.discount) }} تومان
+                </strong>
+            </div>
+
+            <div class="total-row final-row">
+                <span>مبلغ نهایی</span>
+                <strong>
+                    {{ "{:,.0f}".format(sale.final_amount) }} تومان
+                </strong>
+            </div>
+
+        </section>
+
+        {% if sale.description %}
+
+        <div class="invoice-description">
+            <strong>توضیحات فاکتور:</strong>
+            {{ sale.description }}
         </div>
-        <div class="total-row final">
-            <span>مبلغ نهایی</span>
-            <strong>{{ "{:,.0f}".format(sale.final_amount) }} تومان</strong>
-        </div>
-    </div>
 
-    {% if sale.description %}
-    <div class="description">
-        <strong>توضیحات:</strong>
-        {{ sale.description }}
-    </div>
-    {% endif %}
-
-    <div class="actions">
-        <button class="btn" onclick="window.print()">چاپ فاکتور</button>
-
-        {% if sale.status != 'cancelled' %}
-        <form method="POST"
-              action="{{ url_for('cancel_sale', sale_id=sale.id) }}"
-              onsubmit="return confirm('آیا از لغو این فاکتور مطمئن هستید؟ موجودی محصولات به انبار برمی‌گردد.');">
-            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-            <button type="submit" class="btn danger">لغو فاکتور و بازگشت موجودی</button>
-        </form>
         {% endif %}
+
+        <div class="invoice-actions">
+
+            <button
+                type="button"
+                class="invoice-btn print-btn"
+                onclick="window.print()"
+            >
+                چاپ فاکتور
+            </button>
+
+            <a
+                href="{{ url_for('sales') }}"
+                class="invoice-btn back-btn"
+            >
+                بازگشت به دفتر فروش
+            </a>
+
+            {% if sale.status != 'cancelled' %}
+
+            <form
+                method="POST"
+                action="{{ url_for('cancel_sale', sale_id=sale.id) }}"
+                onsubmit="return confirm('آیا از لغو این فاکتور مطمئن هستید؟ موجودی محصولات به انبار بازگردانده می‌شود.');"
+            >
+
+                <input
+                    type="hidden"
+                    name="_csrf"
+                    value="{{ csrf_token() }}"
+                >
+
+                <button type="submit" class="invoice-btn cancel-btn">
+                    لغو فاکتور و بازگشت موجودی
+                </button>
+
+            </form>
+
+            {% endif %}
+
+        </div>
+
     </div>
+
 </div>
-</body>
-</html>
+
+{% endblock %}
