@@ -6,18 +6,16 @@
 {% block content %}
 <div class="admin-page" dir="rtl">
 
-    <div class="admin-header">
+    <header class="admin-header">
         <div>
-            <h1>پنل مدیریت</h1>
-            <p>مدیریت محصولات، انبار و عملیات فروشگاه</p>
+            <h1>پنل مدیریت همراه‌یار</h1>
+            <p>مدیریت فروشگاه و عملیات روزانه</p>
         </div>
-    </div>
+    </header>
 
     <nav class="admin-nav">
         <a href="{{ url_for('admin') }}" class="active">🏠 داشبورد</a>
-        <a href="{{ url_for('products') }}">🛍️ محصولات</a>
-        <a href="{{ url_for('add_product') }}">➕ افزودن محصول</a>
-        <a href="{{ url_for('inventory') }}">📦 انبار</a>
+        <a href="{{ url_for('inventory') }}">📦 مدیریت انبار</a>
         <a href="{{ url_for('sales') }}">🧾 فروش و فاکتورها</a>
         <a href="{{ url_for('reports') }}">📊 گزارش‌ها</a>
         <a href="{{ url_for('find_replace') }}">🔎 جست‌وجو و جایگزینی</a>
@@ -29,55 +27,46 @@
     </nav>
 
     <section class="admin-welcome">
-        <h2>به پنل مدیریت خوش آمدید</h2>
-        <p>تمام بخش‌های فروشگاه را از این قسمت مدیریت کنید.</p>
+        <h2>به همراه‌یار خوش آمدید</h2>
+        <p>تمام بخش‌های فروشگاه را از این پنل مدیریت کنید.</p>
     </section>
 
-    <div class="admin-cards">
-
-        <a href="{{ url_for('products') }}" class="admin-card">
-            <div class="admin-card-icon">🛍️</div>
-            <h3>مدیریت محصولات</h3>
-            <p>مشاهده، ویرایش و مدیریت محصولات فروشگاه</p>
-            <span>مشاهده محصولات ←</span>
-        </a>
-
-        <a href="{{ url_for('add_product') }}" class="admin-card add-card">
-            <div class="admin-card-icon">➕</div>
-            <h3>افزودن محصول جدید</h3>
-            <p>ثبت محصول جدید همراه با نام، قیمت، دسته‌بندی، برند و موجودی</p>
-            <span>افزودن محصول ←</span>
-        </a>
+    <section class="admin-cards">
 
         <a href="{{ url_for('inventory') }}" class="admin-card">
             <div class="admin-card-icon">📦</div>
             <h3>مدیریت انبار</h3>
-            <p>مشاهده و اصلاح موجودی، ورود و خروج کالا و بررسی هشدارها</p>
+            <p>مشاهده موجودی، ورود و خروج کالا و بررسی هشدار کمبود موجودی</p>
             <span>ورود به انبار ←</span>
         </a>
 
         <a href="{{ url_for('sales') }}" class="admin-card">
             <div class="admin-card-icon">🧾</div>
             <h3>مدیریت فروش</h3>
-            <p>ثبت فروش، صدور فاکتور و مشاهده سوابق فروش</p>
+            <p>ثبت فروش، صدور فاکتور و مشاهده سوابق فروشگاه</p>
             <span>ورود به فروش ←</span>
         </a>
 
         <a href="{{ url_for('reports') }}" class="admin-card">
             <div class="admin-card-icon">📊</div>
-            <h3>گزارش‌ها</h3>
-            <p>بررسی گزارش فروش و وضعیت عملکرد فروشگاه</p>
+            <h3>گزارش‌های فروش</h3>
+            <p>بررسی گزارش‌ها و مشاهده عملکرد فروشگاه</p>
             <span>مشاهده گزارش‌ها ←</span>
         </a>
 
         <a href="{{ url_for('find_replace') }}" class="admin-card">
             <div class="admin-card-icon">🔎</div>
             <h3>جست‌وجو و جایگزینی</h3>
-            <p>اصلاح دسته‌جمعی غلط‌های املایی در محصولات، دسته‌بندی‌ها و برندها</p>
+            <p>اصلاح دسته‌جمعی نام محصولات، توضیحات، دسته‌بندی‌ها و برندها</p>
             <span>ورود به ابزار ←</span>
         </a>
 
-    </div>
+    </section>
+
+    <footer class="admin-footer">
+        همراه‌یار | پنل مدیریت فروشگاه
+    </footer>
+
 </div>
 
 <style>
@@ -85,6 +74,7 @@
     max-width: 1150px;
     margin: 25px auto;
     padding: 15px;
+    font-family: inherit;
 }
 
 .admin-header {
@@ -94,6 +84,7 @@
 .admin-header h1 {
     margin: 0 0 8px;
     font-size: 28px;
+    color: #263b60;
 }
 
 .admin-header p {
@@ -124,8 +115,8 @@
     color: #333;
     text-decoration: none;
     font-size: 14px;
-    cursor: pointer;
     font-family: inherit;
+    cursor: pointer;
 }
 
 .admin-nav a:hover,
@@ -149,7 +140,7 @@
 }
 
 .admin-welcome {
-    padding: 24px;
+    padding: 25px;
     margin-bottom: 25px;
     background: linear-gradient(135deg, #263b60, #426b9d);
     color: #fff;
@@ -164,6 +155,7 @@
 .admin-welcome p {
     color: #e8edf5;
     margin: 0;
+    line-height: 1.9;
 }
 
 .admin-cards {
@@ -189,11 +181,6 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.07);
 }
 
-.add-card {
-    border-color: #b8d9c5;
-    background: #f7fcf8;
-}
-
 .admin-card-icon {
     font-size: 34px;
     margin-bottom: 15px;
@@ -216,6 +203,15 @@
     color: #315b91;
     font-weight: bold;
     font-size: 14px;
+}
+
+.admin-footer {
+    margin-top: 30px;
+    padding: 18px;
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    border-top: 1px solid #eee;
 }
 
 @media (max-width: 650px) {
