@@ -53,7 +53,6 @@ PERSIAN_DIGITS = str.maketrans(
 
 
 def persian_numbers(value):
-    """تبدیل اعداد انگلیسی به فارسی"""
     if value is None:
         return ""
 
@@ -61,16 +60,10 @@ def persian_numbers(value):
 
 
 def tehran_now():
-    """زمان فعلی تهران"""
     return datetime.now(TEHRAN)
 
 
 def jalali_date(value, fmt=None):
-    """
-    تبدیل تاریخ میلادی به شمسی
-    پشتیبانی از datetime و date
-    تبدیل اعداد به فارسی
-    """
 
     if value is None:
         return ""
@@ -108,7 +101,6 @@ def jalali_date(value, fmt=None):
 
 
 def jalali_time(value):
-    """نمایش ساعت تهران با اعداد فارسی"""
 
     if value is None:
         return ""
@@ -128,18 +120,12 @@ def jalali_time(value):
 
 
 def jalali_day(value):
-    """نمایش فقط تاریخ شمسی"""
-
     return jalali_date(value, "%Y/%m/%d")
 
 
 def jalali_hour(value):
-    """نمایش فقط ساعت"""
-
     return jalali_date(value, "%H:%M")
 
-
-# فیلترهای قابل استفاده در HTML
 
 app.jinja_env.filters["jalali"] = jalali_date
 app.jinja_env.filters["jalali_date"] = jalali_day
@@ -148,7 +134,6 @@ app.jinja_env.filters["persian_numbers"] = persian_numbers
 
 app.jinja_env.globals["tehran_now"] = tehran_now
 
-# تبدیل خودکار datetime و date خام در قالب‌ها
 app.jinja_env.finalize = jalali_date
 
 
@@ -1149,13 +1134,9 @@ def sales():
             discount = int(discount_text)
 
             if discount < 0:
-
-                raise ValueError(
-                    "مبلغ تخفیف معتبر نیست."
-                )
+                raise ValueError("مبلغ تخفیف معتبر نیست.")
 
             if len(product_ids) != len(quantities):
-
                 raise ValueError(
                     "اطلاعات ردیف‌های فاکتور ناقص است."
                 )
@@ -1174,7 +1155,6 @@ def sales():
                     continue
 
                 if not raw_pid or not raw_qty:
-
                     raise ValueError(
                         "برای هر ردیف فاکتور، محصول و تعداد را وارد کنید."
                     )
@@ -1183,7 +1163,6 @@ def sales():
                 qty = int(raw_qty)
 
                 if pid <= 0 or qty <= 0:
-
                     raise ValueError(
                         "محصول یا تعداد معتبر نیست."
                     )
@@ -1193,7 +1172,6 @@ def sales():
                 )
 
             if not grouped_items:
-
                 raise ValueError(
                     "حداقل یک محصول به فاکتور اضافه کنید."
                 )
@@ -1205,9 +1183,7 @@ def sales():
 
                 locked_products = {}
 
-                for pid in sorted(
-                    grouped_items.keys()
-                ):
+                for pid in sorted(grouped_items.keys()):
 
                     product = conn.execute("""
                         SELECT
@@ -1222,7 +1198,6 @@ def sales():
                     """, (pid,)).fetchone()
 
                     if not product:
-
                         raise ValueError(
                             f"محصول با شناسه {pid} پیدا نشد."
                         )
@@ -1230,7 +1205,6 @@ def sales():
                     requested_qty = grouped_items[pid]
 
                     if product["stock"] < requested_qty:
-
                         raise ValueError(
                             f"موجودی محصول «{product['name']}» کافی نیست. "
                             f"موجودی فعلی: {product['stock']}، "
@@ -1258,14 +1232,11 @@ def sales():
                     })
 
                 if discount > total_amount:
-
                     raise ValueError(
                         "تخفیف نمی‌تواند از مبلغ کل فاکتور بیشتر باشد."
                     )
 
-                final_amount = (
-                    total_amount - discount
-                )
+                final_amount = total_amount - discount
 
                 sale = conn.execute("""
                     INSERT INTO sales
@@ -1479,6 +1450,116 @@ def cancel_sale(sale_id):
 
     flash(
         "فاکتور لغو شد و موجودی کالاها برگشت.",
+        "success"
+    )
+
+    return redirect(url_for("sales"))
+
+
+# ==================================================
+# حذف کامل فاکتور و بازگشت موجودی
+# ==================================================
+
+@app.route(
+    "/admin/sales/<int:sale_id>/delete",
+    methods=["POST"]
+)
+@admin_required
+def delete_sale(sale_id):
+
+    with db() as conn:
+
+        sale = conn.execute("""
+            SELECT *
+            FROM sales
+            WHERE id = %s
+            FOR UPDATE
+        """, (sale_id,)).fetchone()
+
+        if not sale:
+            abort(404)
+
+        invoice_number = sale["invoice_number"]
+
+        items = conn.execute("""
+            SELECT
+                product_id,
+                quantity
+            FROM sale_items
+            WHERE sale_id = %s
+            ORDER BY product_id
+        """, (sale_id,)).fetchall()
+
+        # فقط فاکتور تکمیل‌شده باعث برگشت موجودی می‌شود.
+        # فاکتور لغوشده قبلاً موجودی را برگردانده است.
+
+        if sale["status"] == "completed":
+
+            for item in items:
+
+                product = conn.execute("""
+                    SELECT id
+                    FROM products
+                    WHERE id = %s
+                    FOR UPDATE
+                """, (item["product_id"],)).fetchone()
+
+                if not product:
+                    raise ValueError(
+                        "یکی از محصولات فاکتور پیدا نشد."
+                    )
+
+                conn.execute("""
+                    UPDATE products
+                    SET stock = stock + %s
+                    WHERE id = %s
+                """, (
+                    item["quantity"],
+                    item["product_id"]
+                ))
+
+                # سابقه برگشت موجودی با شماره فاکتور ثبت می‌شود.
+                conn.execute("""
+                    INSERT INTO stock_movements
+                        (
+                            product_id,
+                            movement_type,
+                            quantity,
+                            note
+                        )
+                    VALUES (%s, 'return', %s, %s)
+                """, (
+                    item["product_id"],
+                    item["quantity"],
+                    f"بازگشت کالا بابت حذف فاکتور {invoice_number}"
+                ))
+
+        # حذف گردش‌های فروش و برگشت مربوط به فاکتور
+        # سابقه جدید بازگشت موجودی حذف نمی‌شود.
+
+        conn.execute("""
+            DELETE FROM stock_movements
+            WHERE note IN (%s, %s)
+        """, (
+            f"فروش فاکتور {invoice_number}",
+            f"برگشت از فاکتور {invoice_number}"
+        ))
+
+        # ابتدا ردیف‌های فاکتور حذف می‌شوند تا محدودیت FK رعایت شود.
+
+        conn.execute("""
+            DELETE FROM sale_items
+            WHERE sale_id = %s
+        """, (sale_id,))
+
+        conn.execute("""
+            DELETE FROM sales
+            WHERE id = %s
+        """, (sale_id,))
+
+    flash(
+        f"فاکتور شماره {invoice_number} حذف شد. "
+        "موجودی کالاهای فاکتور تکمیل‌شده به انبار برگشت.",
         "success"
     )
 
