@@ -1,0 +1,307 @@
+
+{% extends "base.html" %}
+
+{% block title %}مدیریت محصولات | همراه‌یار{% endblock %}
+
+{% block head %}
+<style>
+.products-page {
+    direction: rtl;
+    padding: 20px 0 40px;
+}
+
+.products-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.products-header h1 {
+    margin: 0;
+    font-size: 25px;
+}
+
+.products-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.products-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 17px;
+    border-radius: 10px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.btn-add {
+    background: #1677ff;
+    color: white;
+}
+
+.btn-back {
+    background: #eef2f7;
+    color: #263445;
+}
+
+.products-summary {
+    background: #f5f8fc;
+    padding: 17px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    color: #344054;
+}
+
+.products-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    background: white;
+}
+
+.products-table {
+    width: 100%;
+    min-width: 850px;
+    border-collapse: collapse;
+}
+
+.products-table th,
+.products-table td {
+    padding: 15px 12px;
+    text-align: right;
+    border-bottom: 1px solid #edf0f3;
+    font-size: 14px;
+}
+
+.products-table th {
+    background: #f7f9fc;
+    color: #475467;
+    font-weight: bold;
+}
+
+.products-table tr:last-child td {
+    border-bottom: none;
+}
+
+.product-name {
+    font-weight: bold;
+    color: #172b4d;
+}
+
+.product-price {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.stock-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: #e8f5e9;
+    color: #247a35;
+    white-space: nowrap;
+}
+
+.stock-low {
+    background: #fff2d9;
+    color: #a15c00;
+}
+
+.stock-empty {
+    background: #ffe8e8;
+    color: #c62828;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+}
+
+.action-edit {
+    background: #e8f1ff;
+    color: #1459ad;
+}
+
+.action-delete {
+    background: #ffebeb;
+    color: #c62828;
+}
+
+.empty-products {
+    padding: 45px 15px;
+    text-align: center;
+    color: #667085;
+}
+
+.empty-products h3 {
+    margin-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+    .products-page {
+        padding-top: 12px;
+    }
+
+    .products-header {
+        align-items: stretch;
+    }
+
+    .products-header h1 {
+        font-size: 21px;
+    }
+
+    .products-actions {
+        width: 100%;
+    }
+
+    .products-actions a {
+        flex: 1;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="products-page">
+
+    <div class="products-header">
+        <div>
+            <h1>مدیریت محصولات</h1>
+            <p>مشاهده، افزودن، ویرایش و مدیریت محصولات</p>
+        </div>
+
+        <div class="products-actions">
+            <a href="{{ url_for('add_product') }}"
+               class="products-btn btn-add">
+                + افزودن محصول
+            </a>
+
+            <a href="{{ url_for('admin') }}"
+               class="products-btn btn-back">
+                بازگشت به داشبورد
+            </a>
+        </div>
+    </div>
+
+    <div class="products-summary">
+        تعداد محصولات فعال:
+        <strong>{{ products|length }}</strong>
+    </div>
+
+    {% if products %}
+
+    <div class="products-table-wrap">
+        <table class="products-table">
+
+            <thead>
+                <tr>
+                    <th>نام محصول</th>
+                    <th>دسته‌بندی</th>
+                    <th>برند</th>
+                    <th>قیمت</th>
+                    <th>موجودی</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for product in products %}
+                <tr>
+
+                    <td class="product-name">
+                        {{ product.name }}
+                    </td>
+
+                    <td>
+                        {{ product.category_name or 'بدون دسته‌بندی' }}
+                    </td>
+
+                    <td>
+                        {{ product.brand_name or 'بدون برند' }}
+                    </td>
+
+                    <td class="product-price">
+                        {{ "{:,}".format(product.price or 0) }}
+                        تومان
+                    </td>
+
+                    <td>
+                        {% if product.stock == 0 %}
+                            <span class="stock-badge stock-empty">
+                                ناموجود
+                            </span>
+                        {% elif product.stock <= product.min_stock %}
+                            <span class="stock-badge stock-low">
+                                {{ product.stock }} عدد
+                            </span>
+                        {% else %}
+                            <span class="stock-badge">
+                                {{ product.stock }} عدد
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="action-buttons">
+
+                            <a
+                                href="{{ url_for('edit_product', product_id=product.id) }}"
+                                class="products-btn action-edit">
+                                ویرایش
+                            </a>
+
+                            <form
+                                method="POST"
+                                action="{{ url_for('delete_product', product_id=product.id) }}"
+                                onsubmit="return confirm('آیا مطمئن هستید؟ محصول از فهرست فعال خارج می‌شود و سوابق فروش آن حفظ خواهد شد.');">
+
+                                <input
+                                    type="hidden"
+                                    name="_csrf"
+                                    value="{{ csrf_token() }}">
+
+                                <button
+                                    type="submit"
+                                    class="products-btn action-delete">
+                                    حذف
+                                </button>
+
+                            </form>
+
+                        </div>
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+
+    {% else %}
+
+    <div class="empty-products">
+        <h3>هنوز محصولی ثبت نشده است.</h3>
+        <p>برای شروع، اولین محصول خود را اضافه کنید.</p>
+
+        <a href="{{ url_for('add_product') }}"
+           class="products-btn btn-add">
+            افزودن اولین محصول
+        </a>
+    </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}
