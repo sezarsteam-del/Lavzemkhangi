@@ -7,13 +7,13 @@
     .hero {
         background: linear-gradient(120deg, #111827, #1e40af);
         color: white;
-        padding: 28px 24px;
+        padding: 25px 22px;
         border-radius: 18px;
-        margin-bottom: 22px;
+        margin-bottom: 20px;
     }
 
     .hero h1 {
-        font-size: 23px;
+        font-size: 22px;
         margin: 0 0 8px;
     }
 
@@ -23,51 +23,132 @@
         font-size: 13px;
     }
 
-    /* دسته بندی جمع و جور */
-    .category-section {
-        margin: 20px 0 26px;
-    }
-
-    .category-heading {
+    /* جستجو */
+    .search {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
         gap: 10px;
+        margin-bottom: 18px;
     }
 
-    .category-heading .section-title {
-        margin: 0;
+    .search input {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* منوی اصلی دسته بندی */
+    .category-section {
+        margin: 18px 0 25px;
+    }
+
+    .category-dropdown {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 3px 12px rgba(15,23,42,.04);
+    }
+
+    .category-summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 15px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .category-summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .category-summary:hover {
+        background: #f8fafc;
+    }
+
+    .category-summary-right {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+    }
+
+    .main-category-icon {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #eff6ff;
+        color: #2563eb;
+        border-radius: 11px;
+        font-size: 21px;
+    }
+
+    .category-title {
+        font-size: 14px;
+        font-weight: bold;
+        color: #1e293b;
+    }
+
+    .category-subtitle {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 4px;
+    }
+
+    .category-summary-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
     }
 
     .category-total {
         font-size: 11px;
-        color: #64748b;
-        background: #eaf0f8;
-        padding: 5px 10px;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 5px 9px;
         border-radius: 20px;
+    }
+
+    .category-chevron {
+        color: #64748b;
+        font-size: 19px;
+        transition: transform .2s;
+    }
+
+    .category-dropdown[open] .category-chevron {
+        transform: rotate(180deg);
+    }
+
+    /* دسته های داخل منو */
+    .category-content {
+        border-top: 1px solid #edf0f5;
+        padding: 12px;
+        background: #fafcff;
     }
 
     .category-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 9px;
     }
 
     .category-card {
         min-width: 0;
-        min-height: 58px;
+        min-height: 48px;
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: 8px;
-        padding: 9px;
-        background: #fff;
+        padding: 8px;
+        background: white;
         border: 1px solid #e5eaf1;
-        border-radius: 12px;
+        border-radius: 10px;
         text-decoration: none;
-        transition: .2s ease;
-        box-shadow: 0 2px 8px rgba(15,23,42,.03);
+        transition: .2s;
     }
 
     .category-card:hover {
@@ -77,49 +158,34 @@
 
     .category-card.selected {
         background: #eff6ff;
-        border: 1.5px solid #2563eb;
+        border-color: #2563eb;
     }
 
     .category-icon {
-        width: 32px;
-        height: 32px;
-        flex: 0 0 32px;
+        width: 30px;
+        height: 30px;
+        flex: 0 0 30px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: #f1f5f9;
-        border-radius: 9px;
-        font-size: 17px;
-    }
-
-    .category-card.selected .category-icon {
-        background: #dbeafe;
+        border-radius: 8px;
+        font-size: 16px;
     }
 
     .category-name {
-        color: #1e293b;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: bold;
+        color: #334155;
         line-height: 1.6;
         overflow-wrap: anywhere;
-        text-align: center;
     }
 
     .category-card.selected .category-name {
         color: #1d4ed8;
     }
 
-    .search {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 22px;
-    }
-
-    .search input {
-        flex: 1;
-        min-width: 0;
-    }
-
+    /* محصولات */
     .catalog-heading {
         display: flex;
         justify-content: space-between;
@@ -206,41 +272,50 @@
         margin-top: 12px;
     }
 
-    @media(max-width: 900px) {
-        .category-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-    }
-
     @media(max-width: 600px) {
         .hero {
-            padding: 22px 17px;
+            padding: 21px 16px;
         }
 
         .hero h1 {
             font-size: 19px;
         }
 
-        .category-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
+        .category-summary {
+            padding: 12px;
         }
 
-        .category-card {
-            min-height: 53px;
-            padding: 7px;
+        .category-content {
+            padding: 9px;
+        }
+
+        .category-grid {
             gap: 7px;
         }
 
+        .category-card {
+            min-height: 45px;
+            padding: 6px;
+            gap: 6px;
+        }
+
         .category-icon {
-            width: 29px;
-            height: 29px;
-            flex-basis: 29px;
-            font-size: 15px;
+            width: 27px;
+            height: 27px;
+            flex-basis: 27px;
+            font-size: 14px;
         }
 
         .category-name {
-            font-size: 11px;
+            font-size: 10px;
+        }
+
+        .category-title {
+            font-size: 13px;
+        }
+
+        .category-subtitle {
+            font-size: 10px;
         }
 
         .product-image {
@@ -286,64 +361,95 @@
     <button type="submit">جستجو</button>
 </form>
 
+<!-- منوی کشویی دسته بندی -->
 <section class="category-section">
 
-    <div class="category-heading">
-        <h2 class="section-title">دسته‌بندی محصولات</h2>
+    <details class="category-dropdown">
 
-        <span class="category-total">
-            {{ categories|length }} دسته
-        </span>
-    </div>
+        <summary class="category-summary">
 
-    <div class="category-grid">
+            <div class="category-summary-right">
+                <div class="main-category-icon">▦</div>
 
-        <a
-            class="category-card {% if not selected_category %}selected{% endif %}"
-            href="{{ url_for('index', q=q) }}"
-        >
-            <span class="category-icon">▦</span>
-            <span class="category-name">همه محصولات</span>
-        </a>
+                <div>
+                    <div class="category-title">
+                        دسته‌بندی محصولات
+                    </div>
 
-        {% for category in categories %}
-            <a
-                class="category-card {% if selected_category|string == category.id|string %}selected{% endif %}"
-                href="{{ url_for('index', category=category.id, q=q) }}"
-            >
+                    <div class="category-subtitle">
+                        برای مشاهده دسته‌ها کلیک کنید
+                    </div>
+                </div>
+            </div>
 
-                <span class="category-icon">
-                    {% if 'تلویزیون' in category.name %}
-                        📺
-                    {% elif 'یخچال' in category.name %}
-                        🧊
-                    {% elif 'لباسشویی' in category.name %}
-                        🧺
-                    {% elif 'ظرفشویی' in category.name %}
-                        🍽️
-                    {% elif 'جارو' in category.name %}
-                        🧹
-                    {% elif 'آشپزخانه' in category.name %}
-                        🍳
-                    {% elif 'کولر' in category.name %}
-                        ❄️
-                    {% elif 'چای' in category.name or 'قهوه' in category.name %}
-                        ☕
-                    {% else %}
-                        ▤
-                    {% endif %}
+            <div class="category-summary-left">
+                <span class="category-total">
+                    {{ categories|length }} دسته
                 </span>
 
-                <span class="category-name">
-                    {{ category.name }}
-                </span>
+                <span class="category-chevron">⌄</span>
+            </div>
 
-            </a>
-        {% endfor %}
+        </summary>
 
-    </div>
+        <div class="category-content">
+
+            <div class="category-grid">
+
+                <a
+                    class="category-card {% if not selected_category %}selected{% endif %}"
+                    href="{{ url_for('index', q=q) }}"
+                >
+                    <span class="category-icon">▦</span>
+                    <span class="category-name">همه محصولات</span>
+                </a>
+
+                {% for category in categories %}
+
+                    <a
+                        class="category-card {% if selected_category|string == category.id|string %}selected{% endif %}"
+                        href="{{ url_for('index', category=category.id, q=q) }}"
+                    >
+
+                        <span class="category-icon">
+                            {% if 'تلویزیون' in category.name %}
+                                📺
+                            {% elif 'یخچال' in category.name %}
+                                🧊
+                            {% elif 'لباسشویی' in category.name %}
+                                🧺
+                            {% elif 'ظرفشویی' in category.name %}
+                                🍽️
+                            {% elif 'جارو' in category.name %}
+                                🧹
+                            {% elif 'آشپزخانه' in category.name %}
+                                🍳
+                            {% elif 'کولر' in category.name %}
+                                ❄️
+                            {% elif 'چای' in category.name or 'قهوه' in category.name %}
+                                ☕
+                            {% else %}
+                                ▤
+                            {% endif %}
+                        </span>
+
+                        <span class="category-name">
+                            {{ category.name }}
+                        </span>
+
+                    </a>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </details>
+
 </section>
 
+<!-- لیست محصولات -->
 <section>
 
     <div class="catalog-heading">
@@ -359,6 +465,7 @@
         <div class="product-list">
 
             {% for product in products %}
+
                 <article class="product">
 
                     {% if product.image_url %}
@@ -415,8 +522,11 @@
                             {% endif %}
 
                         </div>
+
                     </div>
+
                 </article>
+
             {% endfor %}
 
         </div>
