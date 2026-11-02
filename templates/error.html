@@ -1,8 +1,91 @@
 {% extends "base.html" %}
+
+{% block title %}خطا | همراه‌یار{% endblock %}
+
+{% block head %}
+<style>
+    .error-wrapper {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 25px 12px;
+    }
+
+    .error-card {
+        width: 100%;
+        max-width: 520px;
+        background: white;
+        border: 1px solid #e5eaf1;
+        border-radius: 20px;
+        padding: 35px 25px;
+        text-align: center;
+        box-shadow: 0 12px 35px rgba(15, 23, 42, .06);
+    }
+
+    .error-icon {
+        width: 75px;
+        height: 75px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        border-radius: 22px;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 35px;
+    }
+
+    .error-card h2 {
+        margin: 0 0 12px;
+        font-size: 23px;
+    }
+
+    .error-message {
+        color: #64748b;
+        line-height: 2;
+        font-size: 14px;
+        overflow-wrap: anywhere;
+        margin-bottom: 25px;
+    }
+
+    .error-home {
+        display: inline-block;
+        background: #2563eb;
+        color: white;
+        text-decoration: none;
+        padding: 12px 25px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .error-home:hover {
+        background: #1d4ed8;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="form-card">
-  <h2>خطا</h2>
-  <p>{{ message }}</p>
-  <a href="{{ url_for('index') }}">بازگشت به صفحه اصلی</a>
+
+<div class="error-wrapper">
+
+    <div class="error-card">
+
+        <div class="error-icon">!</div>
+
+        <h2>مشکلی پیش آمده است</h2>
+
+        <div class="error-message">
+            {{ message }}
+        </div>
+
+        <a class="error-home" href="{{ url_for('index') }}">
+            بازگشت به صفحه اصلی
+        </a>
+
+    </div>
+
 </div>
+
 {% endblock %}
