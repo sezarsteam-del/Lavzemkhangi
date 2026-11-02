@@ -38,25 +38,29 @@
             <span>🛍️ تعداد محصولات</span>
             <strong>{{ stats.product_count }}</strong>
         </div>
+
         <div class="stat-card">
             <span>📦 موجودی کل</span>
             <strong>{{ stats.total_stock }}</strong>
         </div>
+
         <div class="stat-card">
             <span>⚠️ موجودی کم</span>
             <strong>{{ stats.low_stock }}</strong>
         </div>
+
         <div class="stat-card">
             <span>❌ ناموجود</span>
             <strong>{{ stats.out_of_stock }}</strong>
         </div>
+
         <div class="stat-card">
             <span>🧾 فاکتورهای امروز</span>
             <strong>{{ today_sales.invoice_count }}</strong>
         </div>
     </section>
 
-    <!-- کارت‌های دسترسی سریع -->
+    <!-- دسترسی سریع -->
     <section class="admin-cards">
 
         <a href="{{ url_for('add_product') }}" class="admin-card add-card">
@@ -182,7 +186,6 @@
             </div>
         </div>
 
-        <!-- افزودن برند -->
         <form action="{{ url_for('add_brand') }}"
               method="POST"
               class="create-form">
@@ -198,7 +201,6 @@
             <button type="submit">➕ افزودن برند</button>
         </form>
 
-        <!-- فهرست برندها -->
         <div class="management-list">
 
             {% for brand in brands %}
@@ -211,7 +213,6 @@
 
                 <div class="item-actions">
 
-                    <!-- ویرایش برند -->
                     <form action="{{ url_for('edit_brand', brand_id=brand.id) }}"
                           method="POST"
                           class="edit-form">
@@ -227,10 +228,8 @@
                         <button type="submit" class="edit-btn">
                             💾 ذخیره
                         </button>
-
                     </form>
 
-                    <!-- حذف برند -->
                     <form action="{{ url_for('delete_brand', brand_id=brand.id) }}"
                           method="POST"
                           onsubmit="return confirm('آیا از حذف این برند مطمئن هستید؟')">
@@ -240,11 +239,9 @@
                         <button type="submit" class="delete-btn">
                             🗑️ حذف
                         </button>
-
                     </form>
 
                 </div>
-
             </div>
 
             {% else %}
@@ -256,16 +253,15 @@
             {% endfor %}
 
         </div>
-
     </section>
 
-    <!-- فهرست محصولات -->
+    <!-- مدیریت محصولات -->
     <section class="panel-section">
 
         <div class="section-heading">
             <div>
                 <h2>🛍️ مدیریت محصولات</h2>
-                <p>مشاهده و ویرایش اطلاعات محصولات ثبت‌شده</p>
+                <p>برای ویرایش هر محصول وارد صفحه اختصاصی آن شوید.</p>
             </div>
 
             <a href="{{ url_for('add_product') }}" class="heading-button">
@@ -277,157 +273,56 @@
 
             {% for product in products %}
 
-            <details class="product-item">
+            <div class="product-item">
 
-                <summary>
+                <div class="product-summary">
 
-                    <div class="product-summary">
+                    {% if product.image_url %}
 
-                        {% if product.image_url %}
+                    <img src="{{ product.image_url }}"
+                         alt="{{ product.name }}"
+                         class="product-thumb">
 
-                        <img src="{{ product.image_url }}"
-                             alt="{{ product.name }}"
-                             class="product-thumb">
+                    {% else %}
 
-                        {% else %}
+                    <div class="product-thumb-placeholder">📦</div>
 
-                        <div class="product-thumb-placeholder">📦</div>
+                    {% endif %}
 
-                        {% endif %}
+                    <div class="product-summary-info">
+                        <strong>{{ product.name }}</strong>
 
-                        <div class="product-summary-info">
-                            <strong>{{ product.name }}</strong>
+                        <small>
+                            {{ product.category_name or 'بدون دسته‌بندی' }}
 
-                            <small>
-                                {{ product.category_name or 'بدون دسته‌بندی' }}
+                            {% if product.brand_name %}
+                            · {{ product.brand_name }}
+                            {% endif %}
+                        </small>
 
-                                {% if product.brand_name %}
-                                · {{ product.brand_name }}
-                                {% endif %}
-                            </small>
-                        </div>
-
+                        <small>
+                            موجودی: {{ product.stock }}
+                        </small>
                     </div>
-
-                    <div class="product-summary-left">
-                        <strong>{{ "{:,}".format(product.price) }}</strong>
-                        <small>تومان</small>
-                        <span class="details-label">ویرایش اطلاعات ⌄</span>
-                    </div>
-
-                </summary>
-
-                <div class="product-edit-content">
-
-                    <form action="{{ url_for('edit_product', product_id=product.id) }}"
-                          method="POST">
-
-                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-
-                        <div class="form-grid">
-
-                            <div class="form-group">
-                                <label>نام محصول</label>
-                                <input type="text"
-                                       name="name"
-                                       value="{{ product.name }}"
-                                       required>
-                            </div>
-
-                            <div class="form-group">
-                                <label>دسته‌بندی</label>
-
-                                <select name="category_id" required>
-
-                                    {% for category in categories %}
-
-                                    <option value="{{ category.id }}"
-                                        {% if category.id == product.category_id %}selected{% endif %}>
-                                        {{ category.name }}
-                                    </option>
-
-                                    {% endfor %}
-
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>برند</label>
-
-                                <select name="brand_id">
-
-                                    <option value="">بدون برند</option>
-
-                                    {% for brand in brands %}
-
-                                    <option value="{{ brand.id }}"
-                                        {% if brand.id == product.brand_id %}selected{% endif %}>
-                                        {{ brand.name }}
-                                    </option>
-
-                                    {% endfor %}
-
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label>قیمت (تومان)</label>
-
-                                <input type="number"
-                                       name="price"
-                                       value="{{ product.price }}"
-                                       min="0"
-                                       required>
-                            </div>
-
-                            <div class="form-group">
-                                <label>حداقل موجودی</label>
-
-                                <input type="number"
-                                       name="min_stock"
-                                       value="{{ product.min_stock }}"
-                                       min="0"
-                                       required>
-                            </div>
-
-                            <div class="form-group">
-                                <label>لینک تصویر</label>
-
-                                <input type="url"
-                                       name="image_url"
-                                       value="{{ product.image_url or '' }}">
-                            </div>
-
-                            <div class="form-group full-width">
-                                <label>توضیحات</label>
-
-                                <textarea name="description"
-                                          rows="4">{{ product.description or '' }}</textarea>
-                            </div>
-
-                        </div>
-
-                        <div class="stock-information">
-
-                            📦 موجودی فعلی:
-
-                            <strong>{{ product.stock }}</strong>
-
-                            <span>
-                                برای تغییر موجودی از بخش مدیریت انبار استفاده کنید.
-                            </span>
-
-                        </div>
-
-                        <button type="submit" class="save-product-btn">
-                            💾 ذخیره تغییرات محصول
-                        </button>
-
-                    </form>
 
                 </div>
 
-            </details>
+                <div class="product-summary-left">
+                    <strong>{{ "{:,}".format(product.price) }}</strong>
+                    <small>تومان</small>
+
+                    <a href="{{ url_for('edit_product', product_id=product.id) }}"
+                       class="manage-product-btn">
+                        ⚙️ مدیریت محصول
+                    </a>
+
+                    <a href="{{ url_for('inventory') }}"
+                       class="inventory-link">
+                        📦 مدیریت موجودی
+                    </a>
+                </div>
+
+            </div>
 
             {% else %}
 
@@ -646,10 +541,7 @@
 }
 
 .create-form input,
-.edit-form input,
-.form-group input,
-.form-group select,
-.form-group textarea {
+.edit-form input {
     width: 100%;
     box-sizing: border-box;
     padding: 12px;
@@ -662,17 +554,13 @@
 }
 
 .create-form input:focus,
-.edit-form input:focus,
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.edit-form input:focus {
     border-color: #426b9d;
 }
 
 .create-form button,
 .edit-btn,
-.delete-btn,
-.save-product-btn {
+.delete-btn {
     border: none;
     border-radius: 9px;
     padding: 12px 16px;
@@ -739,20 +627,6 @@
     color: #c0392b;
 }
 
-.brand-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.brand-item {
-    padding: 14px;
-    background: #f7f9fc;
-    border: 1px solid #edf0f4;
-    border-radius: 10px;
-    font-weight: 600;
-}
-
 .empty-state {
     padding: 22px;
     text-align: center;
@@ -767,29 +641,14 @@
 }
 
 .product-item {
-    border: 1px solid #e6ebf1;
-    border-radius: 12px;
-    overflow: hidden;
-    background: white;
-}
-
-.product-item summary {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
     padding: 14px;
-    cursor: pointer;
-    list-style: none;
-}
-
-.product-item summary::-webkit-details-marker {
-    display: none;
-}
-
-.product-item[open] summary {
-    background: #f7f9fc;
-    border-bottom: 1px solid #e6ebf1;
+    border: 1px solid #e6ebf1;
+    border-radius: 12px;
+    background: white;
 }
 
 .product-summary {
@@ -801,8 +660,8 @@
 
 .product-thumb,
 .product-thumb-placeholder {
-    width: 55px;
-    height: 55px;
+    width: 60px;
+    height: 60px;
     flex-shrink: 0;
     border-radius: 9px;
     object-fit: cover;
@@ -826,8 +685,7 @@
     overflow-wrap: anywhere;
 }
 
-.product-summary-info small,
-.product-summary-left small {
+.product-summary-info small {
     color: #7b8491;
 }
 
@@ -835,66 +693,39 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 4px;
+    gap: 7px;
     white-space: nowrap;
 }
 
-.details-label {
-    color: #315b91;
+.product-summary-left > strong {
+    color: #263b60;
+    font-size: 17px;
+}
+
+.product-summary-left small {
+    color: #7b8491;
+}
+
+.manage-product-btn,
+.inventory-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 13px;
+    border-radius: 8px;
+    text-decoration: none;
     font-size: 12px;
-    margin-top: 5px;
-}
-
-.product-edit-content {
-    padding: 18px;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 15px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.form-group label {
-    font-size: 13px;
     font-weight: bold;
 }
 
-.full-width {
-    grid-column: 1 / -1;
-}
-
-.stock-information {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-top: 18px;
-    padding: 13px;
-    background: #eff6ff;
-    color: #24549a;
-    border-radius: 9px;
-    font-size: 13px;
-    line-height: 1.8;
-}
-
-.stock-information span {
-    width: 100%;
-    color: #526b8d;
-}
-
-.save-product-btn {
-    width: 100%;
-    margin-top: 15px;
-    padding: 14px;
+.manage-product-btn {
     background: #263b60;
     color: white;
+}
+
+.inventory-link {
+    background: #e8f0ff;
+    color: #24549a;
 }
 
 .admin-footer {
@@ -909,10 +740,6 @@
 @media(max-width: 850px) {
     .stats-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .brand-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -937,11 +764,6 @@
     }
 
     .admin-cards {
-        grid-template-columns: 1fr;
-    }
-
-    .form-grid,
-    .brand-grid {
         grid-template-columns: 1fr;
     }
 
@@ -972,12 +794,14 @@
         flex-direction: column;
     }
 
-    .product-item summary {
-        align-items: flex-start;
+    .product-item {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .product-summary-left {
-        font-size: 12px;
+        align-items: stretch;
+        white-space: normal;
     }
 
     .panel-section {
