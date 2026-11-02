@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}تماس با ما | لوازم خانگی{% endblock %}
+
+{% block head %}
+<style>
+    .contact-page {
+        max-width: 760px;
+        margin: 35px auto;
+        padding: 28px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        box-shadow: 0 8px 25px rgba(15, 23, 42, .06);
+    }
+
+    .contact-page h1 {
+        margin: 0 0 10px;
+        color: #1e3a8a;
+    }
+
+    .contact-page p {
+        color: #64748b;
+        line-height: 1.9;
+    }
+
+    .contact-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 0;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .contact-item a {
+        color: #1d4ed8;
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    .contact-item a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 520px) {
+        .contact-page {
+            padding: 20px;
+        }
+
+        .contact-item {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="contact-page">
+
+    <h1>تماس با ما</h1>
+
+    <p>
+        برای دریافت راهنمایی و استعلام محصولات،
+        از راه‌های زیر با ما در ارتباط باشید.
+    </p>
+
+    <div class="contact-item">
+        <strong>شماره تماس</strong>
+        <a href="tel:09199223403" dir="ltr">
+            09199223403
+        </a>
+    </div>
+
+    <div class="contact-item">
+        <strong>ایمیل</strong>
+        <a href="mailto:m4hdisalari2343@gmail.com" dir="ltr">
+            m4hdisalari2343@gmail.com
+        </a>
+    </div>
+
+    <p>
+        <a href="{{ url_for('index') }}">بازگشت به صفحه اصلی</a>
+    </p>
+
+</section>
+{% endblock %}
