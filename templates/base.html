@@ -1,30 +1,82 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}فروشگاه لوازم خانگی{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#111827">
+    <meta name="description" content="همراه‌یار؛ سامانه قیمت‌گذاری، مدیریت محصولات و استعلام لوازم خانگی">
+
+    <title>{% block title %}همراه‌یار | فروشگاه لوازم خانگی{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block head %}{% endblock %}
 </head>
+
 <body>
+
 <header class="topbar">
-  <a class="brand" href="{{ url_for('index') }}">فروشگاه لوازم خانگی</a>
-  {% if session.get('admin') %}
-    <a class="small-link" href="{{ url_for('admin') }}">پنل مدیریت</a>
-  {% else %}
-    <a class="small-link" href="{{ url_for('login') }}">ورود مدیر</a>
-  {% endif %}
+    <div class="topbar-inner">
+
+        <a class="brand" href="{{ url_for('index') }}">
+            <span class="brand-icon">ه</span>
+            <span>
+                <strong>همراه‌یار</strong>
+                <small>سامانه هوشمند لوازم خانگی</small>
+            </span>
+        </a>
+
+        <nav class="top-navigation">
+            <a href="{{ url_for('index') }}">صفحه اصلی</a>
+
+            {% if session.get('admin') %}
+                <a href="{{ url_for('admin') }}">مدیریت</a>
+                <a href="{{ url_for('inventory') }}">انبار</a>
+                <a href="{{ url_for('sales') }}">فروش</a>
+                <a href="{{ url_for('reports') }}">گزارش‌ها</a>
+
+                <form method="POST" action="{{ url_for('logout') }}">
+                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                    <button type="submit" class="logout-link">خروج</button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="login-link">
+                    ورود مدیر
+                </a>
+            {% endif %}
+        </nav>
+
+    </div>
 </header>
+
 <main class="container">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="notice {{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-  {% block content %}{% endblock %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="notice {{ category }}">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
 </main>
-<footer class="footer">فروشگاه لوازم خانگی</footer>
+
+<footer class="footer">
+    <div class="footer-inner">
+        <strong>همراه‌یار</strong>
+        <span>مدیریت هوشمند فروشگاه لوازم خانگی</span>
+        <small>تمام حقوق محفوظ است.</small>
+    </div>
+</footer>
+
+{% block scripts %}{% endblock %}
+
 </body>
 </html>
