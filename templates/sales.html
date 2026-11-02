@@ -85,6 +85,10 @@
     align-items: center;
 }
 
+.actions form {
+    margin: 0;
+}
+
 .sales-btn {
     border: 0;
     border-radius: 9px;
@@ -94,6 +98,7 @@
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
+    white-space: nowrap;
 }
 
 .primary {
@@ -113,6 +118,10 @@
 .danger {
     background: #fee2e2;
     color: #b91c1c;
+}
+
+.danger:hover {
+    background: #fecaca;
 }
 
 .item {
@@ -182,6 +191,7 @@
     padding: 13px;
     border-bottom: 1px solid #edf0f5;
     font-size: 12px;
+    vertical-align: middle;
 }
 
 .sales-table th {
@@ -242,6 +252,10 @@
 
     .page-heading h1 {
         font-size: 21px;
+    }
+
+    .sales-table {
+        min-width: 650px;
     }
 }
 </style>
@@ -483,9 +497,8 @@
                                     <form
                                         method="POST"
                                         action="{{ url_for('cancel_sale', sale_id=invoice.id) }}"
-                                        onsubmit="return confirm('فاکتور لغو و موجودی کالاها بازگردانده شود؟')"
+                                        onsubmit="return confirm('آیا مطمئن هستید؟ فاکتور لغو می‌شود و موجودی کالاها به انبار برمی‌گردد.')"
                                     >
-
                                         <input
                                             type="hidden"
                                             name="_csrf"
@@ -498,10 +511,28 @@
                                         >
                                             لغو فاکتور
                                         </button>
-
                                     </form>
 
                                 {% endif %}
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('delete_sale', sale_id=invoice.id) }}"
+                                    onsubmit="return confirm('آیا مطمئن هستید؟ اطلاعات کامل این فاکتور حذف می‌شود. اگر فاکتور تکمیل‌شده باشد، موجودی کالاهای آن به انبار برمی‌گردد. این عملیات قابل بازگشت نیست.')"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="_csrf"
+                                        value="{{ csrf_token() }}"
+                                    >
+
+                                    <button
+                                        class="sales-btn danger"
+                                        type="submit"
+                                    >
+                                        حذف فاکتور
+                                    </button>
+                                </form>
 
                             </div>
                         </td>
@@ -539,6 +570,7 @@ function formatNumber(value) {
 }
 
 function addItem() {
+
     itemCount++;
 
     const first = document.querySelector('.item');
@@ -550,6 +582,7 @@ function addItem() {
     copy.querySelector('.product-select').value = '';
     copy.querySelector('.quantity').value = '1';
     copy.querySelector('.remove').style.display = 'inline-block';
+
     copy.querySelector('.line-info').textContent =
         'ابتدا محصول را انتخاب کنید.';
 
@@ -559,6 +592,7 @@ function addItem() {
 }
 
 function removeItem(button) {
+
     const items = document.querySelectorAll('.item');
 
     if (items.length <= 1) {
@@ -567,49 +601,68 @@ function removeItem(button) {
 
     button.closest('.item').remove();
 
-    document.querySelectorAll('.item').forEach((item, index) => {
+    const remainingItems = document.querySelectorAll('.item');
+
+    remainingItems.forEach((item, index) => {
+
         item.querySelector('strong').textContent =
             'محصول شماره ' + (index + 1);
 
         item.querySelector('.remove').style.display =
-            document.querySelectorAll('.item').length > 1
+            remainingItems.length > 1
                 ? 'inline-block'
                 : 'none';
     });
+
+    itemCount = remainingItems.length;
 
     calculate();
 }
 
 function calculate() {
+
     let subtotal = 0;
 
     document.querySelectorAll('.item').forEach(item => {
+
         const select = item.querySelector('.product-select');
         const quantityInput = item.querySelector('.quantity');
         const option = select.options[select.selectedIndex];
 
         const price = Number(option?.dataset.price || 0);
         const stock = Number(option?.dataset.stock || 0);
+
         const quantity = Math.max(
             0,
             Number(quantityInput.value || 0)
         );
 
         if (select.value) {
+
             subtotal += price * quantity;
 
             item.querySelector('.line-info').textContent =
                 'قیمت واحد: ' + formatNumber(price) +
                 ' تومان | موجودی فعلی: ' + formatNumber(stock);
+
         } else {
+
             item.querySelector('.line-info').textContent =
                 'ابتدا محصول را انتخاب کنید.';
         }
     });
 
     const discountInput = document.getElementById('discount');
-    const discount = Math.max(0, Number(discountInput.value || 0));
-    const finalAmount = Math.max(0, subtotal - discount);
+
+    const discount = Math.max(
+        0,
+        Number(discountInput.value || 0)
+    );
+
+    const finalAmount = Math.max(
+        0,
+        subtotal - discount
+    );
 
     document.getElementById('subtotal').textContent =
         formatNumber(subtotal) + ' تومان';
@@ -621,39 +674,63 @@ function calculate() {
         formatNumber(finalAmount) + ' تومان';
 }
 
-document.getElementById('saleForm').addEventListener('submit', function(event) {
-    const items = document.querySelectorAll('.item');
-    let hasError = false;
+document.getElementById('saleForm').addEventListener(
+    'submit',
+    function(event) {
 
-    for (const item of items) {
-        const product = item.querySelector('.product-select').value;
-        const quantity = Number(item.querySelector('.quantity').value);
+        const items = document.querySelectorAll('.item');
 
-        if (
-            !product ||
-            !Number.isInteger(quantity) ||
-            quantity <= 0
-        ) {
-            hasError = true;
-            break;
+        let hasError = false;
+
+        for (const item of items) {
+
+            const product = item.querySelector(
+                '.product-select'
+            ).value;
+
+            const quantity = Number(
+                item.querySelector('.quantity').value
+            );
+
+            if (
+                !product ||
+                !Number.isInteger(quantity) ||
+                quantity <= 0
+            ) {
+                hasError = true;
+                break;
+            }
+        }
+
+        const discount = Number(
+            document.getElementById('discount').value || 0
+        );
+
+        if (hasError) {
+
+            event.preventDefault();
+
+            alert(
+                'لطفاً محصول و تعداد تمام ردیف‌ها را کامل کنید یا ردیف خالی را حذف کنید.'
+            );
+
+            return;
+        }
+
+        if (!Number.isFinite(discount) || discount < 0) {
+
+            event.preventDefault();
+
+            alert('مبلغ تخفیف معتبر نیست.');
+
+            return;
+        }
+
+        if (!confirm('آیا از ثبت این فاکتور مطمئن هستید؟')) {
+            event.preventDefault();
         }
     }
-
-    const discount = Number(
-        document.getElementById('discount').value || 0
-    );
-
-    if (hasError) {
-        event.preventDefault();
-        alert('لطفاً محصول و تعداد تمام ردیف‌ها را کامل کنید یا ردیف خالی را حذف کنید.');
-        return;
-    }
-
-    if (!Number.isFinite(discount) || discount < 0) {
-        event.preventDefault();
-        alert('مبلغ تخفیف معتبر نیست.');
-    }
-});
+);
 
 calculate();
 </script>
