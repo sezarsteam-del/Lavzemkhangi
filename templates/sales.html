@@ -4,24 +4,10 @@
 
 {% block head %}
 <style>
-.sales-page {
-    padding: 10px 0 30px;
-}
-
-.page-heading {
-    margin-bottom: 22px;
-}
-
-.page-heading h1 {
-    margin: 0 0 7px;
-    font-size: 24px;
-}
-
-.muted {
-    color: #64748b;
-    font-size: 12px;
-}
-
+.sales-page { padding: 10px 0 30px; }
+.page-heading { margin-bottom: 22px; }
+.page-heading h1 { margin: 0 0 7px; font-size: 24px; }
+.muted { color: #64748b; font-size: 12px; }
 .panel {
     background: white;
     border: 1px solid #e5eaf1;
@@ -29,22 +15,13 @@
     padding: 20px;
     margin-bottom: 20px;
 }
-
-.panel h2 {
-    font-size: 18px;
-    margin: 0 0 18px;
-}
-
+.panel h2 { font-size: 18px; margin: 0 0 18px; }
 .sales-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
 }
-
-.field {
-    margin-bottom: 12px;
-}
-
+.field { margin-bottom: 12px; }
 .field label {
     display: block;
     font-size: 13px;
@@ -52,10 +29,7 @@
     color: #475569;
     font-weight: 600;
 }
-
-.field input,
-.field select,
-.field textarea {
+.field input, .field select, .field textarea {
     width: 100%;
     min-height: 44px;
     padding: 11px;
@@ -65,30 +39,18 @@
     font-size: 13px;
     background: white;
 }
-
-.field textarea {
-    resize: vertical;
-    min-height: 75px;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
+.field textarea { resize: vertical; min-height: 75px; }
+.field input:focus, .field select:focus, .field textarea:focus {
     outline: none;
     border-color: #2563eb;
 }
-
 .actions {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
 }
-
-.actions form {
-    margin: 0;
-}
-
+.actions form { margin: 0; }
 .sales-btn {
     border: 0;
     border-radius: 9px;
@@ -100,30 +62,11 @@
     display: inline-block;
     white-space: nowrap;
 }
-
-.primary {
-    background: #2563eb;
-    color: white;
-}
-
-.primary:hover {
-    background: #1d4ed8;
-}
-
-.secondary {
-    background: #eff6ff;
-    color: #1d4ed8;
-}
-
-.danger {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-.danger:hover {
-    background: #fecaca;
-}
-
+.primary { background: #2563eb; color: white; }
+.primary:hover { background: #1d4ed8; }
+.secondary { background: #eff6ff; color: #1d4ed8; }
+.danger { background: #fee2e2; color: #b91c1c; }
+.danger:hover { background: #fecaca; }
 .item {
     border: 1px solid #e2e8f0;
     border-radius: 13px;
@@ -131,7 +74,6 @@
     margin-bottom: 12px;
     background: #fcfdff;
 }
-
 .item-head {
     display: flex;
     justify-content: space-between;
@@ -139,26 +81,18 @@
     gap: 10px;
     margin-bottom: 12px;
 }
-
 .item-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 10px;
 }
-
-.line-info {
-    margin-top: 8px;
-    color: #64748b;
-    font-size: 11px;
-}
-
+.line-info { margin-top: 8px; color: #64748b; font-size: 11px; }
 .total-box {
     background: #eff6ff;
     padding: 16px;
     border-radius: 12px;
     margin: 17px 0;
 }
-
 .total-row {
     display: flex;
     justify-content: space-between;
@@ -166,7 +100,6 @@
     margin: 9px 0;
     font-size: 13px;
 }
-
 .final-row {
     border-top: 1px solid #dbeafe;
     padding-top: 13px;
@@ -174,52 +107,29 @@
     font-size: 18px;
     color: #1d4ed8;
 }
-
-.table-wrap {
-    overflow-x: auto;
-}
-
+.table-wrap { overflow-x: auto; }
 .sales-table {
     width: 100%;
-    min-width: 650px;
+    min-width: 750px;
     border-collapse: collapse;
 }
-
-.sales-table th,
-.sales-table td {
+.sales-table th, .sales-table td {
     text-align: right;
     padding: 13px;
     border-bottom: 1px solid #edf0f5;
     font-size: 12px;
     vertical-align: middle;
 }
-
-.sales-table th {
-    background: #f8fafc;
-    color: #64748b;
-}
-
-.sales-table tr:last-child td {
-    border-bottom: none;
-}
-
+.sales-table th { background: #f8fafc; color: #64748b; }
+.sales-table tr:last-child td { border-bottom: none; }
 .status {
     display: inline-block;
     padding: 5px 9px;
     border-radius: 20px;
     font-size: 11px;
 }
-
-.completed {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.cancelled {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
+.completed { background: #dcfce7; color: #166534; }
+.cancelled { background: #fee2e2; color: #991b1b; }
 .flash {
     padding: 12px;
     border-radius: 10px;
@@ -228,48 +138,24 @@
     background: #eff6ff;
     color: #1d4ed8;
 }
-
-.flash.error {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.empty-message {
-    text-align: center;
-    padding: 25px !important;
-    color: #64748b;
-}
+.flash.error { background: #fee2e2; color: #991b1b; }
+.empty-message { text-align: center; padding: 25px !important; color: #64748b; }
 
 @media(max-width: 600px) {
-    .sales-grid,
-    .item-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .panel {
-        padding: 14px;
-    }
-
-    .page-heading h1 {
-        font-size: 21px;
-    }
-
-    .sales-table {
-        min-width: 650px;
-    }
+    .sales-grid, .item-grid { grid-template-columns: 1fr; }
+    .panel { padding: 14px; }
+    .page-heading h1 { font-size: 21px; }
+    .sales-table { min-width: 750px; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-
 <div class="sales-page">
 
     <header class="page-heading">
         <h1>دفتر فروش</h1>
-        <p class="muted">
-            ثبت فاکتور، مدیریت فروش و مشاهده سوابق مالی
-        </p>
+        <p class="muted">ثبت فاکتور، مدیریت فروش و مشاهده سوابق مالی</p>
     </header>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -281,39 +167,86 @@
     {% endwith %}
 
     <section class="panel">
-
         <h2>ثبت فاکتور جدید</h2>
 
         <form method="POST" action="{{ url_for('sales') }}" id="saleForm">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
-            <input
-                type="hidden"
-                name="_csrf"
-                value="{{ csrf_token() }}"
-            >
+            <h3 style="font-size:15px;margin:0 0 14px">اطلاعات مشتری</h3>
+
+            <div class="sales-grid">
+                <div class="field">
+                    <label for="customer_first_name">نام مشتری *</label>
+                    <input
+                        type="text"
+                        id="customer_first_name"
+                        name="customer_first_name"
+                        maxlength="100"
+                        required
+                        autocomplete="given-name"
+                        placeholder="نام"
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="customer_last_name">نام خانوادگی *</label>
+                    <input
+                        type="text"
+                        id="customer_last_name"
+                        name="customer_last_name"
+                        maxlength="100"
+                        required
+                        autocomplete="family-name"
+                        placeholder="نام خانوادگی"
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="customer_phone">شماره تماس *</label>
+                    <input
+                        type="tel"
+                        id="customer_phone"
+                        name="customer_phone"
+                        maxlength="20"
+                        required
+                        autocomplete="tel"
+                        inputmode="tel"
+                        placeholder="مثلاً 09123456789"
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="customer_national_id">کد ملی (اختیاری)</label>
+                    <input
+                        type="text"
+                        id="customer_national_id"
+                        name="customer_national_id"
+                        maxlength="10"
+                        inputmode="numeric"
+                        placeholder="کد ملی ۱۰ رقمی"
+                    >
+                </div>
+            </div>
+
+            <hr style="border:0;border-top:1px solid #edf0f5;margin:18px 0">
+
+            <h3 style="font-size:15px;margin:0 0 14px">محصولات فاکتور</h3>
 
             <div id="items">
-
                 <div class="item">
-
                     <div class="item-head">
                         <strong>محصول شماره ۱</strong>
-
                         <button
                             type="button"
                             class="sales-btn danger remove"
                             onclick="removeItem(this)"
                             style="display:none"
-                        >
-                            حذف ردیف
-                        </button>
+                        >حذف ردیف</button>
                     </div>
 
                     <div class="item-grid">
-
                         <div class="field">
                             <label>انتخاب محصول</label>
-
                             <select
                                 name="product_id"
                                 class="product-select"
@@ -321,7 +254,6 @@
                                 onchange="calculate()"
                             >
                                 <option value="">انتخاب محصول</option>
-
                                 {% for p in products %}
                                     <option
                                         value="{{ p.id }}"
@@ -336,7 +268,6 @@
 
                         <div class="field">
                             <label>تعداد</label>
-
                             <input
                                 type="number"
                                 name="quantity"
@@ -348,23 +279,14 @@
                                 oninput="calculate()"
                             >
                         </div>
-
                     </div>
 
-                    <div class="line-info">
-                        ابتدا محصول را انتخاب کنید.
-                    </div>
-
+                    <div class="line-info">ابتدا محصول را انتخاب کنید.</div>
                 </div>
-
             </div>
 
             <div class="actions">
-                <button
-                    type="button"
-                    class="sales-btn secondary"
-                    onclick="addItem()"
-                >
+                <button type="button" class="sales-btn secondary" onclick="addItem()">
                     + افزودن محصول
                 </button>
             </div>
@@ -372,10 +294,8 @@
             <hr style="border:0;border-top:1px solid #edf0f5;margin:20px 0">
 
             <div class="sales-grid">
-
                 <div class="field">
                     <label for="discount">تخفیف (تومان)</label>
-
                     <input
                         type="number"
                         id="discount"
@@ -389,7 +309,6 @@
 
                 <div class="field">
                     <label for="description">توضیحات فاکتور</label>
-
                     <input
                         type="text"
                         id="description"
@@ -398,55 +317,45 @@
                         placeholder="توضیحات اختیاری"
                     >
                 </div>
-
             </div>
 
             <div class="total-box">
-
                 <div class="total-row">
                     <span>جمع کل</span>
                     <strong id="subtotal">۰ تومان</strong>
                 </div>
-
                 <div class="total-row">
                     <span>تخفیف</span>
                     <strong id="discountView">۰ تومان</strong>
                 </div>
-
                 <div class="total-row final-row">
                     <span>مبلغ نهایی</span>
                     <strong id="final">۰ تومان</strong>
                 </div>
-
             </div>
 
             <button
                 type="submit"
                 class="sales-btn primary"
                 style="width:100%;min-height:46px"
-            >
-                ثبت فاکتور
-            </button>
+            >ثبت فاکتور</button>
 
             <p class="muted" style="margin-top:12px">
                 با ثبت موفق فاکتور، موجودی کالاها به‌صورت خودکار کاهش می‌یابد.
             </p>
-
         </form>
-
     </section>
 
     <section class="panel">
-
         <h2>فاکتورهای ثبت‌شده</h2>
 
         <div class="table-wrap">
-
             <table class="sales-table">
-
                 <thead>
                     <tr>
                         <th>شماره فاکتور</th>
+                        <th>مشتری</th>
+                        <th>شماره تماس</th>
                         <th>تاریخ</th>
                         <th>مبلغ نهایی</th>
                         <th>وضعیت</th>
@@ -455,16 +364,18 @@
                 </thead>
 
                 <tbody>
-
                     {% for invoice in invoices %}
-
                     <tr>
-
                         <td>#{{ invoice.invoice_number }}</td>
 
                         <td>
-                            {{ invoice.created_at|jalali }}
+                            {{ invoice.customer_first_name or '—' }}
+                            {{ invoice.customer_last_name or '' }}
                         </td>
+
+                        <td>{{ invoice.customer_phone or '—' }}</td>
+
+                        <td>{{ invoice.created_at|jalali }}</td>
 
                         <td>
                             {{ "{:,}".format(invoice.final_amount) }} تومان
@@ -472,47 +383,28 @@
 
                         <td>
                             {% if invoice.status == 'completed' %}
-                                <span class="status completed">
-                                    تکمیل شده
-                                </span>
+                                <span class="status completed">تکمیل شده</span>
                             {% else %}
-                                <span class="status cancelled">
-                                    لغو شده
-                                </span>
+                                <span class="status cancelled">لغو شده</span>
                             {% endif %}
                         </td>
 
                         <td>
                             <div class="actions">
-
                                 <a
                                     class="sales-btn secondary"
                                     href="{{ url_for('sale_detail', sale_id=invoice.id) }}"
-                                >
-                                    جزئیات
-                                </a>
+                                >جزئیات</a>
 
                                 {% if invoice.status == 'completed' %}
-
-                                    <form
-                                        method="POST"
-                                        action="{{ url_for('cancel_sale', sale_id=invoice.id) }}"
-                                        onsubmit="return confirm('آیا مطمئن هستید؟ فاکتور لغو می‌شود و موجودی کالاها به انبار برمی‌گردد.')"
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="_csrf"
-                                            value="{{ csrf_token() }}"
-                                        >
-
-                                        <button
-                                            class="sales-btn danger"
-                                            type="submit"
-                                        >
-                                            لغو فاکتور
-                                        </button>
-                                    </form>
-
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('cancel_sale', sale_id=invoice.id) }}"
+                                    onsubmit="return confirm('آیا مطمئن هستید؟ فاکتور لغو می‌شود و موجودی کالاها به انبار برمی‌گردد.')"
+                                >
+                                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                    <button class="sales-btn danger" type="submit">لغو فاکتور</button>
+                                </form>
                                 {% endif %}
 
                                 <form
@@ -520,45 +412,24 @@
                                     action="{{ url_for('delete_sale', sale_id=invoice.id) }}"
                                     onsubmit="return confirm('آیا مطمئن هستید؟ اطلاعات کامل این فاکتور حذف می‌شود. اگر فاکتور تکمیل‌شده باشد، موجودی کالاهای آن به انبار برمی‌گردد. این عملیات قابل بازگشت نیست.')"
                                 >
-                                    <input
-                                        type="hidden"
-                                        name="_csrf"
-                                        value="{{ csrf_token() }}"
-                                    >
-
-                                    <button
-                                        class="sales-btn danger"
-                                        type="submit"
-                                    >
-                                        حذف فاکتور
-                                    </button>
+                                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                    <button class="sales-btn danger" type="submit">حذف فاکتور</button>
                                 </form>
-
                             </div>
                         </td>
-
                     </tr>
-
                     {% else %}
-
                     <tr>
-                        <td colspan="5" class="empty-message">
+                        <td colspan="7" class="empty-message">
                             هنوز فاکتوری ثبت نشده است.
                         </td>
                     </tr>
-
                     {% endfor %}
-
                 </tbody>
-
             </table>
-
         </div>
-
     </section>
-
 </div>
-
 {% endblock %}
 
 {% block scripts %}
@@ -570,99 +441,70 @@ function formatNumber(value) {
 }
 
 function addItem() {
-
     itemCount++;
 
     const first = document.querySelector('.item');
     const copy = first.cloneNode(true);
 
-    copy.querySelector('strong').textContent =
-        'محصول شماره ' + itemCount;
-
+    copy.querySelector('strong').textContent = 'محصول شماره ' + itemCount;
     copy.querySelector('.product-select').value = '';
     copy.querySelector('.quantity').value = '1';
     copy.querySelector('.remove').style.display = 'inline-block';
-
-    copy.querySelector('.line-info').textContent =
-        'ابتدا محصول را انتخاب کنید.';
+    copy.querySelector('.line-info').textContent = 'ابتدا محصول را انتخاب کنید.';
 
     document.getElementById('items').appendChild(copy);
-
     calculate();
 }
 
 function removeItem(button) {
-
     const items = document.querySelectorAll('.item');
 
-    if (items.length <= 1) {
-        return;
-    }
+    if (items.length <= 1) return;
 
     button.closest('.item').remove();
 
     const remainingItems = document.querySelectorAll('.item');
 
     remainingItems.forEach((item, index) => {
-
-        item.querySelector('strong').textContent =
-            'محصول شماره ' + (index + 1);
-
+        item.querySelector('strong').textContent = 'محصول شماره ' + (index + 1);
         item.querySelector('.remove').style.display =
-            remainingItems.length > 1
-                ? 'inline-block'
-                : 'none';
+            remainingItems.length > 1 ? 'inline-block' : 'none';
     });
 
     itemCount = remainingItems.length;
-
     calculate();
 }
 
 function calculate() {
-
     let subtotal = 0;
 
     document.querySelectorAll('.item').forEach(item => {
-
         const select = item.querySelector('.product-select');
         const quantityInput = item.querySelector('.quantity');
         const option = select.options[select.selectedIndex];
 
         const price = Number(option?.dataset.price || 0);
         const stock = Number(option?.dataset.stock || 0);
-
-        const quantity = Math.max(
-            0,
-            Number(quantityInput.value || 0)
-        );
+        const quantity = Math.max(0, Number(quantityInput.value || 0));
 
         if (select.value) {
-
             subtotal += price * quantity;
 
             item.querySelector('.line-info').textContent =
                 'قیمت واحد: ' + formatNumber(price) +
                 ' تومان | موجودی فعلی: ' + formatNumber(stock);
-
         } else {
-
             item.querySelector('.line-info').textContent =
                 'ابتدا محصول را انتخاب کنید.';
         }
     });
 
-    const discountInput = document.getElementById('discount');
-
     const discount = Math.max(
         0,
-        Number(discountInput.value || 0)
+        Number(document.getElementById('discount').value || 0)
     );
 
-    const finalAmount = Math.max(
-        0,
-        subtotal - discount
-    );
+    const finalAmount = Math.max(0, subtotal - discount);
 
     document.getElementById('subtotal').textContent =
         formatNumber(subtotal) + ' تومان';
@@ -674,63 +516,55 @@ function calculate() {
         formatNumber(finalAmount) + ' تومان';
 }
 
-document.getElementById('saleForm').addEventListener(
-    'submit',
-    function(event) {
+document.getElementById('saleForm').addEventListener('submit', function(event) {
+    const items = document.querySelectorAll('.item');
+    let hasError = false;
 
-        const items = document.querySelectorAll('.item');
+    for (const item of items) {
+        const product = item.querySelector('.product-select').value;
+        const quantity = Number(item.querySelector('.quantity').value);
 
-        let hasError = false;
-
-        for (const item of items) {
-
-            const product = item.querySelector(
-                '.product-select'
-            ).value;
-
-            const quantity = Number(
-                item.querySelector('.quantity').value
-            );
-
-            if (
-                !product ||
-                !Number.isInteger(quantity) ||
-                quantity <= 0
-            ) {
-                hasError = true;
-                break;
-            }
-        }
-
-        const discount = Number(
-            document.getElementById('discount').value || 0
-        );
-
-        if (hasError) {
-
-            event.preventDefault();
-
-            alert(
-                'لطفاً محصول و تعداد تمام ردیف‌ها را کامل کنید یا ردیف خالی را حذف کنید.'
-            );
-
-            return;
-        }
-
-        if (!Number.isFinite(discount) || discount < 0) {
-
-            event.preventDefault();
-
-            alert('مبلغ تخفیف معتبر نیست.');
-
-            return;
-        }
-
-        if (!confirm('آیا از ثبت این فاکتور مطمئن هستید؟')) {
-            event.preventDefault();
+        if (!product || !Number.isInteger(quantity) || quantity <= 0) {
+            hasError = true;
+            break;
         }
     }
-);
+
+    const firstName = document.getElementById('customer_first_name').value.trim();
+    const lastName = document.getElementById('customer_last_name').value.trim();
+    const phone = document.getElementById('customer_phone').value.trim();
+    const nationalId = document.getElementById('customer_national_id').value.trim();
+
+    const discount = Number(document.getElementById('discount').value || 0);
+
+    if (!firstName || !lastName || !phone) {
+        event.preventDefault();
+        alert('لطفاً نام، نام خانوادگی و شماره تماس مشتری را وارد کنید.');
+        return;
+    }
+
+    if (nationalId && !/^[0-9۰-۹٠-٩]{10}$/.test(nationalId)) {
+        event.preventDefault();
+        alert('کد ملی باید دقیقاً ۱۰ رقم باشد.');
+        return;
+    }
+
+    if (hasError) {
+        event.preventDefault();
+        alert('لطفاً محصول و تعداد تمام ردیف‌ها را کامل کنید یا ردیف خالی را حذف کنید.');
+        return;
+    }
+
+    if (!Number.isFinite(discount) || discount < 0) {
+        event.preventDefault();
+        alert('مبلغ تخفیف معتبر نیست.');
+        return;
+    }
+
+    if (!confirm('آیا از ثبت این فاکتور مطمئن هستید؟')) {
+        event.preventDefault();
+    }
+});
 
 calculate();
 </script>
