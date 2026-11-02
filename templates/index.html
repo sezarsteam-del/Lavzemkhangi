@@ -244,30 +244,6 @@
         margin: 5px 0;
     }
 
-    .stock-badge {
-        display: inline-block;
-        width: fit-content;
-        padding: 4px 9px;
-        border-radius: 20px;
-        font-size: 10px;
-        margin-top: 5px;
-    }
-
-    .stock-available {
-        color: #166534;
-        background: #dcfce7;
-    }
-
-    .stock-low {
-        color: #92400e;
-        background: #fef3c7;
-    }
-
-    .stock-empty {
-        color: #991b1b;
-        background: #fee2e2;
-    }
-
     .product-bottom {
         border-top: 1px solid #edf0f5;
         margin-top: 10px;
@@ -597,19 +573,7 @@
                                 {{ "{:,}".format(product.price) }} تومان
                             </div>
 
-                            {% if product.stock <= 0 %}
-                                <span class="stock-badge stock-empty">
-                                    ناموجود
-                                </span>
-                            {% elif product.stock <= product.min_stock %}
-                                <span class="stock-badge stock-low">
-                                    موجودی محدود | {{ product.stock }} عدد
-                                </span>
-                            {% else %}
-                                <span class="stock-badge stock-available">
-                                    موجود | {{ product.stock }} عدد
-                                </span>
-                            {% endif %}
+
 
                         </div>
 
