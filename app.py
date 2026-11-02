@@ -22,7 +22,10 @@ from flask import (
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config["SECRET_KEY"] = (
+    os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+)
+
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -43,15 +46,37 @@ if not DATABASE_URL:
 # تاریخ شمسی و ساعت تهران
 # ==================================================
 
+PERSIAN_DIGITS = str.maketrans(
+    "0123456789",
+    "۰۱۲۳۴۵۶۷۸۹"
+)
+
+
+def persian_numbers(value):
+    """تبدیل اعداد انگلیسی به فارسی"""
+    if value is None:
+        return ""
+
+    return str(value).translate(PERSIAN_DIGITS)
+
+
 def tehran_now():
+    """زمان فعلی تهران"""
     return datetime.now(TEHRAN)
 
 
 def jalali_date(value, fmt=None):
+    """
+    تبدیل تاریخ میلادی به شمسی
+    پشتیبانی از datetime و date
+    تبدیل اعداد به فارسی
+    """
+
     if value is None:
         return ""
 
     if isinstance(value, datetime):
+
         if value.tzinfo is None:
             value = value.replace(tzinfo=TEHRAN)
 
@@ -62,23 +87,68 @@ def jalali_date(value, fmt=None):
             datetime=value
         )
 
-        return result.strftime(
+        output = result.strftime(
             fmt or "%Y/%m/%d %H:%M"
         )
 
-    if isinstance(value, date):
+    elif isinstance(value, date):
+
         result = jdatetime.date.fromgregorian(
             date=value
         )
 
-        return result.strftime(
+        output = result.strftime(
             fmt or "%Y/%m/%d"
         )
 
-    return value
+    else:
+        return value
 
+    return output.translate(PERSIAN_DIGITS)
+
+
+def jalali_time(value):
+    """نمایش ساعت تهران با اعداد فارسی"""
+
+    if value is None:
+        return ""
+
+    if isinstance(value, datetime):
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=TEHRAN)
+
+        value = value.astimezone(TEHRAN)
+
+        return value.strftime("%H:%M").translate(
+            PERSIAN_DIGITS
+        )
+
+    return ""
+
+
+def jalali_day(value):
+    """نمایش فقط تاریخ شمسی"""
+
+    return jalali_date(value, "%Y/%m/%d")
+
+
+def jalali_hour(value):
+    """نمایش فقط ساعت"""
+
+    return jalali_date(value, "%H:%M")
+
+
+# فیلترهای قابل استفاده در HTML
 
 app.jinja_env.filters["jalali"] = jalali_date
+app.jinja_env.filters["jalali_date"] = jalali_day
+app.jinja_env.filters["jalali_time"] = jalali_hour
+app.jinja_env.filters["persian_numbers"] = persian_numbers
+
+app.jinja_env.globals["tehran_now"] = tehran_now
+
+# تبدیل خودکار datetime و date خام در قالب‌ها
 app.jinja_env.finalize = jalali_date
 
 
@@ -104,6 +174,7 @@ _schema_lock = threading.Lock()
 
 
 def init_db():
+
     with db() as conn:
 
         conn.execute("SET TIME ZONE 'Asia/Tehran'")
@@ -222,10 +293,13 @@ def init_db():
 
 @app.before_request
 def prepare_database():
+
     global _schema_ready
 
     if not _schema_ready:
+
         with _schema_lock:
+
             if not _schema_ready:
                 init_db()
                 _schema_ready = True
@@ -236,6 +310,7 @@ def prepare_database():
 # ==================================================
 
 def csrf_token():
+
     if "_csrf" not in session:
         session["_csrf"] = secrets.token_urlsafe(32)
 
@@ -247,6 +322,7 @@ app.jinja_env.globals["csrf_token"] = csrf_token
 
 @app.before_request
 def check_csrf():
+
     if request.method == "POST":
 
         sent = (
@@ -256,7 +332,12 @@ def check_csrf():
 
         saved = session.get("_csrf", "")
 
-        if not saved or not sent or not hmac.compare_digest(sent, saved):
+        if (
+            not saved
+            or not sent
+            or not hmac.compare_digest(sent, saved)
+        ):
+
             abort(
                 400,
                 description="درخواست نامعتبر است. صفحه را تازه‌سازی کنید."
@@ -264,11 +345,14 @@ def check_csrf():
 
 
 def admin_required(view):
+
     @wraps(view)
     def wrapped(*args, **kwargs):
 
         if not session.get("admin"):
+
             flash("ابتدا وارد حساب مدیر شوید.", "error")
+
             return redirect(url_for("login"))
 
         return view(*args, **kwargs)
@@ -284,7 +368,10 @@ def admin_required(view):
 def index():
 
     q = request.args.get("q", "").strip()
-    selected_category = request.args.get("category", "").strip()
+
+    selected_category = request.args.get(
+        "category", ""
+    ).strip()
 
     with db() as conn:
 
@@ -308,6 +395,7 @@ def index():
         params = []
 
         if q:
+
             sql += """
                 AND (
                     p.name ILIKE %s
@@ -318,15 +406,22 @@ def index():
             """
 
             term = f"%{q}%"
-            params.extend([term, term, term, term])
+
+            params.extend([
+                term, term, term, term
+            ])
 
         if selected_category.isdigit():
+
             sql += " AND p.category_id = %s"
+
             params.append(int(selected_category))
 
         sql += " ORDER BY p.created_at DESC"
 
-        products = conn.execute(sql, params).fetchall()
+        products = conn.execute(
+            sql, params
+        ).fetchall()
 
     return render_template(
         "index.html",
@@ -358,19 +453,27 @@ def login():
 
         password_ok = (
             bool(ADMIN_PASSWORD)
-            and hmac.compare_digest(password, ADMIN_PASSWORD)
+            and hmac.compare_digest(
+                password, ADMIN_PASSWORD
+            )
         )
 
         if username_ok and password_ok:
 
             session.clear()
+
             session["admin"] = True
+
             session["_csrf"] = secrets.token_urlsafe(32)
 
             flash("با موفقیت وارد شدید.", "success")
+
             return redirect(url_for("admin"))
 
-        flash("نام کاربری یا رمز عبور اشتباه است.", "error")
+        flash(
+            "نام کاربری یا رمز عبور اشتباه است.",
+            "error"
+        )
 
     return render_template("login.html")
 
@@ -382,6 +485,7 @@ def logout():
     session.clear()
 
     flash("از حساب مدیر خارج شدید.", "success")
+
     return redirect(url_for("login"))
 
 
@@ -402,7 +506,8 @@ def admin():
                 COUNT(p.id) AS product_count
             FROM categories c
             LEFT JOIN products p
-                ON p.category_id = c.id AND p.is_active = TRUE
+                ON p.category_id = c.id
+                AND p.is_active = TRUE
             GROUP BY c.id
             ORDER BY c.name
         """).fetchall()
@@ -420,7 +525,9 @@ def admin():
         """).fetchall()
 
         brands = conn.execute("""
-            SELECT * FROM brands ORDER BY name
+            SELECT *
+            FROM brands
+            ORDER BY name
         """).fetchall()
 
         stats = conn.execute("""
@@ -466,11 +573,15 @@ def add_category():
     name = request.form.get("name", "").strip()
 
     if not name:
+
         flash("نام دسته‌بندی را وارد کنید.", "error")
+
         return redirect(url_for("admin"))
 
     try:
+
         with db() as conn:
+
             conn.execute(
                 "INSERT INTO categories (name) VALUES (%s)",
                 (name,)
@@ -479,37 +590,62 @@ def add_category():
         flash("دسته‌بندی اضافه شد.", "success")
 
     except psycopg.errors.UniqueViolation:
-        flash("این دسته‌بندی قبلاً ثبت شده است.", "error")
+
+        flash(
+            "این دسته‌بندی قبلاً ثبت شده است.",
+            "error"
+        )
 
     return redirect(url_for("admin"))
 
 
-@app.route("/admin/category/<int:category_id>/edit", methods=["POST"])
+@app.route(
+    "/admin/category/<int:category_id>/edit",
+    methods=["POST"]
+)
 @admin_required
 def edit_category(category_id):
 
     name = request.form.get("name", "").strip()
 
     if not name:
-        flash("نام دسته‌بندی نمی‌تواند خالی باشد.", "error")
+
+        flash(
+            "نام دسته‌بندی نمی‌تواند خالی باشد.",
+            "error"
+        )
+
         return redirect(url_for("admin"))
 
     try:
+
         with db() as conn:
+
             conn.execute(
-                "UPDATE categories SET name = %s WHERE id = %s",
+                """
+                UPDATE categories
+                SET name = %s
+                WHERE id = %s
+                """,
                 (name, category_id)
             )
 
         flash("دسته‌بندی ویرایش شد.", "success")
 
     except psycopg.errors.UniqueViolation:
-        flash("این نام قبلاً استفاده شده است.", "error")
+
+        flash(
+            "این نام قبلاً استفاده شده است.",
+            "error"
+        )
 
     return redirect(url_for("admin"))
 
 
-@app.route("/admin/category/<int:category_id>/delete", methods=["POST"])
+@app.route(
+    "/admin/category/<int:category_id>/delete",
+    methods=["POST"]
+)
 @admin_required
 def delete_category(category_id):
 
@@ -518,21 +654,28 @@ def delete_category(category_id):
         count = conn.execute("""
             SELECT COUNT(*) AS total
             FROM products
-            WHERE category_id = %s AND is_active = TRUE
+            WHERE category_id = %s
+              AND is_active = TRUE
         """, (category_id,)).fetchone()["total"]
 
         if count:
+
             flash(
                 "ابتدا محصولات این دسته‌بندی را منتقل کنید.",
                 "error"
             )
+
         else:
+
             conn.execute(
                 "DELETE FROM categories WHERE id = %s",
                 (category_id,)
             )
 
-            flash("دسته‌بندی حذف شد.", "success")
+            flash(
+                "دسته‌بندی حذف شد.",
+                "success"
+            )
 
     return redirect(url_for("admin"))
 
@@ -546,97 +689,200 @@ def delete_category(category_id):
 def add_product():
 
     name = request.form.get("name", "").strip()
-    description = request.form.get("description", "").strip()
-    image_url = request.form.get("image_url", "").strip() or None
+
+    description = request.form.get(
+        "description", ""
+    ).strip()
+
+    image_url = (
+        request.form.get("image_url", "").strip() or None
+    )
 
     try:
 
-        category_id = int(request.form.get("category_id", ""))
-        price = int(request.form.get("price", "0"))
-        stock = int(request.form.get("stock", "0"))
-        min_stock = int(request.form.get("min_stock", "2"))
+        category_id = int(
+            request.form.get("category_id", "")
+        )
 
-        brand_value = request.form.get("brand_id", "").strip()
-        brand_id = int(brand_value) if brand_value.isdigit() else None
+        price = int(
+            request.form.get("price", "0")
+        )
 
-        if not name or price < 0 or stock < 0 or min_stock < 0:
+        stock = int(
+            request.form.get("stock", "0")
+        )
+
+        min_stock = int(
+            request.form.get("min_stock", "2")
+        )
+
+        brand_value = request.form.get(
+            "brand_id", ""
+        ).strip()
+
+        brand_id = (
+            int(brand_value)
+            if brand_value.isdigit()
+            else None
+        )
+
+        if (
+            not name
+            or price < 0
+            or stock < 0
+            or min_stock < 0
+        ):
             raise ValueError
 
         with db() as conn:
+
             conn.execute("""
                 INSERT INTO products
-                    (name, category_id, brand_id, description,
-                     price, image_url, stock, min_stock)
+                    (
+                        name,
+                        category_id,
+                        brand_id,
+                        description,
+                        price,
+                        image_url,
+                        stock,
+                        min_stock
+                    )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                name, category_id, brand_id, description,
-                price, image_url, stock, min_stock
+                name,
+                category_id,
+                brand_id,
+                description,
+                price,
+                image_url,
+                stock,
+                min_stock
             ))
 
-        flash("محصول با موفقیت ثبت شد.", "success")
+        flash(
+            "محصول با موفقیت ثبت شد.",
+            "success"
+        )
 
     except (ValueError, TypeError):
-        flash("اطلاعات محصول معتبر نیست.", "error")
+
+        flash(
+            "اطلاعات محصول معتبر نیست.",
+            "error"
+        )
 
     return redirect(url_for("admin"))
 
 
-@app.route("/admin/product/<int:product_id>/edit", methods=["POST"])
+@app.route(
+    "/admin/product/<int:product_id>/edit",
+    methods=["POST"]
+)
 @admin_required
 def edit_product(product_id):
 
     try:
 
         name = request.form.get("name", "").strip()
-        category_id = int(request.form.get("category_id", ""))
-        price = int(request.form.get("price", "0"))
-        min_stock = int(request.form.get("min_stock", "2"))
 
-        brand_value = request.form.get("brand_id", "").strip()
-        brand_id = int(brand_value) if brand_value.isdigit() else None
+        category_id = int(
+            request.form.get("category_id", "")
+        )
 
-        description = request.form.get("description", "").strip()
-        image_url = request.form.get("image_url", "").strip() or None
+        price = int(
+            request.form.get("price", "0")
+        )
 
-        if not name or price < 0 or min_stock < 0:
+        min_stock = int(
+            request.form.get("min_stock", "2")
+        )
+
+        brand_value = request.form.get(
+            "brand_id", ""
+        ).strip()
+
+        brand_id = (
+            int(brand_value)
+            if brand_value.isdigit()
+            else None
+        )
+
+        description = request.form.get(
+            "description", ""
+        ).strip()
+
+        image_url = (
+            request.form.get("image_url", "").strip() or None
+        )
+
+        if (
+            not name
+            or price < 0
+            or min_stock < 0
+        ):
             raise ValueError
 
         with db() as conn:
+
             conn.execute("""
                 UPDATE products
-                SET name = %s,
+                SET
+                    name = %s,
                     category_id = %s,
                     brand_id = %s,
                     price = %s,
                     min_stock = %s,
                     description = %s,
                     image_url = %s
-                WHERE id = %s AND is_active = TRUE
+                WHERE id = %s
+                  AND is_active = TRUE
             """, (
-                name, category_id, brand_id, price,
-                min_stock, description, image_url, product_id
+                name,
+                category_id,
+                brand_id,
+                price,
+                min_stock,
+                description,
+                image_url,
+                product_id
             ))
 
-        flash("محصول ویرایش شد.", "success")
+        flash(
+            "محصول ویرایش شد.",
+            "success"
+        )
 
     except (ValueError, TypeError):
-        flash("اطلاعات واردشده معتبر نیست.", "error")
+
+        flash(
+            "اطلاعات واردشده معتبر نیست.",
+            "error"
+        )
 
     return redirect(url_for("admin"))
 
 
-@app.route("/admin/product/<int:product_id>/delete", methods=["POST"])
+@app.route(
+    "/admin/product/<int:product_id>/delete",
+    methods=["POST"]
+)
 @admin_required
 def delete_product(product_id):
 
     with db() as conn:
+
         conn.execute("""
             UPDATE products
             SET is_active = FALSE
             WHERE id = %s
         """, (product_id,))
 
-    flash("محصول از فهرست فعال خارج شد.", "success")
+    flash(
+        "محصول از فهرست فعال خارج شد.",
+        "success"
+    )
+
     return redirect(url_for("admin"))
 
 
@@ -651,35 +897,57 @@ def add_brand():
     name = request.form.get("name", "").strip()
 
     if not name:
-        flash("نام برند را وارد کنید.", "error")
+
+        flash(
+            "نام برند را وارد کنید.",
+            "error"
+        )
+
         return redirect(url_for("admin"))
 
     try:
+
         with db() as conn:
+
             conn.execute(
                 "INSERT INTO brands (name) VALUES (%s)",
                 (name,)
             )
 
-        flash("برند اضافه شد.", "success")
+        flash(
+            "برند اضافه شد.",
+            "success"
+        )
 
     except psycopg.errors.UniqueViolation:
-        flash("این برند قبلاً ثبت شده است.", "error")
+
+        flash(
+            "این برند قبلاً ثبت شده است.",
+            "error"
+        )
 
     return redirect(url_for("admin"))
 
 
-@app.route("/admin/brand/<int:brand_id>/delete", methods=["POST"])
+@app.route(
+    "/admin/brand/<int:brand_id>/delete",
+    methods=["POST"]
+)
 @admin_required
 def delete_brand(brand_id):
 
     with db() as conn:
+
         conn.execute(
             "DELETE FROM brands WHERE id = %s",
             (brand_id,)
         )
 
-    flash("برند حذف شد.", "success")
+    flash(
+        "برند حذف شد.",
+        "success"
+    )
+
     return redirect(url_for("admin"))
 
 
@@ -687,7 +955,10 @@ def delete_brand(brand_id):
 # انبار
 # ==================================================
 
-@app.route("/admin/inventory", methods=["GET", "POST"])
+@app.route(
+    "/admin/inventory",
+    methods=["GET", "POST"]
+)
 @admin_required
 def inventory():
 
@@ -695,15 +966,30 @@ def inventory():
 
         try:
 
-            product_id = int(request.form.get("product_id", ""))
-            movement_type = request.form.get("movement_type", "")
-            quantity = int(request.form.get("quantity", "0"))
-            note = request.form.get("note", "").strip()
+            product_id = int(
+                request.form.get("product_id", "")
+            )
+
+            movement_type = request.form.get(
+                "movement_type", ""
+            )
+
+            quantity = int(
+                request.form.get("quantity", "0")
+            )
+
+            note = request.form.get(
+                "note", ""
+            ).strip()
 
             if quantity <= 0:
                 raise ValueError
 
-            if movement_type not in ("in", "out", "adjustment"):
+            if movement_type not in (
+                "in",
+                "out",
+                "adjustment"
+            ):
                 raise ValueError
 
             with db() as conn:
@@ -711,47 +997,72 @@ def inventory():
                 product = conn.execute("""
                     SELECT id, stock
                     FROM products
-                    WHERE id = %s AND is_active = TRUE
+                    WHERE id = %s
+                      AND is_active = TRUE
                     FOR UPDATE
                 """, (product_id,)).fetchone()
 
                 if not product:
-                    flash("محصول پیدا نشد.", "error")
-                    return redirect(url_for("inventory"))
+
+                    flash(
+                        "محصول پیدا نشد.",
+                        "error"
+                    )
+
+                    return redirect(
+                        url_for("inventory")
+                    )
 
                 old_stock = product["stock"]
 
                 if movement_type == "in":
 
                     new_stock = old_stock + quantity
+
                     movement_quantity = quantity
 
                 elif movement_type == "out":
 
                     if quantity > old_stock:
+
                         flash(
                             "موجودی برای این خروج کافی نیست.",
                             "error"
                         )
-                        return redirect(url_for("inventory"))
+
+                        return redirect(
+                            url_for("inventory")
+                        )
 
                     new_stock = old_stock - quantity
+
                     movement_quantity = quantity
 
                 else:
 
                     new_stock = quantity
-                    movement_quantity = new_stock - old_stock
+
+                    movement_quantity = (
+                        new_stock - old_stock
+                    )
 
                 conn.execute("""
                     UPDATE products
                     SET stock = %s
                     WHERE id = %s
-                """, (new_stock, product_id))
+                """, (
+                    new_stock,
+                    product_id
+                ))
 
                 conn.execute("""
                     INSERT INTO stock_movements
-                        (product_id, movement_type, quantity, note)
+                        (
+                            product_id,
+                            movement_type,
+                            quantity,
+                            note
+                        )
                     VALUES (%s, %s, %s, %s)
                 """, (
                     product_id,
@@ -760,17 +1071,28 @@ def inventory():
                     note
                 ))
 
-            flash("تغییر موجودی ثبت شد.", "success")
+            flash(
+                "تغییر موجودی ثبت شد.",
+                "success"
+            )
 
         except (ValueError, TypeError):
-            flash("اطلاعات ورود یا خروج معتبر نیست.", "error")
+
+            flash(
+                "اطلاعات ورود یا خروج معتبر نیست.",
+                "error"
+            )
 
         return redirect(url_for("inventory"))
 
     with db() as conn:
 
         products = conn.execute("""
-            SELECT id, name, stock, min_stock
+            SELECT
+                id,
+                name,
+                stock,
+                min_stock
             FROM products
             WHERE is_active = TRUE
             ORDER BY name
@@ -797,33 +1119,53 @@ def inventory():
 # دفتر فروش
 # ==================================================
 
-@app.route("/admin/sales", methods=["GET", "POST"])
+@app.route(
+    "/admin/sales",
+    methods=["GET", "POST"]
+)
 @admin_required
 def sales():
 
     if request.method == "POST":
 
-        product_ids = request.form.getlist("product_id")
-        quantities = request.form.getlist("quantity")
+        product_ids = request.form.getlist(
+            "product_id"
+        )
 
-        discount_text = request.form.get("discount", "0").strip()
-        description = request.form.get("description", "").strip()
+        quantities = request.form.getlist(
+            "quantity"
+        )
+
+        discount_text = request.form.get(
+            "discount", "0"
+        ).strip()
+
+        description = request.form.get(
+            "description", ""
+        ).strip()
 
         try:
 
             discount = int(discount_text)
 
             if discount < 0:
-                raise ValueError("مبلغ تخفیف معتبر نیست.")
+
+                raise ValueError(
+                    "مبلغ تخفیف معتبر نیست."
+                )
 
             if len(product_ids) != len(quantities):
+
                 raise ValueError(
                     "اطلاعات ردیف‌های فاکتور ناقص است."
                 )
 
             grouped_items = {}
 
-            for raw_pid, raw_qty in zip(product_ids, quantities):
+            for raw_pid, raw_qty in zip(
+                product_ids,
+                quantities
+            ):
 
                 raw_pid = raw_pid.strip()
                 raw_qty = raw_qty.strip()
@@ -832,6 +1174,7 @@ def sales():
                     continue
 
                 if not raw_pid or not raw_qty:
+
                     raise ValueError(
                         "برای هر ردیف فاکتور، محصول و تعداد را وارد کنید."
                     )
@@ -840,6 +1183,7 @@ def sales():
                 qty = int(raw_qty)
 
                 if pid <= 0 or qty <= 0:
+
                     raise ValueError(
                         "محصول یا تعداد معتبر نیست."
                     )
@@ -849,6 +1193,7 @@ def sales():
                 )
 
             if not grouped_items:
+
                 raise ValueError(
                     "حداقل یک محصول به فاکتور اضافه کنید."
                 )
@@ -860,16 +1205,24 @@ def sales():
 
                 locked_products = {}
 
-                for pid in sorted(grouped_items.keys()):
+                for pid in sorted(
+                    grouped_items.keys()
+                ):
 
                     product = conn.execute("""
-                        SELECT id, name, price, stock
+                        SELECT
+                            id,
+                            name,
+                            price,
+                            stock
                         FROM products
-                        WHERE id = %s AND is_active = TRUE
+                        WHERE id = %s
+                          AND is_active = TRUE
                         FOR UPDATE
                     """, (pid,)).fetchone()
 
                     if not product:
+
                         raise ValueError(
                             f"محصول با شناسه {pid} پیدا نشد."
                         )
@@ -877,6 +1230,7 @@ def sales():
                     requested_qty = grouped_items[pid]
 
                     if product["stock"] < requested_qty:
+
                         raise ValueError(
                             f"موجودی محصول «{product['name']}» کافی نیست. "
                             f"موجودی فعلی: {product['stock']}، "
@@ -889,7 +1243,10 @@ def sales():
 
                     product = locked_products[pid]
 
-                    line_total = product["price"] * requested_qty
+                    line_total = (
+                        product["price"] * requested_qty
+                    )
+
                     total_amount += line_total
 
                     items.append({
@@ -901,15 +1258,23 @@ def sales():
                     })
 
                 if discount > total_amount:
+
                     raise ValueError(
                         "تخفیف نمی‌تواند از مبلغ کل فاکتور بیشتر باشد."
                     )
 
-                final_amount = total_amount - discount
+                final_amount = (
+                    total_amount - discount
+                )
 
                 sale = conn.execute("""
                     INSERT INTO sales
-                        (total_amount, discount, final_amount, description)
+                        (
+                            total_amount,
+                            discount,
+                            final_amount,
+                            description
+                        )
                     VALUES (%s, %s, %s, %s)
                     RETURNING id, invoice_number
                 """, (
@@ -923,8 +1288,13 @@ def sales():
 
                     conn.execute("""
                         INSERT INTO sale_items
-                            (sale_id, product_id, quantity,
-                             unit_price, line_total)
+                            (
+                                sale_id,
+                                product_id,
+                                quantity,
+                                unit_price,
+                                line_total
+                            )
                         VALUES (%s, %s, %s, %s, %s)
                     """, (
                         sale["id"],
@@ -945,7 +1315,12 @@ def sales():
 
                     conn.execute("""
                         INSERT INTO stock_movements
-                            (product_id, movement_type, quantity, note)
+                            (
+                                product_id,
+                                movement_type,
+                                quantity,
+                                note
+                            )
                         VALUES (%s, 'sale', %s, %s)
                     """, (
                         item["id"],
@@ -970,7 +1345,11 @@ def sales():
     with db() as conn:
 
         products = conn.execute("""
-            SELECT id, name, price, stock
+            SELECT
+                id,
+                name,
+                price,
+                stock
             FROM products
             WHERE is_active = TRUE
             ORDER BY name
@@ -1029,7 +1408,10 @@ def sale_detail(sale_id):
 # لغو فاکتور و بازگشت موجودی
 # ==================================================
 
-@app.route("/admin/sales/<int:sale_id>/cancel", methods=["POST"])
+@app.route(
+    "/admin/sales/<int:sale_id>/cancel",
+    methods=["POST"]
+)
 @admin_required
 def cancel_sale(sale_id):
 
@@ -1046,11 +1428,18 @@ def cancel_sale(sale_id):
             abort(404)
 
         if sale["status"] == "cancelled":
-            flash("این فاکتور قبلاً لغو شده است.", "error")
+
+            flash(
+                "این فاکتور قبلاً لغو شده است.",
+                "error"
+            )
+
             return redirect(url_for("sales"))
 
         items = conn.execute("""
-            SELECT product_id, quantity
+            SELECT
+                product_id,
+                quantity
             FROM sale_items
             WHERE sale_id = %s
             ORDER BY product_id
@@ -1069,7 +1458,12 @@ def cancel_sale(sale_id):
 
             conn.execute("""
                 INSERT INTO stock_movements
-                    (product_id, movement_type, quantity, note)
+                    (
+                        product_id,
+                        movement_type,
+                        quantity,
+                        note
+                    )
                 VALUES (%s, 'return', %s, %s)
             """, (
                 item["product_id"],
@@ -1111,7 +1505,8 @@ def reports():
 
         daily = conn.execute("""
             SELECT
-                (created_at AT TIME ZONE 'Asia/Tehran')::date AS sale_date,
+                (created_at AT TIME ZONE 'Asia/Tehran')::date
+                    AS sale_date,
                 COUNT(*) AS invoice_count,
                 SUM(final_amount) AS total
             FROM sales
