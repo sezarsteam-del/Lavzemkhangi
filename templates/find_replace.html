@@ -1,62 +1,169 @@
 
-
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" dir="rtl" style="max-width:1100px;margin:30px auto;padding:20px;color:#222">
+<style>
+.find-page {
+    direction: rtl;
+    max-width: 1100px;
+    margin: 25px auto;
+    padding: 20px;
+    color: var(--text, #222);
+}
+.find-card {
+    background: var(--card, #fff);
+    border: 1px solid var(--border, #ddd);
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 20px;
+}
+.find-page h2, .find-page h3 { margin-top: 0; }
+.find-page label {
+    display: block;
+    margin: 12px 0 6px;
+}
+.find-page input[type="text"],
+.find-page select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid #bbb;
+    border-radius: 9px;
+    font: inherit;
+    margin-bottom: 10px;
+}
+.find-page button {
+    border: 0;
+    border-radius: 9px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font: inherit;
+    margin-top: 10px;
+}
+.find-search-btn { background: #2563eb; color: white; }
+.find-apply-btn { background: #15803d; color: white; }
+.find-item {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    margin: 10px 0 !important;
+    border: 1px solid var(--border, #ddd);
+    border-radius: 10px;
+    background: var(--bg, #f8fafc);
+    overflow-wrap: anywhere;
+}
+.find-item input { margin-top: 5px; }
+.find-old-value { white-space: pre-wrap; }
+.find-muted { color: #777; font-size: 13px; }
+.find-alert {
+    padding: 12px;
+    border-radius: 9px;
+    background: #fff3cd;
+    color: #664d03;
+    margin: 12px 0;
+}
+</style>
 
-    <h2>🔎 جستجو و جایگزینی اطلاعات</h2>
-    <p>عبارت موردنظر را جستجو کن و موارد دلخواه را برای جایگزینی انتخاب کن.</p>
+<div class="find-page">
 
-    <form method="POST">
-        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <div class="find-card">
+        <h2>🔎 جستجو و جایگزینی اطلاعات</h2>
+        <p class="find-muted">
+            ابتدا عبارت را جستجو کن؛ سپس موارد موردنظرت را انتخاب کن.
+        </p>
 
-        <label>محل جستجو</label>
-        <select name="scope" required>
-            <option value="product_name">نام محصولات</option>
-            <option value="product_description">توضیحات محصولات</option>
-            <option value="category_name">نام دسته‌بندی‌ها</option>
-            <option value="brand_name">نام برندها</option>
-        </select>
+        <form method="POST">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
-        <label>عبارت جستجو</label>
-        <input type="text" name="term" value="{{ term or '' }}" required>
+            <label>محل جستجو</label>
+            <select name="scope">
+                <option value="product_name" {% if scope == 'product_name' %}selected{% endif %}>نام محصولات</option>
+                <option value="product_description" {% if scope == 'product_description' %}selected{% endif %}>توضیحات محصولات</option>
+                <option value="category_name" {% if scope == 'category_name' %}selected{% endif %}>نام دسته‌بندی‌ها</option>
+                <option value="brand_name" {% if scope == 'brand_name' %}selected{% endif %}>نام برندها</option>
+            </select>
 
-        <label>عبارت جایگزین</label>
-        <input type="text" name="replacement" value="{{ replacement or '' }}" required>
+            <label>عبارت مورد جستجو</label>
+            <input
+                type="text"
+                name="term"
+                value="{{ term }}"
+                placeholder="عبارتی که می‌خواهی پیدا شود"
+                required
+            >
 
-        <button type="submit" name="action" value="search">جستجو</button>
-    </form>
+            <label>عبارت جایگزین</label>
+            <input
+                type="text"
+                name="replacement"
+                value="{{ replacement }}"
+                placeholder="عبارت جدید"
+                required
+            >
 
-    {% if results is defined and results %}
-    <hr>
-    <h3>نتایج جستجو: {{ count }}</h3>
+            <button class="find-search-btn" type="submit" name="action" value="search">
+                🔍 جستجو
+            </button>
+        </form>
+    </div>
 
-    <form method="POST">
-        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-        <input type="hidden" name="scope" value="{{ scope }}">
-        <input type="hidden" name="term" value="{{ term }}">
-        <input type="hidden" name="replacement" value="{{ replacement }}">
+    {% if term %}
+    <div class="find-card">
+        <h3>نتایج جستجو</h3>
 
-        <p>موارد موردنظر را انتخاب کن:</p>
+        <p>
+            تعداد موارد پیدا شده:
+            <strong>{{ total_found }}</strong>
+        </p>
 
-        {% for item in results %}
-        <label style="display:block;padding:12px;margin:8px 0;background:#f3f4f6;border-radius:8px">
-            <input type="checkbox" name="ids" value="{{ item.id }}">
-            <strong>{{ item.name }}</strong>
-            {% if item.description is defined and item.description %}
-                <br>{{ item.description }}
+        {% if results %}
+            {% if total_found > 200 %}
+                <div class="find-alert">
+                    فقط ۲۰۰ نتیجه اول نمایش داده شده‌اند.
+                    برای جلوگیری از تغییر ناخواسته، بقیه موارد در این مرحله انتخاب‌پذیر نیستند.
+                </div>
             {% endif %}
-        </label>
-        {% endfor %}
 
-        <button type="submit" name="action" value="apply"
-                onclick="return confirm('آیا از جایگزینی موارد انتخاب‌شده مطمئن هستی؟')">
-            جایگزینی موارد انتخاب‌شده
-        </button>
-    </form>
-    {% elif results is defined %}
-        <p>نتیجه‌ای پیدا نشد.</p>
+            <form method="POST">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <input type="hidden" name="scope" value="{{ scope }}">
+                <input type="hidden" name="term" value="{{ term }}">
+                <input type="hidden" name="replacement" value="{{ replacement }}">
+
+                <p class="find-muted">
+                    مواردی را که می‌خواهی تغییر کنند انتخاب کن:
+                </p>
+
+                {% for item in results %}
+                    <label class="find-item">
+                        <input
+                            type="checkbox"
+                            name="selected_ids"
+                            value="{{ item.id }}"
+                        >
+                        <span>
+                            <strong>شناسه: {{ item.id }}</strong>
+                            <br>
+                            <span class="find-old-value">{{ item.old_value }}</span>
+                        </span>
+                    </label>
+                {% endfor %}
+
+                <button
+                    class="find-apply-btn"
+                    type="submit"
+                    name="action"
+                    value="apply"
+                    onclick="return confirm('فقط موارد انتخاب‌شده تغییر می‌کنند. ادامه می‌دهی؟')"
+                >
+                    ✔ جایگزینی موارد انتخاب‌شده
+                </button>
+            </form>
+        {% else %}
+            <p>هیچ نتیجه‌ای پیدا نشد.</p>
+        {% endif %}
+    </div>
     {% endif %}
 
 </div>
