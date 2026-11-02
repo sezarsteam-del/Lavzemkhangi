@@ -1,3 +1,4 @@
+
 import os
 import hmac
 import secrets
@@ -555,9 +556,6 @@ def admin():
 @admin_required
 def find_replace():
 
-    # فقط این جدول‌ها و ستون‌ها اجازه تغییر دارند.
-    # نام جدول و ستون از ورودی کاربر گرفته نمی‌شود.
-
     allowed_scopes = {
         "product_name": (
             "products", "name", "نام محصول"
@@ -585,10 +583,6 @@ def find_replace():
     results = []
     total_found = 0
 
-    # ----------------------------------------------
-    # اعمال جایگزینی روی موارد انتخاب‌شده
-    # ----------------------------------------------
-
     if (
         request.method == "POST"
         and request.form.get("action") == "apply"
@@ -613,8 +607,6 @@ def find_replace():
         else:
 
             try:
-
-                # اعتبارسنجی کامل شناسه‌ها
 
                 if any(
                     not item.isdigit()
@@ -705,10 +697,6 @@ def find_replace():
             replacement=replacement,
             scope=scope
         ))
-
-    # ----------------------------------------------
-    # جست‌وجو و نمایش پیش‌نمایش
-    # ----------------------------------------------
 
     if term:
 
@@ -840,13 +828,12 @@ def delete_category(category_id):
             SELECT COUNT(*) AS total
             FROM products
             WHERE category_id = %s
-              AND is_active = TRUE
         """, (category_id,)).fetchone()["total"]
 
         if count:
 
             flash(
-                "ابتدا محصولات این دسته‌بندی را منتقل کنید.",
+                "ابتدا محصولات این دسته‌بندی را به دسته دیگری منتقل کنید.",
                 "error"
             )
 
@@ -869,10 +856,34 @@ def delete_category(category_id):
 # محصولات
 # ==================================================
 
-@app.route("/admin/product/add", methods=["POST"])
+@app.route("/admin/product/add", methods=["GET", "POST"])
 @admin_required
 def add_product():
 
+    # نمایش صفحه مستقل افزودن محصول
+    if request.method == "GET":
+
+        with db() as conn:
+
+            categories = conn.execute("""
+                SELECT id, name
+                FROM categories
+                ORDER BY name
+            """).fetchall()
+
+            brands = conn.execute("""
+                SELECT id, name
+                FROM brands
+                ORDER BY name
+            """).fetchall()
+
+        return render_template(
+            "add_product.html",
+            categories=categories,
+            brands=brands
+        )
+
+    # ثبت محصول جدید
     name = request.form.get("name", "").strip()
 
     description = request.form.get(
@@ -916,10 +927,43 @@ def add_product():
             or price < 0
             or stock < 0
             or min_stock < 0
+            or category_id <= 0
         ):
             raise ValueError
 
         with db() as conn:
+
+            category = conn.execute("""
+                SELECT id
+                FROM categories
+                WHERE id = %s
+            """, (category_id,)).fetchone()
+
+            if not category:
+
+                flash(
+                    "دسته‌بندی انتخاب‌شده معتبر نیست.",
+                    "error"
+                )
+
+                return redirect(url_for("add_product"))
+
+            if brand_id is not None:
+
+                brand = conn.execute("""
+                    SELECT id
+                    FROM brands
+                    WHERE id = %s
+                """, (brand_id,)).fetchone()
+
+                if not brand:
+
+                    flash(
+                        "برند انتخاب‌شده معتبر نیست.",
+                        "error"
+                    )
+
+                    return redirect(url_for("add_product"))
 
             conn.execute("""
                 INSERT INTO products
@@ -950,6 +994,8 @@ def add_product():
             "success"
         )
 
+        return redirect(url_for("admin"))
+
     except (ValueError, TypeError):
 
         flash(
@@ -957,7 +1003,25 @@ def add_product():
             "error"
         )
 
-    return redirect(url_for("admin"))
+        return redirect(url_for("add_product"))
+
+    except psycopg.errors.UniqueViolation:
+
+        flash(
+            "اطلاعات تکراری است.",
+            "error"
+        )
+
+        return redirect(url_for("add_product"))
+
+    except psycopg.errors.ForeignKeyViolation:
+
+        flash(
+            "دسته‌بندی یا برند انتخاب‌شده معتبر نیست.",
+            "error"
+        )
+
+        return redirect(url_for("add_product"))
 
 
 @app.route(
@@ -1689,9 +1753,6 @@ def delete_sale(sale_id):
             WHERE sale_id = %s
             ORDER BY product_id
         """, (sale_id,)).fetchall()
-
-        # فقط فاکتور تکمیل‌شده باعث برگشت موجودی می‌شود.
-        # فاکتور لغوشده قبلاً موجودی را برگردانده است.
 
         if sale["status"] == "completed":
 
