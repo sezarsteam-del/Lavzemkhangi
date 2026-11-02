@@ -1,0 +1,325 @@
+
+{% extends "base.html" %}
+
+{% block title %}افزودن محصول | همراه‌یار{% endblock %}
+
+{% block head %}
+<style>
+.add-product-page {
+    padding: 10px 0 30px;
+}
+
+.page-heading {
+    margin-bottom: 22px;
+}
+
+.page-heading h1 {
+    margin: 0 0 7px;
+    font-size: 24px;
+    color: #111827;
+}
+
+.muted {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.panel {
+    background: white;
+    border: 1px solid #e5eaf1;
+    border-radius: 15px;
+    padding: 22px;
+    margin-bottom: 20px;
+}
+
+.panel h2 {
+    font-size: 18px;
+    margin: 0 0 18px;
+    color: #111827;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 45px;
+    padding: 10px 12px;
+    border: 1px solid #dbe2ea;
+    border-radius: 9px;
+    background: white;
+    color: #111827;
+    font: inherit;
+    font-size: 14px;
+}
+
+.field textarea {
+    min-height: 115px;
+    resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .08);
+}
+
+.field-full {
+    grid-column: 1 / -1;
+}
+
+.required-mark {
+    color: #dc2626;
+}
+
+.form-hint {
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 13px;
+    border-radius: 9px;
+    margin-top: 18px;
+    font-size: 13px;
+    line-height: 1.9;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.submit-btn,
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 11px 20px;
+    border: 0;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.submit-btn {
+    background: #2563eb;
+    color: white;
+}
+
+.submit-btn:hover {
+    background: #1d4ed8;
+}
+
+.back-btn {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.back-btn:hover {
+    background: #e2e8f0;
+}
+
+@media (max-width: 600px) {
+    .page-heading h1 {
+        font-size: 21px;
+    }
+
+    .panel {
+        padding: 15px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .field-full {
+        grid-column: auto;
+    }
+
+    .form-actions > * {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="add-product-page">
+
+    <header class="page-heading">
+        <h1>افزودن محصول جدید</h1>
+        <p class="muted">
+            اطلاعات محصول را وارد کنید تا به فهرست محصولات فروشگاه اضافه شود.
+        </p>
+    </header>
+
+    <section class="panel">
+
+        <h2>اطلاعات محصول</h2>
+
+        <form action="{{ url_for('add_product') }}" method="POST">
+
+            <input
+                type="hidden"
+                name="_csrf"
+                value="{{ csrf_token() }}"
+            >
+
+            <div class="form-grid">
+
+                <div class="field">
+                    <label for="name">
+                        نام محصول <span class="required-mark">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="مثلاً یخچال فریزر"
+                        required
+                        maxlength="200"
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="category_id">
+                        دسته‌بندی <span class="required-mark">*</span>
+                    </label>
+                    <select id="category_id" name="category_id" required>
+                        <option value="">انتخاب دسته‌بندی</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">
+                                {{ category.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="brand_id">برند</label>
+                    <select id="brand_id" name="brand_id">
+                        <option value="">بدون برند</option>
+                        {% for brand in brands %}
+                            <option value="{{ brand.id }}">
+                                {{ brand.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="price">
+                        قیمت <span class="required-mark">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        id="price"
+                        name="price"
+                        min="0"
+                        step="1"
+                        placeholder="قیمت به تومان"
+                        required
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="stock">
+                        موجودی اولیه <span class="required-mark">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        id="stock"
+                        name="stock"
+                        min="0"
+                        step="1"
+                        value="0"
+                        required
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="min_stock">حداقل موجودی</label>
+                    <input
+                        type="number"
+                        id="min_stock"
+                        name="min_stock"
+                        min="0"
+                        step="1"
+                        value="2"
+                    >
+                </div>
+
+                <div class="field field-full">
+                    <label for="image_url">لینک تصویر محصول</label>
+                    <input
+                        type="url"
+                        id="image_url"
+                        name="image_url"
+                        placeholder="https://example.com/image.jpg"
+                    >
+                    <span class="muted">
+                        لینک مستقیم تصویر محصول را وارد کنید.
+                    </span>
+                </div>
+
+                <div class="field field-full">
+                    <label for="description">توضیحات محصول</label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        placeholder="مشخصات و توضیحات محصول را وارد کنید..."
+                    ></textarea>
+                </div>
+
+            </div>
+
+            <div class="form-hint">
+                توجه: موجودی واردشده در این فرم، موجودی اولیه محصول است.
+                برای ثبت ورود، خروج یا اصلاح موجودی در آینده از بخش
+                «مدیریت انبار» استفاده کنید.
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">
+                    ثبت محصول
+                </button>
+
+                <a href="{{ url_for('admin') }}" class="back-btn">
+                    بازگشت به داشبورد
+                </a>
+            </div>
+
+        </form>
+
+    </section>
+
+</div>
+
+{% endblock %}
