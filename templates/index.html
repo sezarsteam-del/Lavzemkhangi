@@ -1,56 +1,299 @@
-
 {% extends "base.html" %}
+
+{% block title %}همراه‌یار | لیست قیمت لوازم خانگی{% endblock %}
+
+{% block head %}
+<style>
+    .hero {
+        background: linear-gradient(120deg, #111827, #1e40af);
+        color: white;
+        padding: 28px 24px;
+        border-radius: 18px;
+        margin-bottom: 25px;
+    }
+
+    .hero h1 {
+        font-size: 23px;
+        margin: 0 0 8px;
+    }
+
+    .hero p {
+        color: #dbeafe;
+        margin: 0;
+        font-size: 13px;
+    }
+
+    .catalog-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .result-count {
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .chip.selected {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+    }
+
+    .product {
+        position: relative;
+    }
+
+    .product-image {
+        height: 190px;
+        padding: 10px;
+    }
+
+    .product-info {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .product-brand {
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    .product-description {
+        color: #64748b;
+        font-size: 12px;
+        margin: 5px 0;
+    }
+
+    .stock-badge {
+        display: inline-block;
+        width: fit-content;
+        padding: 4px 9px;
+        border-radius: 20px;
+        font-size: 10px;
+        margin-top: 5px;
+    }
+
+    .stock-available {
+        color: #166534;
+        background: #dcfce7;
+    }
+
+    .stock-low {
+        color: #92400e;
+        background: #fef3c7;
+    }
+
+    .stock-empty {
+        color: #991b1b;
+        background: #fee2e2;
+    }
+
+    .product-bottom {
+        border-top: 1px solid #edf0f5;
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+
+    .empty {
+        background: white;
+        padding: 35px 15px;
+        border-radius: 14px;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .clear-search {
+        color: #2563eb;
+        font-size: 12px;
+        display: inline-block;
+        margin-top: 12px;
+    }
+
+    @media(max-width: 600px) {
+        .hero {
+            padding: 22px 17px;
+        }
+
+        .hero h1 {
+            font-size: 19px;
+        }
+
+        .product-image {
+            height: 135px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<form class="search" method="get" action="{{ url_for('index') }}">
-  <input name="q" value="{{ q }}" placeholder="جستجوی محصول یا دسته‌بندی...">
-  {% if selected_category %}
-  <input type="hidden" name="category" value="{{ selected_category }}">
-  {% endif %}
-  <button type="submit">جستجو</button>
+<section class="hero">
+    <h1>به همراه‌یار خوش آمدید</h1>
+    <p>
+        مشاهده قیمت روز، بررسی موجودی و استعلام محصولات لوازم خانگی
+    </p>
+</section>
+
+<form class="search" method="GET" action="{{ url_for('index') }}">
+
+    <input
+        type="search"
+        name="q"
+        value="{{ q }}"
+        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..."
+    >
+
+    {% if selected_category %}
+        <input
+            type="hidden"
+            name="category"
+            value="{{ selected_category }}"
+        >
+    {% endif %}
+
+    <button type="submit">جستجو</button>
+
 </form>
 
 <section>
-  <h2 class="section-title">دسته‌بندی‌ها</h2>
-  <div class="chips">
-    <a class="chip active" href="{{ url_for('index', q=q) }}">همه</a>
-    {% for category in categories %}
-    <a class="chip" href="{{ url_for('index', category=category.id, q=q) }}">
-      {{ category.name }}
-    </a>
-    {% endfor %}
-  </div>
+    <h2 class="section-title">دسته‌بندی محصولات</h2>
+
+    <div class="chips">
+
+        <a
+            class="chip {% if not selected_category %}selected{% endif %}"
+            href="{{ url_for('index', q=q) }}"
+        >
+            همه محصولات
+        </a>
+
+        {% for category in categories %}
+
+            <a
+                class="chip {% if selected_category|string == category.id|string %}selected{% endif %}"
+                href="{{ url_for('index', category=category.id, q=q) }}"
+            >
+                {{ category.name }}
+            </a>
+
+        {% endfor %}
+
+    </div>
 </section>
 
 <section>
-  <h2 class="section-title">لیست قیمت محصولات</h2>
 
-  {% if products %}
-  <div class="product-list">
-    {% for product in products %}
-    <article class="product">
-      {% if product.image_url %}
-      <img class="product-image" src="{{ product.image_url }}" alt="{{ product.name }}">
-      {% else %}
-      <div class="product-placeholder">بدون تصویر</div>
-      {% endif %}
+    <div class="catalog-heading">
+        <h2 class="section-title">لیست قیمت محصولات</h2>
 
-      <div class="product-info">
-        <div class="product-category">{{ product.category_name }}</div>
-        <h3>{{ product.name }}</h3>
-        {% if product.description %}
-        <p>{{ product.description }}</p>
-        {% endif %}
-        <div class="price">
-          {{ "{:,}".format(product.price) }} تومان
+        <span class="result-count">
+            {{ products|length }} محصول
+        </span>
+    </div>
+
+    {% if products %}
+
+        <div class="product-list">
+
+            {% for product in products %}
+
+                <article class="product">
+
+                    {% if product.image_url %}
+
+                        <img
+                            class="product-image"
+                            src="{{ product.image_url }}"
+                            alt="{{ product.name }}"
+                            loading="lazy"
+                        >
+
+                    {% else %}
+
+                        <div class="product-placeholder">
+                            بدون تصویر
+                        </div>
+
+                    {% endif %}
+
+                    <div class="product-info">
+
+                        <div class="product-category">
+                            {{ product.category_name or 'بدون دسته‌بندی' }}
+                        </div>
+
+                        <h3>{{ product.name }}</h3>
+
+                        {% if product.brand_name %}
+                            <div class="product-brand">
+                                برند: {{ product.brand_name }}
+                            </div>
+                        {% endif %}
+
+                        {% if product.description %}
+                            <p class="product-description">
+                                {{ product.description }}
+                            </p>
+                        {% endif %}
+
+                        <div class="product-bottom">
+
+                            <div class="price">
+                                {{ "{:,}".format(product.price) }} تومان
+                            </div>
+
+                            {% if product.stock <= 0 %}
+
+                                <span class="stock-badge stock-empty">
+                                    ناموجود
+                                </span>
+
+                            {% elif product.stock <= product.min_stock %}
+
+                                <span class="stock-badge stock-low">
+                                    موجودی محدود | {{ product.stock }} عدد
+                                </span>
+
+                            {% else %}
+
+                                <span class="stock-badge stock-available">
+                                    موجود | {{ product.stock }} عدد
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+            {% endfor %}
+
         </div>
-      </div>
-    </article>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="empty">محصولی پیدا نشد.</div>
-  {% endif %}
+
+    {% else %}
+
+        <div class="empty">
+
+            <h3>محصولی پیدا نشد!</h3>
+
+            <p>
+                عبارت جستجو یا دسته‌بندی انتخاب‌شده را بررسی کنید.
+            </p>
+
+            <a class="clear-search" href="{{ url_for('index') }}">
+                مشاهده همه محصولات
+            </a>
+
+        </div>
+
+    {% endif %}
+
 </section>
 
 {% endblock %}
