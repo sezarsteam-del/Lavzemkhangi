@@ -9,16 +9,17 @@
     <header class="admin-header">
         <div>
             <h1>پنل مدیریت همراه‌یار</h1>
-            <p>مدیریت فروشگاه و عملیات روزانه</p>
+            <p>مدیریت محصولات، انبار و فروشگاه</p>
         </div>
     </header>
 
     <nav class="admin-nav">
         <a href="{{ url_for('admin') }}" class="active">🏠 داشبورد</a>
-        <a href="{{ url_for('inventory') }}">📦 مدیریت انبار</a>
+        <a href="{{ url_for('inventory') }}">📦 انبار</a>
         <a href="{{ url_for('sales') }}">🧾 فروش و فاکتورها</a>
         <a href="{{ url_for('reports') }}">📊 گزارش‌ها</a>
         <a href="{{ url_for('find_replace') }}">🔎 جست‌وجو و جایگزینی</a>
+        <a href="#add-product">➕ افزودن محصول</a>
 
         <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
             <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -28,39 +29,223 @@
 
     <section class="admin-welcome">
         <h2>به همراه‌یار خوش آمدید</h2>
-        <p>تمام بخش‌های فروشگاه را از این پنل مدیریت کنید.</p>
+        <p>مدیریت محصولات، موجودی و فروشگاه در یک پنل یکپارچه</p>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card">
+            <span>🛍️ تعداد محصولات</span>
+            <strong>{{ stats.product_count }}</strong>
+        </div>
+        <div class="stat-card">
+            <span>📦 موجودی کل</span>
+            <strong>{{ stats.total_stock }}</strong>
+        </div>
+        <div class="stat-card">
+            <span>⚠️ موجودی کم</span>
+            <strong>{{ stats.low_stock }}</strong>
+        </div>
+        <div class="stat-card">
+            <span>❌ ناموجود</span>
+            <strong>{{ stats.out_of_stock }}</strong>
+        </div>
+        <div class="stat-card">
+            <span>🧾 فاکتورهای امروز</span>
+            <strong>{{ today_sales.invoice_count }}</strong>
+        </div>
     </section>
 
     <section class="admin-cards">
 
+        <a href="#add-product" class="admin-card add-card">
+            <div class="admin-card-icon">➕</div>
+            <h3>افزودن محصول جدید</h3>
+            <p>ثبت محصول همراه با قیمت، دسته‌بندی، برند و موجودی</p>
+            <span>ثبت محصول ←</span>
+        </a>
+
         <a href="{{ url_for('inventory') }}" class="admin-card">
             <div class="admin-card-icon">📦</div>
             <h3>مدیریت انبار</h3>
-            <p>مشاهده موجودی، ورود و خروج کالا و بررسی هشدار کمبود موجودی</p>
+            <p>ورود و خروج کالا و اصلاح موجودی محصولات</p>
             <span>ورود به انبار ←</span>
         </a>
 
         <a href="{{ url_for('sales') }}" class="admin-card">
             <div class="admin-card-icon">🧾</div>
             <h3>مدیریت فروش</h3>
-            <p>ثبت فروش، صدور فاکتور و مشاهده سوابق فروشگاه</p>
+            <p>ثبت فروش و صدور فاکتور چندمحصولی</p>
             <span>ورود به فروش ←</span>
         </a>
 
         <a href="{{ url_for('reports') }}" class="admin-card">
             <div class="admin-card-icon">📊</div>
-            <h3>گزارش‌های فروش</h3>
-            <p>بررسی گزارش‌ها و مشاهده عملکرد فروشگاه</p>
+            <h3>گزارش‌ها</h3>
+            <p>بررسی آمار فروش و محصولات پرفروش</p>
             <span>مشاهده گزارش‌ها ←</span>
         </a>
 
         <a href="{{ url_for('find_replace') }}" class="admin-card">
             <div class="admin-card-icon">🔎</div>
             <h3>جست‌وجو و جایگزینی</h3>
-            <p>اصلاح دسته‌جمعی نام محصولات، توضیحات، دسته‌بندی‌ها و برندها</p>
+            <p>اصلاح دسته‌جمعی نام محصولات و برندها</p>
             <span>ورود به ابزار ←</span>
         </a>
 
+    </section>
+
+    <section class="panel-section" id="add-product">
+        <div class="section-heading">
+            <div>
+                <h2>➕ ثبت محصول جدید</h2>
+                <p>اطلاعات محصول را وارد کنید.</p>
+            </div>
+        </div>
+
+        {% if categories %}
+        <form action="{{ url_for('add_product') }}" method="POST" class="product-form">
+
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label>نام محصول *</label>
+                    <input type="text" name="name" required
+                           placeholder="مثلاً تلویزیون سامسونگ">
+                </div>
+
+                <div class="form-group">
+                    <label>دسته‌بندی *</label>
+                    <select name="category_id" required>
+                        <option value="">انتخاب دسته‌بندی</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>برند</label>
+                    <select name="brand_id">
+                        <option value="">بدون برند</option>
+                        {% for brand in brands %}
+                        <option value="{{ brand.id }}">
+                            {{ brand.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>قیمت فروش (تومان) *</label>
+                    <input type="number" name="price" min="0"
+                           value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>موجودی اولیه *</label>
+                    <input type="number" name="stock" min="0"
+                           value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>حداقل موجودی برای هشدار</label>
+                    <input type="number" name="min_stock" min="0"
+                           value="2" required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>لینک تصویر محصول</label>
+                    <input type="url" name="image_url"
+                           placeholder="https://example.com/image.jpg">
+                </div>
+
+                <div class="form-group full-width">
+                    <label>توضیحات محصول</label>
+                    <textarea name="description" rows="4"
+                              placeholder="توضیحات محصول را وارد کنید..."></textarea>
+                </div>
+
+            </div>
+
+            <button type="submit" class="submit-button">
+                💾 ثبت محصول
+            </button>
+        </form>
+
+        {% else %}
+        <div class="empty-warning">
+            <h3>ابتدا دسته‌بندی بسازید</h3>
+            <p>برای ثبت محصول، حداقل یک دسته‌بندی لازم است.</p>
+
+            <form action="{{ url_for('add_category') }}" method="POST">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <input type="text" name="name" required
+                       placeholder="نام دسته‌بندی جدید">
+                <button type="submit" class="submit-button">
+                    افزودن دسته‌بندی
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="panel-section">
+        <div class="section-heading">
+            <div>
+                <h2>📁 دسته‌بندی‌ها</h2>
+                <p>دسته‌بندی‌های فعلی فروشگاه</p>
+            </div>
+        </div>
+
+        <div class="category-list">
+            {% for category in categories %}
+            <div class="category-item">
+                <span>{{ category.name }}</span>
+                <small>{{ category.product_count }} محصول</small>
+            </div>
+            {% else %}
+            <p>هنوز دسته‌بندی ثبت نشده است.</p>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('add_category') }}" method="POST"
+              class="inline-form">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <input type="text" name="name" required
+                   placeholder="نام دسته‌بندی جدید">
+            <button type="submit">افزودن دسته‌بندی</button>
+        </form>
+    </section>
+
+    <section class="panel-section">
+        <div class="section-heading">
+            <div>
+                <h2>🏷️ برندها</h2>
+                <p>مدیریت برندهای محصولات</p>
+            </div>
+        </div>
+
+        <div class="category-list">
+            {% for brand in brands %}
+            <div class="category-item">
+                <span>{{ brand.name }}</span>
+            </div>
+            {% else %}
+            <p>هنوز برندی ثبت نشده است.</p>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('add_brand') }}" method="POST"
+              class="inline-form">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <input type="text" name="name" required
+                   placeholder="نام برند جدید">
+            <button type="submit">افزودن برند</button>
+        </form>
     </section>
 
     <footer class="admin-footer">
@@ -74,7 +259,7 @@
     max-width: 1150px;
     margin: 25px auto;
     padding: 15px;
-    font-family: inherit;
+    color: #263447;
 }
 
 .admin-header {
@@ -83,38 +268,38 @@
 
 .admin-header h1 {
     margin: 0 0 8px;
-    font-size: 28px;
-    color: #263b60;
+    font-size: 27px;
 }
 
-.admin-header p {
-    color: #777;
+.admin-header p,
+.section-heading p {
+    color: #7b8491;
     margin: 0;
 }
 
 .admin-nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    padding: 15px;
-    margin-bottom: 25px;
+    gap: 9px;
+    padding: 14px;
+    margin-bottom: 24px;
     background: #fff;
-    border: 1px solid #e8e8e8;
+    border: 1px solid #e8edf2;
     border-radius: 14px;
 }
 
 .admin-nav a,
-.admin-nav .logout-link {
+.logout-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 11px 16px;
+    padding: 11px 14px;
     border: none;
     border-radius: 9px;
-    background: #f4f6f8;
-    color: #333;
+    background: #f1f4f8;
+    color: #34445b;
     text-decoration: none;
-    font-size: 14px;
+    font-size: 13px;
     font-family: inherit;
     cursor: pointer;
 }
@@ -129,124 +314,276 @@
     margin: 0;
 }
 
-.admin-nav .logout-link {
-    color: #c0392b;
+.logout-link {
     background: #fff0ee;
-}
-
-.admin-nav .logout-link:hover {
-    color: #fff;
-    background: #c0392b;
+    color: #c0392b;
 }
 
 .admin-welcome {
     padding: 25px;
-    margin-bottom: 25px;
+    margin-bottom: 22px;
     background: linear-gradient(135deg, #263b60, #426b9d);
-    color: #fff;
+    color: white;
     border-radius: 16px;
 }
 
 .admin-welcome h2 {
     margin: 0 0 10px;
-    font-size: 22px;
 }
 
 .admin-welcome p {
-    color: #e8edf5;
     margin: 0;
-    line-height: 1.9;
+    color: #e8edf5;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e8edf2;
+    border-radius: 13px;
+    padding: 17px;
+}
+
+.stat-card span {
+    display: block;
+    color: #737e8c;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+.stat-card strong {
+    font-size: 23px;
+    color: #263b60;
 }
 
 .admin-cards {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    gap: 15px;
+    margin-bottom: 25px;
 }
 
 .admin-card {
     display: block;
-    padding: 24px;
-    background: #fff;
-    border: 1px solid #e8e8e8;
+    padding: 22px;
+    background: white;
+    border: 1px solid #e8edf2;
     border-radius: 15px;
+    color: #34445b;
     text-decoration: none;
-    color: #333;
-    transition: 0.2s;
+    transition: .2s;
 }
 
 .admin-card:hover {
     transform: translateY(-3px);
     border-color: #426b9d;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.07);
+    box-shadow: 0 8px 22px rgba(0,0,0,.06);
+}
+
+.add-card {
+    background: #f5fbf7;
+    border-color: #b8d9c5;
 }
 
 .admin-card-icon {
-    font-size: 34px;
-    margin-bottom: 15px;
+    font-size: 32px;
+    margin-bottom: 12px;
 }
 
 .admin-card h3 {
-    margin: 0 0 12px;
-    font-size: 19px;
+    margin: 0 0 10px;
+    font-size: 18px;
 }
 
 .admin-card p {
-    color: #777;
-    font-size: 14px;
+    color: #77818e;
+    font-size: 13px;
     line-height: 1.9;
-    min-height: 52px;
-    margin: 0 0 15px;
+    min-height: 45px;
 }
 
 .admin-card span {
     color: #315b91;
     font-weight: bold;
+    font-size: 13px;
+}
+
+.panel-section {
+    background: white;
+    border: 1px solid #e8edf2;
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 22px;
+    scroll-margin-top: 20px;
+}
+
+.section-heading {
+    margin-bottom: 20px;
+}
+
+.section-heading h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea,
+.inline-form input,
+.empty-warning input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px;
+    border: 1px solid #dce2e9;
+    border-radius: 9px;
+    background: #fff;
+    font-family: inherit;
     font-size: 14px;
+    outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #426b9d;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.submit-button,
+.inline-form button {
+    border: none;
+    border-radius: 9px;
+    padding: 13px 22px;
+    background: #263b60;
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.submit-button {
+    margin-top: 20px;
+    width: 100%;
+}
+
+.category-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.category-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px;
+    background: #f5f7fa;
+    border-radius: 9px;
+}
+
+.category-item small {
+    color: #77818e;
+}
+
+.inline-form {
+    display: flex;
+    gap: 10px;
+}
+
+.inline-form button {
+    white-space: nowrap;
+}
+
+.empty-warning {
+    padding: 18px;
+    background: #fff8e8;
+    border-radius: 12px;
+}
+
+.empty-warning form {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.empty-warning button {
+    white-space: nowrap;
 }
 
 .admin-footer {
-    margin-top: 30px;
-    padding: 18px;
+    margin-top: 25px;
+    padding: 20px;
     text-align: center;
-    color: #888;
-    font-size: 13px;
+    color: #89919c;
     border-top: 1px solid #eee;
+    font-size: 13px;
 }
 
-@media (max-width: 650px) {
-    .admin-page {
-        padding: 10px;
-    }
-
-    .admin-header h1 {
-        font-size: 23px;
-    }
-
-    .admin-nav {
-        display: grid;
+@media(max-width: 750px) {
+    .stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-        padding: 10px;
-    }
-
-    .admin-nav a,
-    .admin-nav .logout-link {
-        padding: 12px 7px;
-        font-size: 12px;
-        text-align: center;
     }
 
     .admin-cards {
         grid-template-columns: 1fr;
     }
+}
 
-    .admin-card {
-        padding: 19px;
+@media(max-width: 550px) {
+    .admin-page {
+        padding: 10px;
     }
 
-    .admin-welcome {
-        padding: 19px;
+    .admin-nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-nav a,
+    .logout-link {
+        padding: 12px 5px;
+        font-size: 11px;
+    }
+
+    .form-grid,
+    .category-list {
+        grid-template-columns: 1fr;
+    }
+
+    .inline-form,
+    .empty-warning form {
+        flex-direction: column;
+    }
+
+    .panel-section {
+        padding: 15px;
     }
 }
 </style>
