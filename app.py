@@ -36,12 +36,12 @@ if os.environ.get("TRUST_PROXY", "false").lower() == "true":
         x_prefix=0
     )
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
+# در محیط عملیاتی حتماً SECRET_KEY ثابت و تصادفی را در متغیرهای هاست تنظیم کنید.
+# مقدار موقت زیر مانع بالا نیامدن محیط آزمایشی در صورت نبود متغیر می‌شود،
+# اما با هر restart نشست‌های قبلی نامعتبر خواهند شد.
+SECRET_KEY = os.environ.get("SECRET_KEY", "").strip() or secrets.token_hex(32)
 if len(SECRET_KEY) < 32:
-    raise RuntimeError(
-        "متغیر SECRET_KEY باید در تنظیمات هاست تعریف شود "
-        "و حداقل ۳۲ کاراکتر تصادفی داشته باشد."
-    )
+    raise RuntimeError("متغیر SECRET_KEY باید حداقل ۳۲ کاراکتر باشد.")
 
 app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_HTTPONLY"] = True
