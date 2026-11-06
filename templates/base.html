@@ -237,7 +237,7 @@
     </div>
 </footer>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     const menuToggle = document.getElementById('menuToggle');
     const mainNavigation = document.getElementById('mainNavigation');
 
@@ -265,6 +265,18 @@
             menuToggle.classList.remove('active');
             menuToggle.setAttribute('aria-expanded', 'false');
         }
+    });
+    // همه پیام‌های تأیید بدون event handler درون HTML مدیریت می‌شوند.
+    document.addEventListener('submit', function (event) {
+        const message = event.target.getAttribute('data-confirm');
+        if (message && !window.confirm(message)) {
+            event.preventDefault();
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        const printButton = event.target.closest('[data-print]');
+        if (printButton) window.print();
     });
 </script>
 
