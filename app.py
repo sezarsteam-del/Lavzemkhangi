@@ -36,12 +36,13 @@ if os.environ.get("TRUST_PROXY", "false").lower() == "true":
         x_prefix=0
     )
 
-# در محیط عملیاتی حتماً SECRET_KEY ثابت و تصادفی را در متغیرهای هاست تنظیم کنید.
-# مقدار موقت زیر مانع بالا نیامدن محیط آزمایشی در صورت نبود متغیر می‌شود،
-# اما با هر restart نشست‌های قبلی نامعتبر خواهند شد.
-SECRET_KEY = os.environ.get("SECRET_KEY", "").strip() or secrets.token_hex(32)
+# کلید نشست باید در تنظیمات هاست به‌صورت ثابت و تصادفی تعریف شود.
+# ساخت کلید موقت در هر اجرا باعث تغییر نشست‌ها و تضعیف کنترل تلاش‌های ورود می‌شود.
+SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
 if len(SECRET_KEY) < 32:
-    raise RuntimeError("متغیر SECRET_KEY باید حداقل ۳۲ کاراکتر باشد.")
+    raise RuntimeError(
+        "متغیر SECRET_KEY باید در تنظیمات هاست تعریف شده و حداقل ۳۲ کاراکتر باشد."
+    )
 
 app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -59,7 +60,11 @@ app.config["SESSION_REFRESH_EACH_REQUEST"] = False
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "").strip()
+if not ADMIN_PASSWORD:
+    raise RuntimeError(
+        "متغیر ADMIN_PASSWORD در تنظیمات هاست تعریف نشده است."
+    )
 
 TEHRAN = ZoneInfo("Asia/Tehran")
 
