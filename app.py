@@ -2405,6 +2405,147 @@ def installment_detail(plan_id):
     return render_template("installment_detail.html",plan=plan,installments=rows)
 
 
+
+
+@app.route("/admin/installments/<int:plan_id>/edit", methods=["GET", "POST"])
+@admin_required
+def edit_installment_plan(plan_id):
+    with db() as conn:
+        plan = conn.execute(
+            "SELECT * FROM installment_plans WHERE id=%s",
+            (plan_id,)
+        ).fetchone()
+        if not plan:
+            abort(404)
+        payments = conn.execute(
+            "SELECT * FROM installment_payments WHERE plan_id=%s ORDER BY installment_no",
+            (plan_id,)
+        ).fetchall()
+
+    if request.method == "POST":
+        name = request.form.get("customer_name", "").strip()
+        phone = normalize_digits(request.form.get("customer_phone", "")).strip()
+        notes = request.form.get("notes", "").strip()
+        try:
+            total = int(normalize_digits(request.form.get("total_amount", "0")).replace(",", ""))
+            count = int(normalize_digits(request.form.get("installment_count", "0")))
+            amounts = request.form.getlist("installment_amount[]")
+            dates = request.form.getlist("due_date[]")
+            if not name or not phone or len(phone) < 7 or len(phone) > 20:
+                raise ValueError
+            if total <= 0 or count < 1 or count > 120 or len(amounts) != count or len(dates) != count:
+                raise ValueError
+
+            old_by_no = {int(p["installment_no"]): p for p in payments}
+            if any(p["paid_at"] is not None for p in payments) and count != len(payments):
+                raise ValueError
+
+            parsed = []
+            for idx, (amount_raw, date_raw) in enumerate(zip(amounts, dates), 1):
+                old = old_by_no.get(idx)
+                if old and old["paid_at"] is not None:
+                    amount = int(old["amount"])
+                    due = old["due_date"]
+                else:
+                    amount = int(normalize_digits(amount_raw).replace(",", ""))
+                    jalali_due = jdatetime.datetime.strptime(
+                        normalize_digits(date_raw).replace("-", "/"), "%Y/%m/%d"
+                    ).date()
+                    due = jalali_due.togregorian()
+                if amount <= 0:
+                    raise ValueError
+                parsed.append((amount, due))
+
+            if sum(x[0] for x in parsed) != total or parsed != sorted(parsed, key=lambda x: x[1]):
+                raise ValueError
+
+            with db() as conn:
+                locked = conn.execute(
+                    "SELECT id FROM installment_plans WHERE id=%s FOR UPDATE",
+                    (plan_id,)
+                ).fetchone()
+                if not locked:
+                    abort(404)
+                current = conn.execute(
+                    "SELECT * FROM installment_payments WHERE plan_id=%s ORDER BY installment_no FOR UPDATE",
+                    (plan_id,)
+                ).fetchall()
+                has_paid = any(p["paid_at"] is not None for p in current)
+                if has_paid and count != len(current):
+                    raise ValueError
+
+                conn.execute(
+                    """UPDATE installment_plans
+                       SET customer_name=%s, customer_phone=%s, total_amount=%s,
+                           installment_count=%s, notes=%s
+                       WHERE id=%s""",
+                    (name, phone, total, count, notes, plan_id)
+                )
+
+                if count == len(current):
+                    for no, (amount, due) in enumerate(parsed, 1):
+                        old = next((p for p in current if int(p["installment_no"]) == no), None)
+                        if old and old["paid_at"] is not None:
+                            continue
+                        conn.execute(
+                            """UPDATE installment_payments
+                               SET amount=%s, due_date=%s
+                               WHERE plan_id=%s AND installment_no=%s""",
+                            (amount, due, plan_id, no)
+                        )
+                else:
+                    if has_paid:
+                        raise ValueError
+                    conn.execute("DELETE FROM installment_payments WHERE plan_id=%s", (plan_id,))
+                    for no, (amount, due) in enumerate(parsed, 1):
+                        conn.execute(
+                            """INSERT INTO installment_payments
+                               (plan_id, installment_no, amount, due_date)
+                               VALUES (%s, %s, %s, %s)""",
+                            (plan_id, no, amount, due)
+                        )
+
+            flash("قرارداد با موفقیت ویرایش شد.", "success")
+            return redirect(url_for("installment_detail", plan_id=plan_id))
+        except (ValueError, TypeError):
+            flash(
+                "اطلاعات نامعتبر است. جمع اقساط باید برابر مبلغ کل باشد و تاریخ‌ها به ترتیب باشند. "
+                "در صورت ثبت پرداخت، تعداد اقساط قابل تغییر نیست.",
+                "error"
+            )
+            with db() as conn:
+                plan = conn.execute(
+                    "SELECT * FROM installment_plans WHERE id=%s", (plan_id,)
+                ).fetchone()
+                payments = conn.execute(
+                    "SELECT * FROM installment_payments WHERE plan_id=%s ORDER BY installment_no",
+                    (plan_id,)
+                ).fetchall()
+
+    return render_template(
+        "edit_installment.html",
+        plan=plan,
+        installments=payments,
+        has_paid=any(p["paid_at"] is not None for p in payments)
+    )
+
+
+@app.route("/admin/installments/<int:plan_id>/delete", methods=["POST"])
+@admin_required
+def delete_installment_plan(plan_id):
+    with db() as conn:
+        plan = conn.execute(
+            "SELECT id, customer_name FROM installment_plans WHERE id=%s FOR UPDATE",
+            (plan_id,)
+        ).fetchone()
+        if not plan:
+            abort(404)
+        conn.execute("DELETE FROM installment_payments WHERE plan_id=%s", (plan_id,))
+        conn.execute("DELETE FROM installment_plans WHERE id=%s", (plan_id,))
+    flash("قرارداد و سوابق اقساط آن حذف شد.", "success")
+    return redirect(url_for("installments"))
+
+
 @app.route("/admin/installments/payment/<int:payment_id>/toggle",methods=["POST"])
 @admin_required
 def toggle_installment_payment(payment_id):
