@@ -191,6 +191,7 @@
                     <a href="{{ url_for('inventory') }}">انبار</a>
                     <a href="{{ url_for('sales') }}">فروش</a>
                     <a href="{{ url_for('reports') }}">گزارش‌ها</a>
+                    <a href="{{ url_for('installment_sms_settings') }}">پیامک اقساط</a>
 
                     <form method="POST" action="{{ url_for('logout') }}">
                         <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
