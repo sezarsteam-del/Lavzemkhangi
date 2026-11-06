@@ -2613,7 +2613,8 @@ def installments():
                     conn.execute("""INSERT INTO installment_payments
                         (plan_id,installment_no,amount,due_date) VALUES (%s,%s,%s,%s)""",
                         (plan["id"],no,amount,due))
-            flash("پرونده اقساط ثبت شد.","success")
+            send_installment_welcome(plan["id"], name, phone, total, count, parsed)
+            flash("قرارداد ثبت شد. پیام تشکر در صورت فعال بودن پیامک ارسال شد.", "success")
             return redirect(url_for("installment_detail",plan_id=plan["id"]))
         except (ValueError,TypeError):
             flash("اطلاعات نامعتبر است؛ جمع اقساط باید برابر مبلغ کل باشد و تاریخ‌ها به ترتیب باشند.","error")
