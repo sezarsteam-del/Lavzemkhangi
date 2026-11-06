@@ -3,6 +3,9 @@ import hmac
 import secrets
 import threading
 import re
+import json
+import uuid
+import urllib.request
 
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
@@ -361,6 +364,44 @@ def init_db():
             paid_at TIMESTAMPTZ, UNIQUE(plan_id, installment_no)
         )""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_installments_due ON installment_payments(due_date, paid_at)")
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS sms_settings (
+                id SMALLINT PRIMARY KEY CHECK (id = 1),
+                enabled BOOLEAN NOT NULL DEFAULT FALSE,
+                welcome_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                send_hour SMALLINT NOT NULL DEFAULT 9 CHECK (send_hour BETWEEN 0 AND 23),
+                send_minute SMALLINT NOT NULL DEFAULT 0 CHECK (send_minute BETWEEN 0 AND 59),
+                line_number TEXT NOT NULL DEFAULT '30005088',
+                welcome_template TEXT NOT NULL DEFAULT 'مرسی که لوازم خانگی بولحسنی را انتخاب کردید. تاریخ اقساط شما از {first_due_date} تا {last_due_date} است. با سپاس',
+                reminder_template TEXT NOT NULL DEFAULT 'مشتری گرامی {customer_name}، یادآوری می‌شود قسط شماره {installment_no} به مبلغ {amount} تومان در تاریخ {due_date} سررسید می‌شود. لوازم خانگی بولحسنی'
+            )
+        """)
+        conn.execute("INSERT INTO sms_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS installment_sms_logs (
+                id BIGSERIAL PRIMARY KEY,
+                plan_id BIGINT REFERENCES installment_plans(id) ON DELETE SET NULL,
+                payment_id BIGINT REFERENCES installment_payments(id) ON DELETE SET NULL,
+                kind TEXT NOT NULL CHECK (kind IN ('welcome', 'reminder')),
+                receptor TEXT NOT NULL,
+                message TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'processing'
+                    CHECK (status IN ('processing', 'sent', 'failed')),
+                provider_message_id TEXT,
+                error_text TEXT NOT NULL DEFAULT '',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                sent_at TIMESTAMPTZ
+            )
+        """)
+        conn.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_installment_sms_once
+            ON installment_sms_logs (plan_id, (COALESCE(payment_id, 0)), kind)
+            WHERE plan_id IS NOT NULL
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_installment_sms_logs_created ON installment_sms_logs (created_at DESC)")
+
 
 
 @app.before_request
