@@ -2399,15 +2399,39 @@ def sms_fill(template, values):
 
 def send_installment_sms(plan_id, payment_id, kind, receptor, message):
     with db() as conn:
-        log = conn.execute(
-            """INSERT INTO installment_sms_logs
-               (plan_id, payment_id, kind, receptor, message, status)
-               VALUES (%s, %s, %s, %s, %s, 'processing')
-               ON CONFLICT DO NOTHING RETURNING id""",
-            (plan_id, payment_id, kind, receptor, message)
+        existing = conn.execute(
+            """SELECT id, status, created_at
+               FROM installment_sms_logs
+               WHERE plan_id=%s AND COALESCE(payment_id, 0)=COALESCE(%s, 0)
+                 AND kind=%s
+               FOR UPDATE""",
+            (plan_id, payment_id, kind)
         ).fetchone()
-    if not log:
-        return False
+        if existing:
+            age = (tehran_now() - existing["created_at"].astimezone(TEHRAN)).total_seconds() if existing["created_at"].tzinfo else 0
+            if existing["status"] == "sent" or (
+                existing["status"] == "processing" and age < 900
+            ):
+                return False
+            log_id = existing["id"]
+            conn.execute(
+                """UPDATE installment_sms_logs
+                   SET status='processing', receptor=%s, message=%s,
+                       error_text='', created_at=NOW()
+                   WHERE id=%s""",
+                (receptor, message, log_id)
+            )
+        else:
+            log = conn.execute(
+                """INSERT INTO installment_sms_logs
+                   (plan_id, payment_id, kind, receptor, message, status)
+                   VALUES (%s, %s, %s, %s, %s, 'processing')
+                   ON CONFLICT DO NOTHING RETURNING id""",
+                (plan_id, payment_id, kind, receptor, message)
+            ).fetchone()
+            if not log:
+                return False
+            log_id = log["id"]
 
     api_key = os.environ.get("GHASEDAK_API_KEY", "").strip()
     if not api_key:
@@ -2415,12 +2439,13 @@ def send_installment_sms(plan_id, payment_id, kind, receptor, message):
         with db() as conn:
             conn.execute(
                 "UPDATE installment_sms_logs SET status='failed', error_text=%s WHERE id=%s",
-                (error_text, log["id"])
+                (error_text, log_id)
             )
         return False
 
     settings = get_sms_settings()
     payload = {
+        "sendDate": "",
         "message": message,
         "lineNumber": settings["line_number"],
         "receptor": receptor,
@@ -2450,18 +2475,17 @@ def send_installment_sms(plan_id, payment_id, kind, receptor, message):
                 """UPDATE installment_sms_logs
                    SET status='sent', provider_message_id=%s, sent_at=NOW(), error_text=''
                    WHERE id=%s""",
-                (provider_id, log["id"])
+                (provider_id, log_id)
             )
         return True
     except Exception as exc:
         with db() as conn:
             conn.execute(
                 "UPDATE installment_sms_logs SET status='failed', error_text=%s WHERE id=%s",
-                (str(exc)[:1000], log["id"])
+                (str(exc)[:1000], log_id)
             )
         app.logger.exception("Ghasedak SMS send failed")
         return False
-
 
 def send_installment_welcome(plan_id, name, phone, total, count, parsed):
     settings = get_sms_settings()
