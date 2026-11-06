@@ -14,7 +14,7 @@ import psycopg
 from psycopg.rows import dict_row
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, session, flash, abort
+    url_for, session, flash, abort, g
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -377,6 +377,17 @@ def csrf_token():
 app.jinja_env.globals["csrf_token"] = csrf_token
 
 
+@app.before_request
+def create_csp_nonce():
+    # یک nonce تصادفی و مستقل برای اسکریپت‌های مجاز همین پاسخ
+    g.csp_nonce = secrets.token_urlsafe(18)
+
+
+@app.context_processor
+def inject_security_context():
+    return {"csp_nonce": getattr(g, "csp_nonce", "")}
+
+
 @app.after_request
 def add_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -386,8 +397,9 @@ def add_security_headers(response):
         "camera=(), microphone=(), geolocation=()"
     )
 
-    # قالب‌های فعلی از CSS و JavaScript داخلی استفاده می‌کنند؛
-    # بنابراین unsafe-inline فعلاً برای حفظ عملکرد سایت لازم است.
+    # اجرای اسکریپت فقط با nonce همین پاسخ مجاز است؛ event handlerهای
+    # درون HTML نیز به data-* و listenerهای جاوااسکریپت منتقل شده‌اند.
+    nonce = getattr(g, "csp_nonce", "")
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "base-uri 'self'; "
@@ -397,9 +409,16 @@ def add_security_headers(response):
         "img-src 'self' data: https:; "
         "font-src 'self' data: https:; "
         "style-src 'self' 'unsafe-inline' https:; "
-        "script-src 'self' 'unsafe-inline'; "
+        f"script-src 'self' 'nonce-{nonce}'; "
+        "script-src-attr 'none'; "
         "connect-src 'self' https:; "
     )
+
+    # جلوگیری از ذخیره شدن صفحات مدیریتی و اطلاعات مشتری در cache مرورگر
+    if session.get("admin") or request.path.startswith("/admin") or request.path == "/login":
+        response.headers["Cache-Control"] = "no-store, private, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
 
     # COOKIE_SECURE=true یعنی سایت پشت HTTPS ارائه می‌شود.
     if app.config["SESSION_COOKIE_SECURE"]:
@@ -1798,6 +1817,15 @@ def validate_customer_data(form):
 
     if not last_name:
         raise ValueError("نام خانوادگی مشتری را وارد کنید.")
+
+    if len(first_name) > 80 or len(last_name) > 80:
+        raise ValueError("نام و نام خانوادگی حداکثر باید ۸۰ نویسه باشند.")
+
+    if len(phone) > 30:
+        raise ValueError("شماره تماس بیش از حد طولانی است.")
+
+    if len(national_id) > 10:
+        raise ValueError("کد ملی باید حداکثر ۱۰ رقم باشد.")
 
     # حذف فاصله و خط تیره و پرانتز از شماره تماس
     phone = re.sub(r"[\s\-\(\)]", "", phone)
