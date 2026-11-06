@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}پنل پیامک اقساط{% endblock %}
+{% block content %}
+<div class="sms-page" dir="rtl">
+<h1>پنل ارسال پیامک اقساط</h1>
+<p>مدیریت پیام تشکر پس از ثبت قرارداد و یادآوری یک روز پیش از سررسید</p>
+<section class="panel">
+<h2>وضعیت اتصال و زمان‌بندی</h2>
+<p>کلید قاصدک: <strong>{{ 'تنظیم شده' if api_configured else 'تنظیم نشده در هاست' }}</strong></p>
+<p>زمان‌بند خودکار: <strong>{{ 'آماده' if cron_configured else 'نیازمند تنظیم SMS_CRON_SECRET و زمان‌بند هاست' }}</strong></p>
+<p class="hint">زمان ارسال بر اساس ساعت تهران است. برای اجرای خودکار، زمان‌بند هاست باید مسیر داخلی را هر ۵ دقیقه با هدر Authorization: Bearer فراخوانی کند.</p>
+</section>
+<section class="panel">
+<h2>تنظیمات ارسال</h2>
+<form method="POST">
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+<label class="check"><input type="checkbox" name="enabled" {% if settings.enabled %}checked{% endif %}> فعال‌سازی کلی پیامک‌ها</label>
+<label class="check"><input type="checkbox" name="welcome_enabled" {% if settings.welcome_enabled %}checked{% endif %}> ارسال پیام تشکر بلافاصله پس از ثبت قرارداد</label>
+<label class="check"><input type="checkbox" name="reminder_enabled" {% if settings.reminder_enabled %}checked{% endif %}> ارسال یادآوری یک روز قبل از سررسید قسط</label>
+<div class="fields">
+<label>ساعت ارسال یادآوری (تهران)<input type="number" name="send_hour" min="0" max="23" required value="{{ settings.send_hour }}"></label>
+<label>دقیقه<input type="number" name="send_minute" min="0" max="59" required value="{{ settings.send_minute }}"></label>
+<label>شماره خط ارسال<input name="line_number" maxlength="30" required value="{{ settings.line_number }}"></label>
+</div>
+<h3>متن پیام تشکر</h3>
+<textarea name="welcome_template" rows="4" maxlength="1000" required>{{ settings.welcome_template }}</textarea>
+<p class="hint">متغیرها: {customer_name}، {first_due_date}، {last_due_date}، {total_amount}، {installment_count}، {brand}</p>
+<h3>متن یادآوری سررسید</h3>
+<textarea name="reminder_template" rows="4" maxlength="1000" required>{{ settings.reminder_template }}</textarea>
+<p class="hint">متغیرها: {customer_name}، {installment_no}، {amount}، {due_date}، {brand}</p>
+<button class="primary" type="submit">ذخیره تنظیمات</button>
+</form>
+</section>
+<section class="panel">
+<h2>سوابق ۵۰ پیام آخر</h2>
+<div class="scroll"><table><thead><tr><th>تاریخ</th><th>مشتری</th><th>شماره</th><th>نوع</th><th>وضعیت</th><th>خطا</th></tr></thead><tbody>
+{% for log in logs %}
+<tr><td>{{ log.created_at|jalali }}</td><td>{{ log.customer_name or 'قرارداد حذف‌شده' }}</td><td>{{ log.receptor }}</td><td>{{ 'تشکر' if log.kind == 'welcome' else 'یادآوری' }}</td><td>{{ 'ارسال موفق' if log.status == 'sent' else ('در حال پردازش' if log.status == 'processing' else 'ناموفق') }}</td><td>{{ log.error_text }}</td></tr>
+{% else %}<tr><td colspan="6">هنوز پیامکی ثبت نشده است.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+</div>
+<style>
+.sms-page{max-width:1000px;margin:25px auto;padding:15px;color:#263447}.panel{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:20px;margin:18px 0}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}label{display:flex;flex-direction:column;gap:7px;margin:12px 0}.check{display:flex;flex-direction:row;align-items:center;gap:8px}.check input{width:auto}input,textarea{padding:11px;border:1px solid #dce2e9;border-radius:8px;font:inherit;min-width:0}textarea{width:100%;box-sizing:border-box;line-height:1.9}.primary,button{padding:10px 15px;border:0;border-radius:8px;background:#263b60;color:white;font:inherit;cursor:pointer}.hint{color:#687789;font-size:13px}.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:750px}td,th{text-align:right;padding:10px;border-bottom:1px solid #edf0f4}@media(max-width:650px){.fields{grid-template-columns:1fr}.panel{padding:12px}}
+</style>
+{% endblock %}
