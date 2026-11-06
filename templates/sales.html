@@ -239,7 +239,7 @@
                         <button
                             type="button"
                             class="sales-btn danger remove"
-                            onclick="removeItem(this)"
+                            data-remove-item
                             style="display:none"
                         >حذف ردیف</button>
                     </div>
@@ -251,7 +251,7 @@
                                 name="product_id"
                                 class="product-select"
                                 required
-                                onchange="calculate()"
+                                class="product-select"
                             >
                                 <option value="">انتخاب محصول</option>
                                 {% for p in products %}
@@ -276,7 +276,7 @@
                                 step="1"
                                 value="1"
                                 required
-                                oninput="calculate()"
+                                data-recalculate
                             >
                         </div>
                     </div>
@@ -286,7 +286,7 @@
             </div>
 
             <div class="actions">
-                <button type="button" class="sales-btn secondary" onclick="addItem()">
+                <button type="button" class="sales-btn secondary" data-add-item>
                     + افزودن محصول
                 </button>
             </div>
@@ -303,7 +303,7 @@
                         min="0"
                         step="1"
                         value="0"
-                        oninput="calculate()"
+                        data-recalculate
                     >
                 </div>
 
@@ -400,7 +400,7 @@
                                 <form
                                     method="POST"
                                     action="{{ url_for('cancel_sale', sale_id=invoice.id) }}"
-                                    onsubmit="return confirm('آیا مطمئن هستید؟ فاکتور لغو می‌شود و موجودی کالاها به انبار برمی‌گردد.')"
+                                    data-confirm="آیا مطمئن هستید؟ فاکتور لغو می‌شود و موجودی کالاها به انبار برمی‌گردد."
                                 >
                                     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
                                     <button class="sales-btn danger" type="submit">لغو فاکتور</button>
@@ -410,7 +410,7 @@
                                 <form
                                     method="POST"
                                     action="{{ url_for('delete_sale', sale_id=invoice.id) }}"
-                                    onsubmit="return confirm('آیا مطمئن هستید؟ اطلاعات کامل این فاکتور حذف می‌شود. اگر فاکتور تکمیل‌شده باشد، موجودی کالاهای آن به انبار برمی‌گردد. این عملیات قابل بازگشت نیست.')"
+                                    data-confirm="آیا مطمئن هستید؟ اطلاعات کامل این فاکتور حذف می‌شود. اگر فاکتور تکمیل‌شده باشد، موجودی کالاهای آن به انبار برمی‌گردد. این عملیات قابل بازگشت نیست."
                                 >
                                     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
                                     <button class="sales-btn danger" type="submit">حذف فاکتور</button>
@@ -433,7 +433,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 let itemCount = 1;
 
 function formatNumber(value) {
@@ -515,6 +515,16 @@ function calculate() {
     document.getElementById('final').textContent =
         formatNumber(finalAmount) + ' تومان';
 }
+
+document.getElementById('items').addEventListener('click', function(event) {
+    const removeButton = event.target.closest('[data-remove-item]');
+    if (removeButton) removeItem(removeButton);
+});
+
+document.querySelector('[data-add-item]').addEventListener('click', addItem);
+document.getElementById('items').addEventListener('change', calculate);
+document.getElementById('items').addEventListener('input', calculate);
+document.getElementById('discount').addEventListener('input', calculate);
 
 document.getElementById('saleForm').addEventListener('submit', function(event) {
     const items = document.querySelectorAll('.item');
