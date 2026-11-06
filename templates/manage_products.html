@@ -264,7 +264,7 @@
                             <form
                                 method="POST"
                                 action="{{ url_for('delete_product', product_id=product.id) }}"
-                                onsubmit="return confirm('آیا مطمئن هستید؟ محصول از فهرست فعال خارج می‌شود و سوابق فروش آن حفظ خواهد شد.');">
+                                data-confirm="آیا مطمئن هستید؟ محصول از فهرست فعال خارج می‌شود و سوابق فروش آن حفظ خواهد شد.">
 
                                 <input
                                     type="hidden"
