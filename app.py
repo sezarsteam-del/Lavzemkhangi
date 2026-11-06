@@ -2360,7 +2360,11 @@ def installments():
             parsed=[]
             for a,d in zip(amounts,dates):
                 amount=int(normalize_digits(a).replace(",",""))
-                due=date.fromisoformat(d)
+                # تاریخ از فرم به‌صورت شمسی (YYYY/MM/DD) دریافت می‌شود.
+                jalali_due = jdatetime.datetime.strptime(
+                    normalize_digits(d).replace("-", "/"), "%Y/%m/%d"
+                ).date()
+                due = jalali_due.togregorian()
                 if amount<=0: raise ValueError
                 parsed.append((amount,due))
             if sum(x[0] for x in parsed)!=total or parsed!=sorted(parsed,key=lambda x:x[1]):
