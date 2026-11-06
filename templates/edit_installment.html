@@ -11,7 +11,7 @@
 <label>نام مشتری<input name="customer_name" required maxlength="160" value="{{ plan.customer_name }}"></label>
 <label>شماره تماس<input name="customer_phone" required maxlength="20" inputmode="tel" value="{{ plan.customer_phone }}"></label>
 <label>مبلغ کل (تومان)<input name="total_amount" id="total" required inputmode="numeric" value="{{ plan.total_amount }}"></label>
-<label>تعداد اقساط<input name="installment_count" id="count" type="number" min="1" max="120" value="{{ plan.installment_count }}" {% if has_paid %}readonly{% endif %} required></label>
+<label>تعداد اقساط<input name="installment_count" id="count" type="number" min="1" max="120" value="{{ plan.installment_count }}" readonly required></label>
 </div>
 <label>توضیحات<textarea name="notes" maxlength="1000">{{ plan.notes }}</textarea></label>
 <h3>مبلغ و تاریخ اقساط</h3>
@@ -25,7 +25,7 @@
 </div>
 {% endfor %}
 </div>
-{% if not has_paid %}<p class="hint">در صورت نیاز می‌توانید تعداد اقساط را تغییر دهید. مجموع مبالغ باید برابر مبلغ کل باشد.</p>{% endif %}
+{% if not has_paid %}<p class="hint">تعداد اقساط پس از ثبت قرارداد ثابت است تا سوابق پرداخت حفظ شود. مجموع مبالغ باید برابر مبلغ کل باشد.</p>{% endif %}
 <button class="primary" type="submit">ذخیره تغییرات</button>
 <a class="back" href="{{ url_for('installment_detail',plan_id=plan.id) }}">انصراف</a>
 </form>
