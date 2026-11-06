@@ -17,6 +17,7 @@
         <a href="{{ url_for('manage_products') }}">🛍️ مدیریت محصولات</a>
         <a href="{{ url_for('inventory') }}">📦 انبار</a>
         <a href="{{ url_for('sales') }}">🧾 فروش و فاکتورها</a>
+        <a href="{{ url_for('installments') }}">💳 مدیریت اقساط</a>
         <a href="{{ url_for('reports') }}">📊 گزارش‌ها</a>
         <a href="{{ url_for('find_replace') }}">🔎 جست‌وجو و جایگزینی</a>
         <a href="{{ url_for('add_product') }}">➕ افزودن محصول</a>
@@ -89,6 +90,13 @@
             <h3>مدیریت فروش</h3>
             <p>ثبت فروش و صدور فاکتور چندمحصولی</p>
             <span>ورود به فروش ←</span>
+        </a>
+
+        <a href="{{ url_for('installments') }}" class="admin-card">
+            <div class="admin-card-icon">💳</div>
+            <h3>مدیریت اقساط</h3>
+            <p>ثبت قرارداد، تعیین سررسیدها و پیگیری پرداخت مشتریان</p>
+            <span>ورود به مدیریت اقساط ←</span>
         </a>
 
         <a href="{{ url_for('reports') }}" class="admin-card">
