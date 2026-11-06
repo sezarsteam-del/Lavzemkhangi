@@ -412,7 +412,7 @@ def add_security_headers(response):
         "img-src 'self' data: https:; "
         "font-src 'self' data: https:; "
         "style-src 'self' 'unsafe-inline' https:; "
-        "script-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline' https://unpkg.com; "
         "connect-src 'self' https:; "
     )
 
