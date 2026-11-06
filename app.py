@@ -348,6 +348,21 @@ def init_db():
         """)
 
 
+        conn.execute("""CREATE TABLE IF NOT EXISTS installment_plans (
+            id BIGSERIAL PRIMARY KEY, customer_name TEXT NOT NULL,
+            customer_phone TEXT NOT NULL, total_amount BIGINT NOT NULL CHECK(total_amount > 0),
+            installment_count INTEGER NOT NULL CHECK(installment_count > 0),
+            notes TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS installment_payments (
+            id BIGSERIAL PRIMARY KEY, plan_id BIGINT NOT NULL REFERENCES installment_plans(id) ON DELETE RESTRICT,
+            installment_no INTEGER NOT NULL CHECK(installment_no > 0),
+            amount BIGINT NOT NULL CHECK(amount > 0), due_date DATE NOT NULL,
+            paid_at TIMESTAMPTZ, UNIQUE(plan_id, installment_no)
+        )""")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_installments_due ON installment_payments(due_date, paid_at)")
+
+
 @app.before_request
 def prepare_database():
 
@@ -2320,6 +2335,86 @@ def delete_sale(sale_id):
     )
 
     return redirect(url_for("sales"))
+
+
+
+# ==================================================
+# مدیریت اقساط
+# ==================================================
+@app.route("/admin/installments", methods=["GET", "POST"])
+@admin_required
+def installments():
+    if request.method == "POST":
+        name=request.form.get("customer_name","").strip()
+        phone=normalize_digits(request.form.get("customer_phone","")).strip()
+        notes=request.form.get("notes","").strip()
+        try:
+            total=int(normalize_digits(request.form.get("total_amount","0")).replace(",",""))
+            count=int(normalize_digits(request.form.get("installment_count","0")))
+            amounts=request.form.getlist("installment_amount[]")
+            dates=request.form.getlist("due_date[]")
+            if not name or not phone or len(phone)<7 or len(phone)>20:
+                raise ValueError
+            if total<=0 or count<1 or count>120 or len(amounts)!=count or len(dates)!=count:
+                raise ValueError
+            parsed=[]
+            for a,d in zip(amounts,dates):
+                amount=int(normalize_digits(a).replace(",",""))
+                due=date.fromisoformat(d)
+                if amount<=0: raise ValueError
+                parsed.append((amount,due))
+            if sum(x[0] for x in parsed)!=total or parsed!=sorted(parsed,key=lambda x:x[1]):
+                raise ValueError
+            with db() as conn:
+                plan=conn.execute("""INSERT INTO installment_plans
+                    (customer_name,customer_phone,total_amount,installment_count,notes)
+                    VALUES (%s,%s,%s,%s,%s) RETURNING id""",
+                    (name,phone,total,count,notes)).fetchone()
+                for no,(amount,due) in enumerate(parsed,1):
+                    conn.execute("""INSERT INTO installment_payments
+                        (plan_id,installment_no,amount,due_date) VALUES (%s,%s,%s,%s)""",
+                        (plan["id"],no,amount,due))
+            flash("پرونده اقساط ثبت شد.","success")
+            return redirect(url_for("installment_detail",plan_id=plan["id"]))
+        except (ValueError,TypeError):
+            flash("اطلاعات نامعتبر است؛ جمع اقساط باید برابر مبلغ کل باشد و تاریخ‌ها به ترتیب باشند.","error")
+    with db() as conn:
+        plans=conn.execute("""SELECT p.*,
+            COALESCE(SUM(i.amount) FILTER (WHERE i.paid_at IS NOT NULL),0) AS paid_amount,
+            COUNT(i.id) FILTER (WHERE i.paid_at IS NOT NULL) AS paid_count,
+            COUNT(i.id) FILTER (WHERE i.paid_at IS NULL AND i.due_date<CURRENT_DATE) AS overdue_count
+            FROM installment_plans p LEFT JOIN installment_payments i ON i.plan_id=p.id
+            GROUP BY p.id ORDER BY p.created_at DESC""").fetchall()
+    return render_template("installments.html",plans=plans)
+
+
+@app.route("/admin/installments/<int:plan_id>")
+@admin_required
+def installment_detail(plan_id):
+    with db() as conn:
+        plan=conn.execute("""SELECT p.*,
+            COALESCE(SUM(i.amount) FILTER (WHERE i.paid_at IS NOT NULL),0) AS paid_amount
+            FROM installment_plans p LEFT JOIN installment_payments i ON i.plan_id=p.id
+            WHERE p.id=%s GROUP BY p.id""",(plan_id,)).fetchone()
+        if not plan: abort(404)
+        rows=conn.execute("SELECT * FROM installment_payments WHERE plan_id=%s ORDER BY installment_no",(plan_id,)).fetchall()
+    return render_template("installment_detail.html",plan=plan,installments=rows)
+
+
+@app.route("/admin/installments/payment/<int:payment_id>/toggle",methods=["POST"])
+@admin_required
+def toggle_installment_payment(payment_id):
+    with db() as conn:
+        row=conn.execute("SELECT id,plan_id,paid_at FROM installment_payments WHERE id=%s FOR UPDATE",(payment_id,)).fetchone()
+        if not row: abort(404)
+        if row["paid_at"] is None:
+            conn.execute("UPDATE installment_payments SET paid_at=NOW() WHERE id=%s",(payment_id,))
+            flash("پرداخت قسط ثبت شد.","success")
+        else:
+            conn.execute("UPDATE installment_payments SET paid_at=NULL WHERE id=%s",(payment_id,))
+            flash("وضعیت قسط به پرداخت‌نشده تغییر کرد.","success")
+        pid=row["plan_id"]
+    return redirect(url_for("installment_detail",plan_id=pid))
 
 
 # ==================================================
