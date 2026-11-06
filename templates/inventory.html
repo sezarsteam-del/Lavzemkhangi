@@ -434,7 +434,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function () {
     const typeSelect = document.getElementById('movement_type');
     const quantityLabel = document.getElementById('quantity_label');

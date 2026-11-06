@@ -14,7 +14,7 @@ import psycopg
 from psycopg.rows import dict_row
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, session, flash, abort
+    url_for, session, flash, abort, g
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -36,11 +36,12 @@ if os.environ.get("TRUST_PROXY", "false").lower() == "true":
         x_prefix=0
     )
 
+# کلید نشست باید در تنظیمات هاست به‌صورت ثابت و تصادفی تعریف شود.
+# ساخت کلید موقت در هر اجرا باعث تغییر نشست‌ها و تضعیف کنترل تلاش‌های ورود می‌شود.
 SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
 if len(SECRET_KEY) < 32:
     raise RuntimeError(
-        "متغیر SECRET_KEY باید در تنظیمات هاست تعریف شود "
-        "و حداقل ۳۲ کاراکتر تصادفی داشته باشد."
+        "متغیر SECRET_KEY باید در تنظیمات هاست تعریف شده و حداقل ۳۲ کاراکتر باشد."
     )
 
 app.config["SECRET_KEY"] = SECRET_KEY
@@ -49,12 +50,21 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
     os.environ.get("COOKIE_SECURE", "true").lower() == "true"
 )
+# محدودیت اندازه درخواست برای جلوگیری از ارسال payloadهای بسیار بزرگ
+# تصاویر محصولات از URL دریافت می‌شوند؛ بنابراین ۲ مگابایت برای فرم‌ها کافی است.
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
+app.config["MAX_FORM_MEMORY_SIZE"] = 256 * 1024
+app.config["MAX_FORM_PARTS"] = 100
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
 app.config["SESSION_REFRESH_EACH_REQUEST"] = False
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "").strip()
+if not ADMIN_PASSWORD:
+    raise RuntimeError(
+        "متغیر ADMIN_PASSWORD در تنظیمات هاست تعریف نشده است."
+    )
 
 TEHRAN = ZoneInfo("Asia/Tehran")
 
@@ -377,6 +387,17 @@ def csrf_token():
 app.jinja_env.globals["csrf_token"] = csrf_token
 
 
+@app.before_request
+def create_csp_nonce():
+    # یک nonce تصادفی و مستقل برای اسکریپت‌های مجاز همین پاسخ
+    g.csp_nonce = secrets.token_urlsafe(18)
+
+
+@app.context_processor
+def inject_security_context():
+    return {"csp_nonce": getattr(g, "csp_nonce", "")}
+
+
 @app.after_request
 def add_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -386,8 +407,9 @@ def add_security_headers(response):
         "camera=(), microphone=(), geolocation=()"
     )
 
-    # قالب‌های فعلی از CSS و JavaScript داخلی استفاده می‌کنند؛
-    # بنابراین unsafe-inline فعلاً برای حفظ عملکرد سایت لازم است.
+    # اجرای اسکریپت فقط با nonce همین پاسخ مجاز است؛ event handlerهای
+    # درون HTML نیز به data-* و listenerهای جاوااسکریپت منتقل شده‌اند.
+    nonce = getattr(g, "csp_nonce", "")
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "base-uri 'self'; "
@@ -397,9 +419,16 @@ def add_security_headers(response):
         "img-src 'self' data: https:; "
         "font-src 'self' data: https:; "
         "style-src 'self' 'unsafe-inline' https:; "
-        "script-src 'self' 'unsafe-inline'; "
+        f"script-src 'self' 'nonce-{nonce}'; "
+        "script-src-attr 'none'; "
         "connect-src 'self' https:; "
     )
+
+    # جلوگیری از ذخیره شدن صفحات مدیریتی و اطلاعات مشتری در cache مرورگر
+    if session.get("admin") or request.path.startswith("/admin") or request.path == "/login":
+        response.headers["Cache-Control"] = "no-store, private, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
 
     # COOKIE_SECURE=true یعنی سایت پشت HTTPS ارائه می‌شود.
     if app.config["SESSION_COOKIE_SECURE"]:
@@ -1799,6 +1828,15 @@ def validate_customer_data(form):
     if not last_name:
         raise ValueError("نام خانوادگی مشتری را وارد کنید.")
 
+    if len(first_name) > 80 or len(last_name) > 80:
+        raise ValueError("نام و نام خانوادگی حداکثر باید ۸۰ نویسه باشند.")
+
+    if len(phone) > 30:
+        raise ValueError("شماره تماس بیش از حد طولانی است.")
+
+    if len(national_id) > 10:
+        raise ValueError("کد ملی باید حداکثر ۱۰ رقم باشد.")
+
     # حذف فاصله و خط تیره و پرانتز از شماره تماس
     phone = re.sub(r"[\s\-\(\)]", "", phone)
 
@@ -2390,6 +2428,15 @@ def bad_request(error):
             "درخواست نامعتبر است."
         )
     ), 400
+
+
+@app.errorhandler(413)
+def request_too_large(error):
+
+    return render_template(
+        "error.html",
+        message="حجم اطلاعات ارسالی بیش از حد مجاز است."
+    ), 413
 
 
 @app.errorhandler(404)
