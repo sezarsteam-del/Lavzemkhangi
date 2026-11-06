@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}جزئیات اقساط{% endblock %}
+{% block content %}
+<div class="admin-page" dir="rtl"><h1>جزئیات اقساط مشتری</h1>
+<section class="panel"><h2>{{ plan.customer_name }}</h2><p>شماره تماس: {{ plan.customer_phone }}</p><p>مبلغ کل: {{ "{:,}".format(plan.total_amount) }} تومان</p><p>پرداخت‌شده: {{ "{:,}".format(plan.paid_amount) }} تومان</p><h3>مانده بدهی: {{ "{:,}".format(plan.total_amount-plan.paid_amount) }} تومان</h3>{% if plan.notes %}<p>{{ plan.notes }}</p>{% endif %}</section>
+<section class="panel"><h2>سررسیدها</h2><div class="scroll"><table><thead><tr><th>قسط</th><th>مبلغ</th><th>تاریخ سررسید</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>
+{% for i in installments %}<tr><td>{{ i.installment_no }}</td><td>{{ "{:,}".format(i.amount) }} تومان</td><td>{{ i.due_date|jalali_date }}</td><td>{% if i.paid_at %}پرداخت‌شده · {{ i.paid_at|jalali }}{% elif i.due_date < tehran_now().date() %}<b style="color:#c0392b">معوق</b>{% else %}پرداخت‌نشده{% endif %}</td><td><form method="POST" action="{{ url_for('toggle_installment_payment',payment_id=i.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>{{ 'لغو ثبت پرداخت' if i.paid_at else 'ثبت پرداخت' }}</button></form></td></tr>{% endfor %}
+</tbody></table></div></section><a href="{{ url_for('installments') }}">بازگشت به اقساط</a></div>
+<style>.admin-page{max-width:1000px;margin:25px auto;padding:15px}.panel{background:white;border:1px solid #e5eaf0;border-radius:14px;padding:18px;margin:18px 0}.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:650px}td,th{text-align:right;padding:12px;border-bottom:1px solid #edf0f4}button{padding:9px 13px;border:0;border-radius:8px;background:#263b60;color:white;font:inherit;cursor:pointer}</style>
+{% endblock %}
