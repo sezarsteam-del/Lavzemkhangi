@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}ویرایش قرارداد اقساط{% endblock %}
+{% block content %}
+<div class="edit-page" dir="rtl">
+<h1>ویرایش قرارداد اقساط</h1>
+<p>قرارداد مشتری: <strong>{{ plan.customer_name }}</strong></p>
+<section class="panel">
+<form method="POST">
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+<div class="fields">
+<label>نام مشتری<input name="customer_name" required maxlength="160" value="{{ plan.customer_name }}"></label>
+<label>شماره تماس<input name="customer_phone" required maxlength="20" inputmode="tel" value="{{ plan.customer_phone }}"></label>
+<label>مبلغ کل (تومان)<input name="total_amount" id="total" required inputmode="numeric" value="{{ plan.total_amount }}"></label>
+<label>تعداد اقساط<input name="installment_count" id="count" type="number" min="1" max="120" value="{{ plan.installment_count }}" {% if has_paid %}readonly{% endif %} required></label>
+</div>
+<label>توضیحات<textarea name="notes" maxlength="1000">{{ plan.notes }}</textarea></label>
+<h3>مبلغ و تاریخ اقساط</h3>
+{% if has_paid %}<p class="notice">اقساط پرداخت‌شده برای حفظ سوابق مالی قفل هستند و تعداد اقساط قابل تغییر نیست.</p>{% endif %}
+<div id="rows">
+{% for i in installments %}
+<div class="installment-row">
+<b>قسط {{ i.installment_no }}{% if i.paid_at %} · پرداخت‌شده{% endif %}</b>
+<input name="installment_amount[]" inputmode="numeric" required value="{{ i.amount }}" {% if i.paid_at %}readonly{% endif %}>
+<input name="due_date[]" type="text" data-jdp data-jdp-only-date autocomplete="off" placeholder="۱۴۰۵/۰۱/۱۵" required value="{{ i.due_date|jalali_date }}" {% if i.paid_at %}readonly{% endif %}>
+</div>
+{% endfor %}
+</div>
+{% if not has_paid %}<p class="hint">در صورت نیاز می‌توانید تعداد اقساط را تغییر دهید. مجموع مبالغ باید برابر مبلغ کل باشد.</p>{% endif %}
+<button class="primary" type="submit">ذخیره تغییرات</button>
+<a class="back" href="{{ url_for('installment_detail',plan_id=plan.id) }}">انصراف</a>
+</form>
+</section>
+</div>
+<style>
+.edit-page{max-width:900px;margin:25px auto;padding:15px;color:#263447}.panel{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:20px;margin:18px 0}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{display:flex;flex-direction:column;gap:6px;margin:8px 0}input,textarea{padding:11px;border:1px solid #dce2e9;border-radius:8px;font:inherit;min-width:0}.installment-row{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;padding:9px;background:#f6f8fb;margin:8px 0;border-radius:8px}.primary,button{padding:10px 14px;border:0;border-radius:8px;background:#263b60;color:#fff;font:inherit;cursor:pointer}.back{margin-right:12px}.hint{color:#687789}.notice{background:#fff7e6;padding:10px;border-radius:8px}@media(max-width:600px){.fields{grid-template-columns:1fr}.installment-row{grid-template-columns:1fr}.panel{padding:12px}}
+</style>
+<link rel="stylesheet" href="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.css">
+<script src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
+<script>
+if(window.jalaliDatepicker){jalaliDatepicker.startWatch({selector:'input[data-jdp]',persianDigits:true,date:true,time:false,zIndex:3000});}
+</script>
+{% endblock %}
