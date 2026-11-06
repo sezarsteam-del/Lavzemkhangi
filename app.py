@@ -49,6 +49,11 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
     os.environ.get("COOKIE_SECURE", "true").lower() == "true"
 )
+# محدودیت اندازه درخواست برای جلوگیری از ارسال payloadهای بسیار بزرگ
+# تصاویر محصولات از URL دریافت می‌شوند؛ بنابراین ۲ مگابایت برای فرم‌ها کافی است.
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
+app.config["MAX_FORM_MEMORY_SIZE"] = 256 * 1024
+app.config["MAX_FORM_PARTS"] = 100
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
 app.config["SESSION_REFRESH_EACH_REQUEST"] = False
 
@@ -2418,6 +2423,15 @@ def bad_request(error):
             "درخواست نامعتبر است."
         )
     ), 400
+
+
+@app.errorhandler(413)
+def request_too_large(error):
+
+    return render_template(
+        "error.html",
+        message="حجم اطلاعات ارسالی بیش از حد مجاز است."
+    ), 413
 
 
 @app.errorhandler(404)
