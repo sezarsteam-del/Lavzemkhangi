@@ -2379,6 +2379,200 @@ def delete_sale(sale_id):
 
 
 
+
+# ==================================================
+# پیامک اقساط - تنظیمات و زمان‌بندی
+# ==================================================
+GHASEDAK_URL = "https://gateway.ghasedak.me/rest/api/v1/WebService/SendSingleSMS"
+
+
+def get_sms_settings():
+    with db() as conn:
+        return conn.execute("SELECT * FROM sms_settings WHERE id=1").fetchone()
+
+
+def sms_fill(template, values):
+    for key, value in values.items():
+        template = template.replace("{" + key + "}", str(value))
+    return template[:1000]
+
+
+def send_installment_sms(plan_id, payment_id, kind, receptor, message):
+    with db() as conn:
+        log = conn.execute(
+            """INSERT INTO installment_sms_logs
+               (plan_id, payment_id, kind, receptor, message, status)
+               VALUES (%s, %s, %s, %s, %s, 'processing')
+               ON CONFLICT DO NOTHING RETURNING id""",
+            (plan_id, payment_id, kind, receptor, message)
+        ).fetchone()
+    if not log:
+        return False
+
+    api_key = os.environ.get("GHASEDAK_API_KEY", "").strip()
+    if not api_key:
+        error_text = "GHASEDAK_API_KEY در متغیرهای محرمانه هاست تنظیم نشده است."
+        with db() as conn:
+            conn.execute(
+                "UPDATE installment_sms_logs SET status='failed', error_text=%s WHERE id=%s",
+                (error_text, log["id"])
+            )
+        return False
+
+    settings = get_sms_settings()
+    payload = {
+        "message": message,
+        "lineNumber": settings["line_number"],
+        "receptor": receptor,
+        "clientReferenceId": str(uuid.uuid4()),
+        "udh": False
+    }
+    req = urllib.request.Request(
+        GHASEDAK_URL,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"ApiKey": api_key, "Content-Type": "application/json", "Accept": "application/json"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            raw = response.read(100000).decode("utf-8", errors="replace")
+        result = json.loads(raw) if raw else {}
+        success = (
+            result.get("IsSuccess") is True
+            or str(result.get("IsSuccess", "")).lower() == "true"
+            or str(result.get("StatusCode", "")) == "200"
+        )
+        if not success:
+            raise RuntimeError(str(result.get("Message") or result.get("message") or "پاسخ ناموفق سرویس پیامک"))
+        provider_id = str(result.get("MessageId") or "")
+        with db() as conn:
+            conn.execute(
+                """UPDATE installment_sms_logs
+                   SET status='sent', provider_message_id=%s, sent_at=NOW(), error_text=''
+                   WHERE id=%s""",
+                (provider_id, log["id"])
+            )
+        return True
+    except Exception as exc:
+        with db() as conn:
+            conn.execute(
+                "UPDATE installment_sms_logs SET status='failed', error_text=%s WHERE id=%s",
+                (str(exc)[:1000], log["id"])
+            )
+        app.logger.exception("Ghasedak SMS send failed")
+        return False
+
+
+def send_installment_welcome(plan_id, name, phone, total, count, parsed):
+    settings = get_sms_settings()
+    if not settings or not settings["enabled"] or not settings["welcome_enabled"]:
+        return
+    first_due = min(item[1] for item in parsed)
+    last_due = max(item[1] for item in parsed)
+    message = sms_fill(settings["welcome_template"], {
+        "customer_name": name,
+        "total_amount": f"{total:,}",
+        "installment_count": count,
+        "first_due_date": jalali_day(first_due),
+        "last_due_date": jalali_day(last_due),
+        "brand": "لوازم خانگی بولحسنی"
+    })
+    send_installment_sms(plan_id, None, "welcome", phone, message)
+
+
+@app.route("/internal/sms/run", methods=["POST"])
+def run_installment_sms_reminders():
+    secret = os.environ.get("SMS_CRON_SECRET", "").strip()
+    if len(secret) < 32 or not hmac.compare_digest(
+        request.headers.get("Authorization", ""), "Bearer " + secret
+    ):
+        abort(404)
+
+    settings = get_sms_settings()
+    if not settings or not settings["enabled"] or not settings["reminder_enabled"]:
+        return {"ok": True, "sent": 0, "message": "reminders disabled"}
+
+    now = tehran_now()
+    if (now.hour, now.minute) < (int(settings["send_hour"]), int(settings["send_minute"])):
+        return {"ok": True, "sent": 0, "message": "waiting for configured Tehran time"}
+
+    target_date = now.date() + timedelta(days=1)
+    with db() as conn:
+        due_rows = conn.execute(
+            """SELECT p.id AS plan_id, p.customer_name, p.customer_phone,
+                      i.id AS payment_id, i.installment_no, i.amount, i.due_date
+               FROM installment_payments i
+               JOIN installment_plans p ON p.id=i.plan_id
+               WHERE i.due_date=%s AND i.paid_at IS NULL
+               ORDER BY i.id LIMIT 500""",
+            (target_date,)
+        ).fetchall()
+
+    sent_count = 0
+    for item in due_rows:
+        message = sms_fill(settings["reminder_template"], {
+            "customer_name": item["customer_name"],
+            "installment_no": item["installment_no"],
+            "amount": f'{int(item["amount"]):,}',
+            "due_date": jalali_day(item["due_date"]),
+            "brand": "لوازم خانگی بولحسنی"
+        })
+        if send_installment_sms(
+            item["plan_id"], item["payment_id"], "reminder",
+            item["customer_phone"], message
+        ):
+            sent_count += 1
+    return {"ok": True, "sent": sent_count, "checked": len(due_rows)}
+
+
+@app.route("/admin/sms", methods=["GET", "POST"])
+@admin_required
+def installment_sms_settings():
+    if request.method == "POST":
+        try:
+            enabled = request.form.get("enabled") == "on"
+            welcome_enabled = request.form.get("welcome_enabled") == "on"
+            reminder_enabled = request.form.get("reminder_enabled") == "on"
+            hour = int(request.form.get("send_hour", "9"))
+            minute = int(request.form.get("send_minute", "0"))
+            line_number = normalize_digits(request.form.get("line_number", "")).strip()
+            welcome_template = request.form.get("welcome_template", "").strip()
+            reminder_template = request.form.get("reminder_template", "").strip()
+            if not (0 <= hour <= 23 and 0 <= minute <= 59):
+                raise ValueError
+            if not line_number or len(line_number) > 30:
+                raise ValueError
+            if not welcome_template or not reminder_template or len(welcome_template) > 1000 or len(reminder_template) > 1000:
+                raise ValueError
+            with db() as conn:
+                conn.execute(
+                    """UPDATE sms_settings SET enabled=%s, welcome_enabled=%s,
+                       reminder_enabled=%s, send_hour=%s, send_minute=%s,
+                       line_number=%s, welcome_template=%s, reminder_template=%s
+                       WHERE id=1""",
+                    (enabled, welcome_enabled, reminder_enabled, hour, minute,
+                     line_number, welcome_template, reminder_template)
+                )
+            flash("تنظیمات پیامک ذخیره شد.", "success")
+            return redirect(url_for("installment_sms_settings"))
+        except (ValueError, TypeError):
+            flash("ساعت یا متن پیامک معتبر نیست.", "error")
+
+    with db() as conn:
+        settings = conn.execute("SELECT * FROM sms_settings WHERE id=1").fetchone()
+        logs = conn.execute(
+            """SELECT l.*, p.customer_name
+               FROM installment_sms_logs l
+               LEFT JOIN installment_plans p ON p.id=l.plan_id
+               ORDER BY l.created_at DESC LIMIT 50"""
+        ).fetchall()
+    return render_template(
+        "installment_sms.html", settings=settings, logs=logs,
+        api_configured=bool(os.environ.get("GHASEDAK_API_KEY")),
+        cron_configured=len(os.environ.get("SMS_CRON_SECRET", "").strip()) >= 32
+    )
+
+
 # ==================================================
 # مدیریت اقساط
 # ==================================================
