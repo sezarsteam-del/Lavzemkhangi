@@ -271,7 +271,7 @@
             <button
                 type="button"
                 class="invoice-btn print-btn"
-                onclick="window.print()"
+                data-print
             >
                 چاپ فاکتور
             </button>
@@ -284,7 +284,7 @@
             <form
                 method="POST"
                 action="{{ url_for('cancel_sale', sale_id=sale.id) }}"
-                onsubmit="return confirm('آیا از لغو این فاکتور مطمئن هستید؟ موجودی محصولات به انبار بازگردانده می‌شود.');"
+                data-confirm="آیا از لغو این فاکتور مطمئن هستید؟ موجودی محصولات به انبار بازگردانده می‌شود."
             >
                 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 
