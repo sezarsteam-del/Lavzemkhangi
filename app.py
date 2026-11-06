@@ -2437,7 +2437,8 @@ def edit_installment_plan(plan_id):
                 raise ValueError
 
             old_by_no = {int(p["installment_no"]): p for p in payments}
-            if any(p["paid_at"] is not None for p in payments) and count != len(payments):
+            # تعداد اقساط پس از ثبت قرارداد ثابت می‌ماند تا سوابق پرداخت حذف یا جابه‌جا نشوند.
+            if count != len(payments):
                 raise ValueError
 
             parsed = []
@@ -2471,7 +2472,7 @@ def edit_installment_plan(plan_id):
                     (plan_id,)
                 ).fetchall()
                 has_paid = any(p["paid_at"] is not None for p in current)
-                if has_paid and count != len(current):
+                if count != len(current):
                     raise ValueError
 
                 conn.execute(
@@ -2482,28 +2483,16 @@ def edit_installment_plan(plan_id):
                     (name, phone, total, count, notes, plan_id)
                 )
 
-                if count == len(current):
-                    for no, (amount, due) in enumerate(parsed, 1):
-                        old = next((p for p in current if int(p["installment_no"]) == no), None)
-                        if old and old["paid_at"] is not None:
-                            continue
-                        conn.execute(
-                            """UPDATE installment_payments
-                               SET amount=%s, due_date=%s
-                               WHERE plan_id=%s AND installment_no=%s""",
-                            (amount, due, plan_id, no)
-                        )
-                else:
-                    if has_paid:
-                        raise ValueError
-                    conn.execute("DELETE FROM installment_payments WHERE plan_id=%s", (plan_id,))
-                    for no, (amount, due) in enumerate(parsed, 1):
-                        conn.execute(
-                            """INSERT INTO installment_payments
-                               (plan_id, installment_no, amount, due_date)
-                               VALUES (%s, %s, %s, %s)""",
-                            (plan_id, no, amount, due)
-                        )
+                for no, (amount, due) in enumerate(parsed, 1):
+                    old = next((p for p in current if int(p["installment_no"]) == no), None)
+                    if old and old["paid_at"] is not None:
+                        continue
+                    conn.execute(
+                        """UPDATE installment_payments
+                           SET amount=%s, due_date=%s
+                           WHERE plan_id=%s AND installment_no=%s""",
+                        (amount, due, plan_id, no)
+                    )
 
             flash("قرارداد با موفقیت ویرایش شد.", "success")
             return redirect(url_for("installment_detail", plan_id=plan_id))
