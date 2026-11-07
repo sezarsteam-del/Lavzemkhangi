@@ -21,6 +21,7 @@ from flask import (
     url_for, session, flash, abort
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
+from customer_store import customer_bp, init_customer_store
 
 # ==================================================
 # تنظیمات اصلی
@@ -48,6 +49,8 @@ if len(SECRET_KEY) < 32:
     )
 
 app.config["SECRET_KEY"] = SECRET_KEY
+init_customer_store(db, SECRET_KEY)
+app.register_blueprint(customer_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
