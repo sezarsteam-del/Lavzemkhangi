@@ -408,8 +408,8 @@ def run_price_alerts(db_func=None, limit=100):
             WHERE a.is_active=TRUE AND p.is_active=TRUE
               AND p.price<=a.target_price
             ORDER BY a.id
-            FOR UPDATE OF a SKIP LOCKED
             LIMIT %s
+            FOR UPDATE OF a SKIP LOCKED
         """, (max(1, min(int(limit), 500)),)).fetchall()
         checked = len(rows)
         for item in rows:
