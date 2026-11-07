@@ -260,7 +260,7 @@ def init_db():
             ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE
         """)
 
-        # Keep the public storefront to six fixed appliance categories.
+        # Seed the six default categories without overwriting administrator changes.
         fixed_categories = [
             ("یخچال و فریزر", "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=900&auto=format&fit=crop"),
             ("شست‌وشو و نظافت", "https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=900&auto=format&fit=crop"),
@@ -273,57 +273,8 @@ def init_db():
             conn.execute("""
                 INSERT INTO categories (name, image_url)
                 VALUES (%s, %s)
-                ON CONFLICT (name) DO UPDATE
-                SET image_url = EXCLUDED.image_url
+                ON CONFLICT (name) DO NOTHING
             """, (category_name, category_image))
-
-        conn.execute("""
-            UPDATE products p
-            SET category_id = target.id
-            FROM categories oldc, categories target
-            WHERE oldc.id = p.category_id
-              AND target.name = CASE
-                WHEN concat_ws(' ', p.name, p.description, oldc.name) ILIKE ANY
-                     (ARRAY['%یخچال%', '%فریزر%', '%ساید%', '%سردکن%'])
-                    THEN 'یخچال و فریزر'
-                WHEN concat_ws(' ', p.name, p.description, oldc.name) ILIKE ANY
-                     (ARRAY['%لباسشویی%', '%ظرفشویی%', '%جارو%', '%بخارشوی%', '%اتو%'])
-                    THEN 'شست‌وشو و نظافت'
-                WHEN concat_ws(' ', p.name, p.description, oldc.name) ILIKE ANY
-                     (ARRAY['%اجاق%', '%گاز%', '%مایکرو%', '%توستر%', '%سرخ‌کن%', '%پلوپز%', '%فر%'])
-                    THEN 'لوازم پخت‌وپز'
-                WHEN concat_ws(' ', p.name, p.description, oldc.name) ILIKE ANY
-                     (ARRAY['%کولر%', '%پنکه%', '%بخاری%', '%هیتر%', '%شوفاژ%', '%تهویه%'])
-                    THEN 'لوازم سرمایشی و گرمایشی'
-                WHEN concat_ws(' ', p.name, p.description, oldc.name) ILIKE ANY
-                     (ARRAY['%چای‌ساز%', '%چای ساز%', '%قهوه%', '%مخلوط‌کن%', '%آبمیوه%', '%غذاساز%', '%خردکن%', '%همزن%', '%کتری%'])
-                    THEN 'لوازم برقی آشپزخانه'
-                WHEN concat_ws(' ', p.name, p.description, oldc.name) ILIKE ANY
-                     (ARRAY['%تلویزیون%', '%اسپیکر%', '%صوتی%', '%تصویری%', '%سینمای خانگی%', '%رادیو%'])
-                    THEN 'لوازم صوتی و تصویری'
-                WHEN oldc.name IN (
-                    'یخچال و فریزر','شست‌وشو و نظافت','لوازم پخت‌وپز',
-                    'لوازم سرمایشی و گرمایشی','لوازم برقی آشپزخانه','لوازم صوتی و تصویری'
-                ) THEN oldc.name
-                ELSE 'لوازم برقی آشپزخانه'
-              END
-              AND p.category_id IS NOT NULL
-        """)
-        conn.execute("""
-            UPDATE products p
-            SET category_id = (
-                SELECT id FROM categories
-                WHERE name = 'لوازم برقی آشپزخانه'
-            )
-            WHERE p.category_id IS NULL
-        """)
-        conn.execute("""
-            DELETE FROM categories
-            WHERE name NOT IN (
-                'یخچال و فریزر','شست‌وشو و نظافت','لوازم پخت‌وپز',
-                'لوازم سرمایشی و گرمایشی','لوازم برقی آشپزخانه','لوازم صوتی و تصویری'
-            )
-        """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS stock_movements (
