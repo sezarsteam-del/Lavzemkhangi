@@ -49,7 +49,6 @@ if len(SECRET_KEY) < 32:
     )
 
 app.config["SECRET_KEY"] = SECRET_KEY
-init_customer_store(db, SECRET_KEY)
 app.register_blueprint(customer_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -191,6 +190,9 @@ def db():
         connect_timeout=15,
         row_factory=dict_row
     )
+
+# اتصال توابع حساب مشتری پس از تعریف db()
+init_customer_store(db, SECRET_KEY)
 
 
 # ==================================================
