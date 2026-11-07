@@ -422,3 +422,57 @@ def customer_password_reset_verify():
                     flash("رمز عبور با موفقیت بازیابی شد؛ اکنون وارد شوید.", "success")
                     return redirect(url_for("customer.customer_login"))
     return render_template("customer_password_reset_verify.html")
+
+
+@customer_bp.route("/account/phone/change", methods=["GET", "POST"])
+@customer_required
+def customer_phone_change():
+    user = current_customer()
+    if request.method == "POST":
+        try:
+            phone = clean_phone(request.form.get("phone", ""))
+            with DB() as conn:
+                existing = conn.execute("SELECT id FROM customers WHERE phone=%s AND id<>%s", (phone, user["id"])).fetchone()
+                if existing:
+                    raise ValueError("این شماره موبایل قبلاً در حساب دیگری ثبت شده است.")
+                enforce_otp_rate_limit(conn, phone)
+                code = f"{secrets.randbelow(1000000):06d}"
+                conn.execute("INSERT INTO customer_login_codes(phone,code_hash,expires_at) VALUES(%s,%s,NOW()+INTERVAL '5 minutes')", (phone, otp_hash(phone, code)))
+            send_otp(phone, code)
+            session["pending_phone_change"] = phone
+            flash("کد تأیید به شماره جدید ارسال شد.", "success")
+            return redirect(url_for("customer.customer_phone_change_verify"))
+        except ValueError as exc:
+            flash(str(exc), "error")
+        except Exception:
+            flash("ارسال کد تأیید انجام نشد؛ تنظیمات پیامک را بررسی کنید.", "error")
+    return render_template("customer_phone_change.html", customer=user)
+
+@customer_bp.route("/account/phone/change/verify", methods=["GET", "POST"])
+@customer_required
+def customer_phone_change_verify():
+    user = current_customer()
+    phone = session.get("pending_phone_change")
+    if not phone:
+        return redirect(url_for("customer.customer_phone_change"))
+    if request.method == "POST":
+        code = "".join(c for c in request.form.get("code", "") if c.isdigit())
+        with DB() as conn:
+            challenge = conn.execute("SELECT id,code_hash,attempts FROM customer_login_codes WHERE phone=%s AND consumed_at IS NULL AND expires_at>NOW() ORDER BY created_at DESC LIMIT 1 FOR UPDATE", (phone,)).fetchone()
+            if not challenge or challenge["attempts"] >= 5:
+                flash("کد منقضی شده یا تعداد تلاش‌ها تمام شده است.", "error")
+            elif not re.fullmatch(r"\d{6}", code):
+                flash("کد باید ۶ رقم باشد.", "error")
+            elif not hmac.compare_digest(challenge["code_hash"], otp_hash(phone, code)):
+                conn.execute("UPDATE customer_login_codes SET attempts=attempts+1 WHERE id=%s", (challenge["id"],))
+                flash("کد صحیح نیست.", "error")
+            else:
+                try:
+                    conn.execute("UPDATE customers SET phone=%s WHERE id=%s", (phone, user["id"]))
+                    conn.execute("UPDATE customer_login_codes SET consumed_at=NOW() WHERE id=%s", (challenge["id"],))
+                    session.pop("pending_phone_change", None)
+                    flash("شماره موبایل حساب با موفقیت تغییر کرد.", "success")
+                    return redirect(url_for("customer.customer_profile"))
+                except Exception:
+                    flash("امکان ثبت این شماره وجود ندارد؛ شاید قبلاً استفاده شده باشد.", "error")
+    return render_template("customer_phone_change_verify.html")
