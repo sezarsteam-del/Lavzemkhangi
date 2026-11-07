@@ -540,7 +540,7 @@
 </section>
 
 <!-- لیست محصولات -->
-<section>
+<section id="catalog">
 
     <div class="catalog-heading">
         <h2 class="section-title">لیست قیمت محصولات</h2>
@@ -577,7 +577,7 @@
                             {{ product.category_name or 'بدون دسته‌بندی' }}
                         </div>
 
-                        <h3>{{ product.name }}</h3>
+                        <h3><a href="{{ url_for('features.product_detail',product_id=product.id) }}">{{ product.name }}</a></h3>
 
                         {% if product.brand_name %}
                             <div class="product-brand">
@@ -595,6 +595,19 @@
 
                             <div class="price">
                                 {{ "{:,}".format(product.price) }} تومان
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:7px;margin:10px 0">
+                                <a class="btn secondary" href="{{ url_for('features.product_detail',product_id=product.id) }}">جزئیات و نظرات</a>
+                                <form method="post" action="{{ url_for('features.compare_add',product_id=product.id) }}">
+                                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                    <button class="secondary" type="submit">مقایسه</button>
+                                </form>
+                                {% if session.get('customer_id') %}
+                                <form method="post" action="{{ url_for('features.wishlist_toggle',product_id=product.id) }}">
+                                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                    <button class="secondary" type="submit">♡ ذخیره</button>
+                                </form>
+                                {% endif %}
                             </div>
                             <form method="post" action="{{ url_for('customer.cart') }}">
                                 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
