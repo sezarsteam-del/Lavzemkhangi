@@ -730,3 +730,13 @@ tr:hover td { background:#f1f6f6 !important; }
   .category-photo-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .category-photo-tile { min-height: 150px; }
 }
+
+.category-products-page { margin:18px 0 35px; }
+.back-to-categories { display:inline-block; margin:8px 0 18px; color:#269a9a; font-weight:700; text-decoration:none; }
+.category-products-page .catalog-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.category-products-page .search { display:flex; gap:10px; margin:16px 0 22px; }
+.category-products-page .search input { flex:1; min-width:0; }
+@media(max-width:600px) {
+ .category-products-page .catalog-heading { align-items:flex-start; flex-direction:column; }
+ .category-products-page .search { flex-direction:column; }
+}
