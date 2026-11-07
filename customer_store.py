@@ -362,11 +362,11 @@ def zarinpal_callback():
         return redirect(url_for("customer.customer_order_detail",order_id=order_id))
     if order["status"] != "pending_payment":
         flash("وضعیت این سفارش تغییر کرده است؛ برای پیگیری با فروشگاه تماس بگیرید.","error")
-        return redirect(url_for("customer.customer_login"))
+        return redirect(url_for("customer.customer_order_detail",order_id=order_id))
     if status != "OK":
         fail_zarinpal_order(order_id)
         flash("پرداخت انجام نشد یا از سوی شما لغو شد؛ مبلغی به‌عنوان پرداخت موفق ثبت نشده است.","error")
-        return redirect(url_for("customer.customer_login"))
+        return redirect(url_for("customer.customer_order_detail",order_id=order_id))
     try:
         verification = zarinpal_api("verify", {
             "amount": int(order["total_amount"]) * 10,
@@ -515,7 +515,7 @@ def customer_orders_admin():
         flash("ابتدا وارد حساب مدیر شوید.", "error")
         return redirect(url_for("login"))
     with DB() as conn:
-        orders = conn.execute("""SELECT o.id,o.total_amount,o.status,o.fulfillment_status,o.tracking_code,o.created_at,
+        orders = conn.execute("""SELECT o.id,o.total_amount,o.status,o.payment_provider,o.fulfillment_status,o.tracking_code,o.created_at,
             c.first_name,c.last_name,c.phone FROM store_orders o JOIN customers c ON c.id=o.customer_id
             ORDER BY o.created_at DESC LIMIT 200""").fetchall()
     return render_template("admin_customer_orders.html", orders=orders)
