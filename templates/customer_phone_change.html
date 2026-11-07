@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}تغییر شماره موبایل{% endblock %}
+{% block content %}<section class="panel account-panel"><h1>تغییر شماره موبایل</h1><p>شماره جدید را وارد کنید. کد تأیید به همان شماره ارسال می‌شود.</p><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><label>شماره موبایل جدید</label><input name="phone" inputmode="tel" placeholder="09123456789" required><button type="submit">ارسال کد تأیید</button></form></section>{% endblock %}
