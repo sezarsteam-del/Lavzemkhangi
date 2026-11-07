@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}تأیید شماره جدید{% endblock %}
+{% block content %}<section class="panel account-panel"><h1>تأیید شماره موبایل</h1><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><label>کد ۶ رقمی پیامک‌شده</label><input name="code" inputmode="numeric" maxlength="6" required><button type="submit">تأیید و تغییر شماره</button></form></section>{% endblock %}

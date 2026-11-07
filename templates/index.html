@@ -359,7 +359,7 @@
 <section class="hero">
     <h1>به فروشگاه لوازم خانگی خوش آمدید</h1>
     <p>
-        مشاهده قیمت روز، بررسی موجودی و استعلام محصولات لوازم خانگی
+        مشاهده محصولات و خرید آسان لوازم خانگی
     </p>
 </section>
 
@@ -596,6 +596,12 @@
                             <div class="price">
                                 {{ "{:,}".format(product.price) }} تومان
                             </div>
+                            <form method="post" action="{{ url_for('customer.cart') }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="add">
+                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                <button type="submit">افزودن به سبد خرید</button>
+                            </form>
 
 
                         </div>
