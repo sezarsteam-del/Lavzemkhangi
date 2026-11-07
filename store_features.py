@@ -1,5 +1,11 @@
 import secrets
 import string
+import hashlib
+import json
+import os
+import urllib.request
+import urllib.error
+import uuid
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 
@@ -74,9 +80,14 @@ def ensure_features_schema():
                 gift_card_id BIGINT NOT NULL REFERENCES gift_cards(id),
                 customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
                 amount BIGINT NOT NULL CHECK(amount > 0),
+                order_id BIGINT REFERENCES store_orders(id) ON DELETE SET NULL,
+                refunded_at TIMESTAMPTZ,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
         """)
+        conn.execute("ALTER TABLE gift_card_redemptions ADD COLUMN IF NOT EXISTS order_id BIGINT REFERENCES store_orders(id) ON DELETE SET NULL")
+        conn.execute("ALTER TABLE gift_card_redemptions ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_gift_card_redemptions_order ON gift_card_redemptions(order_id) WHERE order_id IS NOT NULL")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS price_alerts (
                 id BIGSERIAL PRIMARY KEY,
@@ -84,10 +95,15 @@ def ensure_features_schema():
                 product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
                 target_price BIGINT NOT NULL CHECK(target_price > 0),
                 is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                last_notified_at TIMESTAMPTZ,
+                last_notified_price BIGINT,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 UNIQUE(customer_id, product_id)
             )
         """)
+        conn.execute("ALTER TABLE price_alerts ADD COLUMN IF NOT EXISTS last_notified_at TIMESTAMPTZ")
+        conn.execute("ALTER TABLE price_alerts ADD COLUMN IF NOT EXISTS last_notified_price BIGINT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_price_alerts_active ON price_alerts(is_active,product_id)")
         conn.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS loyalty_points INTEGER NOT NULL DEFAULT 0")
         conn.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS referral_code TEXT")
         conn.execute("UPDATE customers SET referral_code=upper(substr(md5(id::text || phone),1,8)) WHERE referral_code IS NULL")
@@ -321,18 +337,14 @@ def admin_support_reply(ticket_id):
 @customer_required
 def gift_card(user):
     if request.method == "POST":
-        raw = "".join(ch for ch in request.form.get("code", "").upper() if ch.isalnum())[:40]
-        import hashlib
-        digest = hashlib.sha256(raw.encode()).hexdigest()
-        with DB() as conn:
-            card = conn.execute("SELECT id,remaining_amount FROM gift_cards WHERE code_hash=%s AND remaining_amount>0 AND (expires_at IS NULL OR expires_at>NOW()) FOR UPDATE", (digest,)).fetchone()
-            if not card:
-                flash("کارت هدیه معتبر نیست یا اعتبار آن تمام شده است.", "error")
-            else:
-                flash("کد معتبر است؛ اما اتصال اعتبار کارت هدیه به پرداخت سفارش هنوز تکمیل نشده و هیچ اعتباری مصرف نشد.", "error")
-        return redirect(url_for("features.gift_card"))
+        flash("کد کارت هدیه را هنگام تکمیل خرید وارد کنید تا از مبلغ سفارش کسر شود.", "info")
+        return redirect(url_for("customer.checkout"))
     with DB() as conn:
-        history = conn.execute("SELECT amount,created_at FROM gift_card_redemptions WHERE customer_id=%s ORDER BY created_at DESC", (user["id"],)).fetchall()
+        history = conn.execute("""
+            SELECT amount,created_at,refunded_at
+            FROM gift_card_redemptions
+            WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50
+        """, (user["id"],)).fetchall()
     return render_template("feature_gift_card.html", history=history)
 
 @features_bp.route("/admin/gift-cards", methods=["GET", "POST"])
@@ -347,7 +359,7 @@ def admin_gift_cards():
         else:
             alphabet = string.ascii_uppercase + string.digits
             issued_code = "-".join("".join(secrets.choice(alphabet) for _ in range(4)) for _ in range(3))
-            digest = hashlib.sha256(issued_code.encode()).hexdigest()
+            digest = hashlib.sha256(issued_code.replace("-", "").upper().encode()).hexdigest()
             with DB() as conn:
                 conn.execute("INSERT INTO gift_cards(code_hash,amount,remaining_amount) VALUES(%s,%s,%s)", (digest,int(amount),int(amount)))
     return render_template("feature_admin_gift_cards.html", issued_code=issued_code)
@@ -364,9 +376,80 @@ def price_alert(user, product_id):
             if not product:
                 abort(404)
             conn.execute("""
-                INSERT INTO price_alerts(customer_id,product_id,target_price)
-                VALUES(%s,%s,%s)
-                ON CONFLICT(customer_id,product_id) DO UPDATE SET target_price=EXCLUDED.target_price,is_active=TRUE
+                INSERT INTO price_alerts(customer_id,product_id,target_price,is_active,last_notified_at,last_notified_price)
+                VALUES(%s,%s,%s,TRUE,NULL,NULL)
+                ON CONFLICT(customer_id,product_id) DO UPDATE SET
+                    target_price=EXCLUDED.target_price,is_active=TRUE,
+                    last_notified_at=NULL,last_notified_price=NULL
             """, (user["id"],product_id,int(target)))
-        flash("هشدار قیمت ذخیره شد؛ بررسی و اطلاع‌رسانی خودکار نیازمند اتصال سرویس پیامک/اعلان است.", "success")
+        flash("هشدار قیمت ذخیره شد. پس از رسیدن قیمت به مبلغ هدف، پیامک اطلاع‌رسانی ارسال می‌شود.", "success")
     return redirect(url_for("features.product_detail", product_id=product_id))
+
+
+def run_price_alerts(db_func=None, limit=100):
+    """Send one SMS for each active alert whose product reached its target price."""
+    db_call = db_func or DB
+    if db_call is None:
+        raise RuntimeError("اتصال پایگاه داده آماده نیست.")
+    api_key = os.environ.get("GHASEDAK_API_KEY", "").strip()
+    if not api_key:
+        return {"checked": 0, "sent": 0, "failed": 0, "reason": "sms_api_not_configured"}
+    url = "https://gateway.ghasedak.me/rest/api/v1/WebService/SendSingleSMS"
+    checked = sent = failed = 0
+    with db_call() as conn:
+        settings = conn.execute("SELECT line_number FROM sms_settings WHERE id=1").fetchone()
+        line_number = str(settings["line_number"] or "").strip() if settings else ""
+        rows = conn.execute("""
+            SELECT a.id,a.target_price,p.name AS product_name,p.price,
+                   c.phone
+            FROM price_alerts a
+            JOIN products p ON p.id=a.product_id
+            JOIN customers c ON c.id=a.customer_id
+            WHERE a.is_active=TRUE AND p.is_active=TRUE
+              AND p.price<=a.target_price
+            ORDER BY a.id
+            FOR UPDATE OF a SKIP LOCKED
+            LIMIT %s
+        """, (max(1, min(int(limit), 500)),)).fetchall()
+        checked = len(rows)
+        for item in rows:
+            message = (
+                f"خبر خوب! قیمت {item['product_name']} به "
+                f"{int(item['price']):,} تومان رسیده است. "
+                "برای مشاهده و خرید به فروشگاه لوازم خانگی مراجعه کنید."
+            )[:900]
+            payload = {
+                "message": message,
+                "receptor": str(item["phone"]),
+                "clientReferenceId": str(uuid.uuid4()),
+                "udh": False,
+            }
+            if line_number:
+                payload["lineNumber"] = line_number
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                headers={"ApiKey": api_key, "Content-Type": "application/json", "Accept": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=20) as response:
+                    raw = response.read(50000).decode("utf-8", "replace")
+                result = json.loads(raw) if raw else {}
+                ok = (
+                    result.get("IsSuccess") is True
+                    or str(result.get("IsSuccess", "")).lower() == "true"
+                    or str(result.get("StatusCode", "")) == "200"
+                )
+                if not ok:
+                    failed += 1
+                    continue
+                conn.execute("""
+                    UPDATE price_alerts
+                    SET is_active=FALSE,last_notified_at=NOW(),last_notified_price=%s
+                    WHERE id=%s AND is_active=TRUE
+                """, (int(item["price"]), item["id"]))
+                sent += 1
+            except Exception:
+                failed += 1
+    return {"checked": checked, "sent": sent, "failed": failed}
