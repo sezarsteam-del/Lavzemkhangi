@@ -358,3 +358,57 @@ def customer_order_admin_status(order_id):
                 WHERE id=%s""", (status, tracking or None, status, status, order_id))
             flash("وضعیت سفارش به‌روزرسانی شد.", "success")
     return redirect(url_for("customer.customer_orders_admin"))
+
+
+@customer_bp.route("/account/password/reset", methods=["GET", "POST"])
+def customer_password_reset():
+    if request.method == "POST":
+        try:
+            phone = clean_phone(request.form.get("phone", ""))
+            with DB() as conn:
+                user = conn.execute("SELECT id FROM customers WHERE phone=%s AND is_active=TRUE", (phone,)).fetchone()
+                if not user:
+                    raise ValueError("اگر حساب فعالی با این شماره وجود داشته باشد، کد بازیابی ارسال می‌شود.")
+                code = f"{secrets.randbelow(1000000):06d}"
+                conn.execute("INSERT INTO customer_login_codes(phone,code_hash,expires_at) VALUES(%s,%s,NOW()+INTERVAL '5 minutes')", (phone, otp_hash(phone, code)))
+                conn.execute("DELETE FROM customer_login_codes WHERE phone=%s AND consumed_at IS NULL AND created_at<NOW()-INTERVAL '30 minutes'", (phone,))
+            send_otp(phone, code)
+            session["pending_reset_phone"] = phone
+            flash("کد بازیابی ارسال شد و پنج دقیقه اعتبار دارد.", "success")
+            return redirect(url_for("customer.customer_password_reset_verify"))
+        except ValueError as exc:
+            flash(str(exc), "error")
+        except Exception:
+            flash("ارسال کد بازیابی انجام نشد؛ تنظیمات پیامک را بررسی کنید.", "error")
+    return render_template("customer_password_reset.html")
+
+@customer_bp.route("/account/password/reset/verify", methods=["GET", "POST"])
+def customer_password_reset_verify():
+    phone = session.get("pending_reset_phone")
+    if not phone:
+        return redirect(url_for("customer.customer_password_reset"))
+    if request.method == "POST":
+        code = "".join(c for c in request.form.get("code", "") if c.isdigit())
+        password = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+        if not re.fullmatch(r"\d{6}", code):
+            flash("کد باید ۶ رقم باشد.", "error")
+        elif len(password) < 10 or len(password) > 128:
+            flash("رمز جدید باید بین ۱۰ تا ۱۲۸ نویسه باشد.", "error")
+        elif password != confirm:
+            flash("تکرار رمز جدید مطابقت ندارد.", "error")
+        else:
+            with DB() as conn:
+                challenge = conn.execute("SELECT id,code_hash,attempts FROM customer_login_codes WHERE phone=%s AND consumed_at IS NULL AND expires_at>NOW() ORDER BY created_at DESC LIMIT 1 FOR UPDATE", (phone,)).fetchone()
+                if not challenge or challenge["attempts"] >= 5:
+                    flash("کد منقضی شده یا تعداد تلاش‌ها تمام شده است.", "error")
+                elif not hmac.compare_digest(challenge["code_hash"], otp_hash(phone, code)):
+                    conn.execute("UPDATE customer_login_codes SET attempts=attempts+1 WHERE id=%s", (challenge["id"],))
+                    flash("کد صحیح نیست.", "error")
+                else:
+                    conn.execute("UPDATE customers SET password_hash=%s WHERE phone=%s AND is_active=TRUE", (generate_password_hash(password), phone))
+                    conn.execute("UPDATE customer_login_codes SET consumed_at=NOW() WHERE id=%s", (challenge["id"],))
+                    session.pop("pending_reset_phone", None)
+                    flash("رمز عبور با موفقیت بازیابی شد؛ اکنون وارد شوید.", "success")
+                    return redirect(url_for("customer.customer_login"))
+    return render_template("customer_password_reset_verify.html")
