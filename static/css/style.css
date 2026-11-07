@@ -160,3 +160,40 @@ tr:hover td{background:#faf6ed}
  .topbar-inner{background:transparent}
  .mobile-bottom-nav{box-shadow:0 -5px 22px rgba(0,0,0,.22)}
 }
+
+
+/* Modern colorful home-appliance storefront */
+:root{--primary:#1769aa;--primary-dark:#103e70;--primary-soft:#e8f4ff;--accent:#ff7a45;--accent-soft:#fff0e9;--ink:#18324b;--text:#40566b;--muted:#788b9c;--background:#f3f8fc;--surface:#fff;--border:#dce8f1;--success:#16865b;--danger:#d64545;--radius:18px;--shadow:0 14px 36px rgba(23,77,120,.10)}
+body{background:var(--background);color:var(--text)}
+h1,h2,h3,h4{color:var(--ink)}
+.announcement-bar{background:linear-gradient(90deg,#123f70,#1769aa);color:#fff}
+.announcement-note{color:#ffe0a8}
+.topbar{background:rgba(255,255,255,.97);border-bottom:1px solid #dce8f1;box-shadow:0 6px 22px rgba(23,77,120,.08)}
+.brand{color:#173c60}.brand-icon{background:linear-gradient(145deg,#ff9b58,#ed5b43);color:#fff;box-shadow:0 8px 20px rgba(237,91,67,.22)}
+.brand-copy strong{color:#174b78}.brand-copy small{color:#74899b}
+.header-action{background:#fff;border-color:#d9e6f0;color:#28506f}.header-action:hover{background:#fff0e9;border-color:#ff9b70;color:#d95737}
+.menu-toggle{background:#fff;border-color:#d9e6f0;color:#1769aa}
+.top-navigation{background:#fff;border-color:#dce8f1;box-shadow:0 20px 48px rgba(20,65,100,.16)}
+.top-navigation a,.top-navigation .logout-link{color:#36536c}.top-navigation a:hover,.top-navigation .logout-link:hover{background:#eaf5ff;color:#1769aa}
+.top-navigation .admin-login-link{background:#1769aa;color:#fff}.nav-divider{background:#dce8f1}
+input,select,textarea{background:#fff;border-color:#d6e3ee;color:#304c64}
+input:focus,select:focus,textarea:focus{border-color:#2693d1;box-shadow:0 0 0 3px rgba(38,147,209,.14)}
+button,.btn{background:linear-gradient(135deg,#ff8654,#ed5a43);color:#fff;box-shadow:0 5px 14px rgba(237,90,67,.15)}
+button:hover,.btn:hover{background:linear-gradient(135deg,#f36e45,#d94b37);color:#fff}
+.secondary{background:#eaf4fc;color:#1769aa}.secondary:hover{background:#d8ecfb;color:#104b7b}
+.danger{background:#ffebea;color:#b52e2e}
+.product{background:#fff;border-color:#deebf4;box-shadow:0 5px 18px rgba(26,77,116,.045)}
+.product:hover{border-color:#8dc9eb;box-shadow:0 17px 36px rgba(26,77,116,.13)}
+.product-image,.product-placeholder{background:linear-gradient(145deg,#f7fbff,#eaf4fb)}
+.product h3,.product h3 a{color:#193d5b}.product h3 a:hover{color:#e85d43}
+.price{color:#e65e43}.product-bottom{border-color:#e7eff5}
+.form-card{background:#fff;border-color:#deebf4;box-shadow:0 12px 32px rgba(31,82,120,.07)}
+table{background:#fff}th{background:#e8f3fb;color:#174b78}td{border-color:#e5eef5}tr:hover td{background:#f6fbff}
+.chip{border-color:#d9e6f0;background:#fff;color:#3f5d75}.chip:hover,.chip.active{background:#1769aa;color:#fff;border-color:#1769aa}
+.notice{background:#eaf4fc;color:#285575;border-color:#2693d1}
+.notice.success{background:#e5f6ed;color:#17613c;border-color:#2a9b61}
+.notice.error,.notice.danger{background:#ffebea;color:#943c36;border-color:#d64545}
+.footer{background:linear-gradient(110deg,#103e70,#145d96);color:#e4f2fc;border-top:4px solid #ff8654}
+.footer-brand strong,.footer-contact strong{color:#fff}.footer-brand p,.footer-contact span,.footer-bottom{color:#c5dced}
+.footer-links a{color:#e4f2fc}.footer-links a:hover{color:#ffd19c}.footer-bottom{border-color:rgba(255,255,255,.18)}
+.mobile-bottom-nav{background:rgba(255,255,255,.98);border-color:#dce8f1}.mobile-bottom-nav a{color:#52718a}.mobile-bottom-nav a:hover{color:#ed6045}
