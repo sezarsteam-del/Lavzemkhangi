@@ -529,9 +529,16 @@ def index():
     with db() as conn:
 
         categories = conn.execute("""
-            SELECT id, name
-            FROM categories
-            ORDER BY name
+            SELECT
+                c.id,
+                c.name,
+                COUNT(p.id) AS product_count
+            FROM categories c
+            LEFT JOIN products p
+                ON p.category_id = c.id
+               AND p.is_active = TRUE
+            GROUP BY c.id, c.name
+            ORDER BY product_count DESC, c.name ASC
         """).fetchall()
 
         sql = """
