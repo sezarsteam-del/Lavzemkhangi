@@ -576,7 +576,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 <!-- اسلایدر محصولات؛ از همان محصولات موجود فروشگاه استفاده می‌کند -->
-{% if products %}
+{% if featured_products %}
 <section class="featured-products" aria-label="محصولات منتخب">
     <div class="featured-heading">
         <div>
@@ -590,7 +590,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
     </div>
     <div class="featured-track" id="featuredProducts">
-        {% for product in products %}
+        {% for product in featured_products %}
         <article class="featured-card">
             <a class="featured-image-link" href="{{ url_for('index', q=product.name) }}" aria-label="جستجوی {{ product.name }}">
                 {% if product.image_url %}
