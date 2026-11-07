@@ -1,0 +1,33 @@
+name: Safe branch validation
+
+on:
+  push:
+    branches:
+      - feature/customer-accounts-store
+  pull_request:
+    branches:
+      - feature/customer-accounts-store
+
+jobs:
+  syntax-and-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install application dependencies
+        run: pip install -r requirements.txt
+      - name: Compile Python files
+        run: python -m compileall -q .
+      - name: Parse Jinja templates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from jinja2 import Environment, FileSystemLoader
+          env = Environment(loader=FileSystemLoader("templates"))
+          files = sorted(Path("templates").rglob("*.html"))
+          for path in files:
+              env.parse(path.read_text(encoding="utf-8"))
+          print(f"Parsed {len(files)} templates successfully")
+          PY
