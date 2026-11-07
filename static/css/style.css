@@ -97,3 +97,66 @@ tr:hover td{background:#fafbfc}
  .mobile-bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:1px;color:#66758a;font-size:19px;line-height:1.3}.mobile-bottom-nav small{font-size:9px;font-weight:700}
 }
 @media(max-width:380px){.product-list{grid-template-columns:1fr}.product-image,.product-placeholder{height:190px}}
+
+
+/* Luxury black & gold edition */
+:root{
+ --primary:#171717;--primary-dark:#090909;--primary-soft:#f4ead8;
+ --accent:#c7a15a;--accent-soft:#f7f0e3;--ink:#171717;--text:#45413a;--muted:#89847b;
+ --background:#f4f2ee;--surface:#fff;--border:#e7e0d4;--success:#28734d;--danger:#a83232;
+ --radius:18px;--shadow:0 14px 38px rgba(15,13,10,.09);
+}
+body{background:var(--background);color:var(--text)}
+h1,h2,h3,h4{color:var(--ink)}
+.announcement-bar{background:#090909;color:#eee5d5;border-bottom:1px solid #332817}
+.announcement-note{color:#d7b875}
+.topbar{background:rgba(17,17,17,.98);border-bottom:1px solid #3d3322;box-shadow:0 7px 25px rgba(0,0,0,.17)}
+.brand{color:#fff}
+.brand-icon{background:linear-gradient(145deg,#e1c27d,#a67b35);color:#17130b;box-shadow:0 8px 22px rgba(199,161,90,.25)}
+.brand-copy strong{color:#fff}
+.brand-copy small{color:#c5b99f}
+.header-action{background:#202020;border-color:#51432b;color:#f4ead8}
+.header-action:hover{background:#332a1c;border-color:#c7a15a;color:#f4d99e}
+.menu-toggle{background:#202020;border-color:#51432b;color:#d8b96e}
+.top-navigation{background:#171717;border-color:#51432b;box-shadow:0 20px 48px rgba(0,0,0,.3)}
+.top-navigation a,.top-navigation .logout-link{color:#eee6d8}
+.top-navigation a:hover,.top-navigation .logout-link:hover{background:#342b1c;color:#f1d18b}
+.top-navigation .admin-login-link{background:#c7a15a;color:#17130b}
+.nav-divider{background:#4a3b24}
+.container{color:var(--text)}
+input,select,textarea{background:#fffdf9;border-color:#ded5c6;color:#28241e}
+input:focus,select:focus,textarea:focus{border-color:#b88c43;box-shadow:0 0 0 3px rgba(199,161,90,.18)}
+button,.btn{background:linear-gradient(135deg,#d8b66e,#b68a3d);color:#17130b;box-shadow:0 5px 14px rgba(143,105,43,.14)}
+button:hover,.btn:hover{background:linear-gradient(135deg,#e5c982,#c29a50);color:#100e0a}
+.secondary{background:#eee8dc;color:#383126}.secondary:hover{background:#e3d7c2}
+.danger{background:#f8e9e5;color:#9c3028}
+.product{background:#fffdfa;border-color:#e5ddcf}
+.product:hover{border-color:#c7a15a;box-shadow:0 17px 36px rgba(45,34,16,.12)}
+.product-image,.product-placeholder{background:linear-gradient(145deg,#fffefa,#f1ede5)}
+.product h3,.product h3 a{color:#211e18}
+.product h3 a:hover{color:#a47b38}
+.price{color:#a77b34}
+.product-bottom{border-color:#eee6d8}
+.form-card{background:#fffdfa;border-color:#e6dece;box-shadow:0 12px 32px rgba(31,25,15,.06)}
+table{background:#fffdfa}
+th{background:#24211b;color:#ead7ac}
+td{border-color:#eee7db}
+tr:hover td{background:#faf6ed}
+.chip{border-color:#ded5c6;background:#fffdfa;color:#554a38}
+.chip:hover,.chip.active{background:#1b1915;color:#f0d28f;border-color:#b88c43}
+.notice{background:#f2ede3;color:#51452f;border-color:#c7a15a}
+.notice.success{background:#e6f2e9;color:#17613c;border-color:#2a9b61}
+.notice.error,.notice.danger{background:#fce9e7;color:#943c36;border-color:#c44b43}
+.footer{background:#090909;color:#e5ddce;border-top:1px solid #49391f}
+.footer-brand strong,.footer-contact strong{color:#e4c27a}
+.footer-brand p,.footer-contact span,.footer-bottom{color:#b6aa91}
+.footer-links a{color:#e0d7c5}
+.footer-links a:hover{color:#e4c27a}
+.footer-bottom{border-color:#3c3324}
+.mobile-bottom-nav{background:rgba(17,17,17,.98);border-color:#4b3d28}
+.mobile-bottom-nav a{color:#d7c49d}
+.mobile-bottom-nav a:hover{color:#f1d18b}
+@media(max-width:650px){
+ .topbar-inner{background:transparent}
+ .mobile-bottom-nav{box-shadow:0 -5px 22px rgba(0,0,0,.22)}
+}
