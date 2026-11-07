@@ -2597,6 +2597,23 @@ def installment_sms_settings():
     )
 
 
+@app.route("/admin/sms/test", methods=["POST"])
+@admin_required
+def installment_sms_test():
+    phone = normalize_digits(request.form.get("test_phone", "")).strip()
+    if not phone or len(phone) < 7 or len(phone) > 20:
+        flash("شماره موبایل برای تست معتبر نیست.", "error")
+        return redirect(url_for("installment_sms_settings"))
+
+    message = "این یک پیامک آزمایشی از پنل اقساط لوازم خانگی بولحسنی است."
+    sent = send_installment_sms(None, None, "welcome", phone, message)
+    if sent:
+        flash("درخواست ارسال پیامک آزمایشی با موفقیت به پنل قاصدک ارسال شد. دریافت نهایی را روی گوشی بررسی کنید.", "success")
+    else:
+        flash("ارسال پیامک آزمایشی ناموفق بود؛ علت را در سوابق پیامک، ستون خطا بررسی کنید.", "error")
+    return redirect(url_for("installment_sms_settings"))
+
+
 # ==================================================
 # مدیریت اقساط
 # ==================================================
