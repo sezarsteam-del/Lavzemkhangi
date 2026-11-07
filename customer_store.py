@@ -37,6 +37,9 @@ def ensure_customer_schema():
             product_id INTEGER NOT NULL REFERENCES products(id), product_name TEXT NOT NULL,
             quantity INTEGER NOT NULL CHECK(quantity > 0), unit_price BIGINT NOT NULL,
             line_total BIGINT NOT NULL)""")
+        conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS subtotal_amount BIGINT NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS gift_card_discount BIGINT NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS payment_amount BIGINT")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_store_orders_customer ON store_orders(customer_id,created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_customer_codes_phone ON customer_login_codes(phone,created_at DESC)")
         conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS sale_id BIGINT REFERENCES sales(id) ON DELETE RESTRICT")
@@ -174,7 +177,7 @@ def customer_logout():
 @customer_required
 def customer_account():
     user=current_customer()
-    with DB() as conn: orders=conn.execute("SELECT id,total_amount,status,fulfillment_status,tracking_code,created_at FROM store_orders WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],)).fetchall()
+    with DB() as conn: orders=conn.execute("SELECT id,total_amount,payment_amount,gift_card_discount,status,fulfillment_status,tracking_code,created_at FROM store_orders WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],)).fetchall()
     return render_template("customer_account.html",customer=user,orders=orders)
 
 @customer_bp.route("/cart",methods=["GET","POST"])
@@ -246,6 +249,21 @@ def release_order_stock(conn, order_id):
         )
 
 
+def refund_gift_card_for_order(conn, order_id):
+    redemption = conn.execute(
+        """UPDATE gift_card_redemptions
+           SET refunded_at=NOW()
+           WHERE order_id=%s AND refunded_at IS NULL
+           RETURNING gift_card_id,amount""",
+        (order_id,),
+    ).fetchone()
+    if redemption:
+        conn.execute(
+            "UPDATE gift_cards SET remaining_amount=remaining_amount+%s WHERE id=%s",
+            (int(redemption["amount"]), redemption["gift_card_id"]),
+        )
+
+
 def fail_zarinpal_order(order_id):
     with DB() as conn:
         order = conn.execute(
@@ -258,6 +276,7 @@ def fail_zarinpal_order(order_id):
                 "UPDATE store_orders SET status='payment_failed' WHERE id=%s",
                 (order_id,),
             )
+            refund_gift_card_for_order(conn, order_id)
 
 
 @customer_bp.route("/checkout",methods=["GET","POST"])
@@ -274,6 +293,8 @@ def checkout():
     if request.method=="POST":
         address=request.form.get("shipping_address","").strip()
         payment_method=request.form.get("payment_method","manual").strip()
+        gift_code_raw=request.form.get("gift_card_code","").strip().upper()
+        gift_code="".join(ch for ch in gift_code_raw if ch.isalnum())[:40]
         if payment_method not in ("manual","zarinpal"):
             abort(400)
         if len(address)<15 or len(address)>1000:
@@ -296,51 +317,99 @@ def checkout():
                     locked.append((p,qty)); total+=int(p["price"])*qty
                 if total<=0:
                     raise ValueError("مبلغ سفارش معتبر نیست.")
-                order_status = "pending_payment" if payment_method == "zarinpal" else "pending_confirmation"
-                provider = "zarinpal" if payment_method == "zarinpal" else "manual"
-                order=conn.execute("""INSERT INTO store_orders
-                    (customer_id,total_amount,status,shipping_address,payment_provider)
-                    VALUES(%s,%s,%s,%s,%s) RETURNING id""",
-                    (user["id"],total,order_status,address,provider)).fetchone()
+                gift_card=None
+                gift_discount=0
+                if gift_code:
+                    digests=[
+                        hashlib.sha256(gift_code.encode("ascii","ignore")).hexdigest(),
+                        hashlib.sha256(gift_code_raw.encode("utf-8")).hexdigest(),
+                    ]
+                    gift_card=conn.execute(
+                        """SELECT id,remaining_amount FROM gift_cards
+                           WHERE code_hash=ANY(%s) AND remaining_amount>0
+                             AND (expires_at IS NULL OR expires_at>NOW())
+                           FOR UPDATE""",
+                        (digests,),
+                    ).fetchone()
+                    if not gift_card:
+                        raise ValueError("کد کارت هدیه معتبر نیست، منقضی شده یا اعتبار ندارد.")
+                    gift_discount=min(total,int(gift_card["remaining_amount"]))
+                amount_due=total-gift_discount
+                if payment_method=="zarinpal" and amount_due==0:
+                    provider="gift_card"
+                    order_status="paid"
+                elif payment_method=="zarinpal":
+                    provider="zarinpal"
+                    order_status="pending_payment"
+                elif amount_due==0:
+                    provider="gift_card"
+                    order_status="paid"
+                else:
+                    provider="manual"
+                    order_status="pending_confirmation"
+                order=conn.execute(
+                    """INSERT INTO store_orders
+                       (customer_id,total_amount,subtotal_amount,gift_card_discount,payment_amount,status,shipping_address,payment_provider)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+                    (user["id"],total,total,gift_discount,amount_due,order_status,address,provider),
+                ).fetchone()
                 for p,qty in locked:
-                    if payment_method == "zarinpal":
-                        reserved = conn.execute(
+                    if provider in ("zarinpal","gift_card"):
+                        reserved=conn.execute(
                             "UPDATE products SET stock=stock-%s WHERE id=%s AND stock>=%s RETURNING id",
                             (qty,p["id"],qty),
                         ).fetchone()
                         if not reserved:
                             raise ValueError("موجودی یکی از کالاها هنگام ثبت سفارش تغییر کرد؛ سبد را دوباره بررسی کنید.")
-                    conn.execute("""INSERT INTO store_order_items
-                        (order_id,product_id,product_name,quantity,unit_price,line_total)
-                        VALUES(%s,%s,%s,%s,%s,%s)""",
-                        (order["id"],p["id"],p["name"],qty,p["price"],int(p["price"])*qty))
-            if payment_method == "zarinpal":
+                    conn.execute(
+                        """INSERT INTO store_order_items
+                           (order_id,product_id,product_name,quantity,unit_price,line_total)
+                           VALUES(%s,%s,%s,%s,%s,%s)""",
+                        (order["id"],p["id"],p["name"],qty,p["price"],int(p["price"])*qty),
+                    )
+                if gift_discount:
+                    changed=conn.execute(
+                        """UPDATE gift_cards SET remaining_amount=remaining_amount-%s
+                           WHERE id=%s AND remaining_amount>=%s RETURNING id""",
+                        (gift_discount,gift_card["id"],gift_discount),
+                    ).fetchone()
+                    if not changed:
+                        raise ValueError("اعتبار کارت هدیه هم‌زمان تغییر کرد؛ دوباره تلاش کنید.")
+                    conn.execute(
+                        """INSERT INTO gift_card_redemptions
+                           (gift_card_id,customer_id,amount,order_id)
+                           VALUES(%s,%s,%s,%s)""",
+                        (gift_card["id"],user["id"],gift_discount,order["id"]),
+                    )
+            if provider=="zarinpal":
                 try:
-                    _merchant, _api_base, start_base, _sandbox = zarinpal_config()
-                    response = zarinpal_api("request", {
-                        "amount": int(total) * 10,
-                        "callback_url": url_for("customer.zarinpal_callback", _external=True),
-                        "description": f"خرید اینترنتی سفارش شماره {order['id']}"[:250],
-                        "metadata": {"mobile": user["phone"]},
+                    _merchant,_api_base,start_base,_sandbox=zarinpal_config()
+                    response=zarinpal_api("request",{
+                        "amount":int(amount_due)*10,
+                        "callback_url":url_for("customer.zarinpal_callback",_external=True),
+                        "description":f"خرید اینترنتی سفارش شماره {order['id']}"[:250],
+                        "metadata":{"mobile":user["phone"]},
                     })
-                    data = response.get("data") or {}
-                    authority = data.get("authority")
-                    if data.get("code") != 100 or not authority:
-                        raise RuntimeError("زرین‌پال درخواست پرداخت را تأیید نکرد؛ کد پاسخ: " + str(data.get("code", "نامشخص")))
+                    data=response.get("data") or {}
+                    authority=data.get("authority")
+                    if data.get("code")!=100 or not authority:
+                        raise RuntimeError("زرین‌پال درخواست پرداخت را تأیید نکرد؛ کد پاسخ: "+str(data.get("code","نامشخص")))
                     with DB() as conn:
                         conn.execute(
                             "UPDATE store_orders SET payment_authority=%s WHERE id=%s AND status='pending_payment'",
-                            (authority, order["id"]),
+                            (authority,order["id"]),
                         )
                     session["cart"]={}
-                    return redirect(start_base + authority)
+                    return redirect(start_base+authority)
                 except Exception as exc:
                     fail_zarinpal_order(order["id"])
-                    app_message = str(exc)[:180]
-                    flash("ساخت درگاه پرداخت انجام نشد. مبلغی از شما کسر نشده است. " + app_message,"error")
+                    flash("ساخت درگاه پرداخت انجام نشد. اعتبار کارت هدیه به کارت برگردانده شد. "+str(exc)[:150],"error")
                     return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
             session["cart"]={}
-            flash("سفارش شما ثبت شد و برای تأیید نهایی با فروشگاه هماهنگ می‌شود. پرداخت آنلاین انجام نشده است.","success")
+            if amount_due==0:
+                flash("سفارش با اعتبار کارت هدیه به‌طور کامل پرداخت شد.","success")
+            else:
+                flash("سفارش ثبت شد و برای تأیید نهایی با فروشگاه هماهنگ می‌شود.","success")
             return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
         except ValueError as e:
             flash(str(e),"error")
@@ -355,7 +424,7 @@ def zarinpal_callback():
         abort(400)
     with DB() as conn:
         order = conn.execute(
-            "SELECT id,total_amount,status,payment_provider FROM store_orders WHERE payment_authority=%s",
+            "SELECT id,total_amount,COALESCE(payment_amount,total_amount) AS payment_amount,status,payment_provider FROM store_orders WHERE payment_authority=%s",
             (authority,),
         ).fetchone()
     if not order or order["payment_provider"] != "zarinpal":
@@ -373,7 +442,7 @@ def zarinpal_callback():
         return redirect(url_for("customer.customer_order_detail",order_id=order_id))
     try:
         verification = zarinpal_api("verify", {
-            "amount": int(order["total_amount"]) * 10,
+            "amount": int(order["payment_amount"]) * 10,
             "authority": authority,
         })
         data = verification.get("data") or {}
@@ -507,8 +576,9 @@ def customer_cancel_order(order_id):
         elif order["status"] not in ("pending_payment", "pending_confirmation") or order["fulfillment_status"] in ("processing", "ready_to_ship", "shipped", "delivered"):
             flash("این سفارش از این بخش قابل لغو نیست. برای سفارش پرداخت‌شده با پشتیبانی تماس بگیرید.", "error")
         else:
-            if order["status"] == "pending_payment":
+            if order["status"] == "pending_payment" or order["payment_provider"] == "gift_card":
                 release_order_stock(conn, order_id)
+            refund_gift_card_for_order(conn, order_id)
             conn.execute("UPDATE store_orders SET status='cancelled',fulfillment_status='cancelled',cancelled_at=NOW() WHERE id=%s", (order_id,))
             flash("سفارش لغو شد.", "success")
     return redirect(url_for("customer.customer_order_detail", order_id=order_id))
@@ -519,7 +589,7 @@ def customer_orders_admin():
         flash("ابتدا وارد حساب مدیر شوید.", "error")
         return redirect(url_for("login"))
     with DB() as conn:
-        orders = conn.execute("""SELECT o.id,o.total_amount,o.status,o.payment_provider,o.fulfillment_status,o.tracking_code,o.created_at,
+        orders = conn.execute("""SELECT o.id,o.total_amount,o.subtotal_amount,o.gift_card_discount,o.payment_amount,o.status,o.payment_provider,o.fulfillment_status,o.tracking_code,o.created_at,
             c.first_name,c.last_name,c.phone FROM store_orders o JOIN customers c ON c.id=o.customer_id
             ORDER BY o.created_at DESC LIMIT 200""").fetchall()
     return render_template("admin_customer_orders.html", orders=orders)
