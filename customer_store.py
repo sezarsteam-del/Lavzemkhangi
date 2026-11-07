@@ -37,6 +37,8 @@ def ensure_customer_schema():
             line_total BIGINT NOT NULL)""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_store_orders_customer ON store_orders(customer_id,created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_customer_codes_phone ON customer_login_codes(phone,created_at DESC)")
+        conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS sale_id BIGINT REFERENCES sales(id) ON DELETE RESTRICT")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_store_orders_authority ON store_orders(payment_authority) WHERE payment_authority IS NOT NULL")
 
 def clean_phone(value):
     value = str(value or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩","01234567890123456789"))
