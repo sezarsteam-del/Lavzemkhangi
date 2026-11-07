@@ -372,24 +372,43 @@
 .clear-search{color:#1769aa}
 @media(max-width:600px){.hero{padding:24px 17px}.hero h1{font-size:20px}}
 
+
+/* Luxury black and gold storefront overrides */
+.hero{background:linear-gradient(115deg,#171511,#332817 65%,#171511)!important;color:#f4e8d0!important;border:1px solid #6d542d;box-shadow:0 18px 42px rgba(0,0,0,.35)}
+.hero h1{color:#f2d49a!important}.hero p{color:#d8c8aa!important}
+.category-dropdown{background:#19191f!important;border-color:#51432b!important}
+.category-summary:hover,.category-content{background:#242127!important}
+.category-title,.category-name{color:#f1e7d6!important}.category-subtitle{color:#b2a797!important}
+.main-category-icon,.category-icon,.category-total{background:#342a1d!important;color:#e4c27d!important}
+.main-category-icon svg,.category-icon svg{stroke:#d8b36e!important}
+.category-card{background:#202027!important;border-color:#39343a!important}
+.category-card:hover,.category-card.selected{background:#342a1d!important;border-color:#c7a15a!important}
+.catalog-heading .section-title{color:#e8d2a6!important}
+.result-count{background:#342a1d!important;color:#e4c27d!important}
+.product,.empty{background:#19191f!important;border-color:#39343a!important;color:#e8dfd2!important}
+.product-image,.product-placeholder{background:linear-gradient(145deg,#242329,#17171c)!important}
+.product h3,.product h3 a{color:#f5eee2!important}.price{color:#e1bd78!important}
+.product-description,.product-brand,.product-category{color:#b2a797!important}
+.product-bottom{border-color:#39343a!important}
+
 </style>
 {% endblock %}
 
 {% block content %}
 
-<section class="hero">
-    <h1>به فروشگاه لوازم خانگی خوش آمدید</h1>
-    <p>
-        مشاهده محصولات و خرید آسان لوازم خانگی
-    </p>
-</section>
+<section class="hero global-home-hero"><div class="global-hero-copy"><span class="global-hero-kicker">LAVZEMKHANGI · HOME APPLIANCES</span><h1 data-global-i18n="title">به فروشگاه لوازم خانگی خوش آمدید</h1><p data-global-i18n="intro">مشاهده محصولات و خرید آسان لوازم خانگی</p><a class="global-hero-link" href="#catalog">مشاهده محصولات ←</a></div><div class="global-hero-photo"><img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dmchighres.png" alt="مجموعه لوازم خانگی مدرن" fetchpriority="high"></div></section>
+<section class="appliance-showcase" aria-label="دسته‌های لوازم خانگی">
+<a class="appliance-tile" href="#catalog"><img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dff456/original.png" alt="یخچال و فریزر" loading="lazy"><span>یخچال و فریزر</span></a>
+<a class="appliance-tile" href="#catalog"><img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/daw408newimages/DAW408B%2001%202000%20X%202000px.png" alt="ماشین لباسشویی" loading="lazy"><span>شست‌وشو و نظافت</span></a>
+<a class="appliance-tile" href="#catalog"><img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dbo499/dboprod.png" alt="فر و اجاق" loading="lazy"><span>آشپزخانه</span></a>
+<a class="appliance-tile" href="#catalog"><img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dwd258/original%20%286%29.png" alt="لوازم خانگی" loading="lazy"><span>لوازم خانه</span></a></section>
 
 <form class="search" method="GET" action="{{ url_for('index') }}">
     <input
         type="search"
         name="q"
         value="{{ q }}"
-        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..."
+        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..." data-global-placeholder="search"
     >
 
     {% if selected_category %}
@@ -400,7 +419,7 @@
         >
     {% endif %}
 
-    <button type="submit">جستجو</button>
+    <button type="submit" data-global-i18n="searchButton">جستجو</button>
 </form>
 
 <!-- منوی کشویی دسته بندی -->
@@ -562,10 +581,10 @@
 
 
 <!-- لیست محصولات -->
-<section>
+<section id="catalog">
 
     <div class="catalog-heading">
-        <h2 class="section-title">لیست قیمت محصولات</h2>
+        <h2 class="section-title" data-global-i18n="catalog">لیست قیمت محصولات</h2>
 
         <span class="result-count">
             {{ products|length }} محصول
@@ -622,7 +641,7 @@
                                 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="add">
                                 <input type="hidden" name="product_id" value="{{ product.id }}">
-                                <button type="submit">افزودن به سبد خرید</button>
+                                <button type="submit" data-global-i18n="add">افزودن به سبد خرید</button>
                             </form>
 
 
