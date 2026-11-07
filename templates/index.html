@@ -596,6 +596,12 @@
                             <div class="price">
                                 {{ "{:,}".format(product.price) }} تومان
                             </div>
+                            <form method="post" action="{{ url_for('customer.cart') }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="add">
+                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                <button type="submit">افزودن به سبد خرید</button>
+                            </form>
 
 
                         </div>
