@@ -132,6 +132,7 @@ def customer_login():
             if mode=="otp":
                 code=f"{secrets.randbelow(1000000):06d}"
                 with DB() as conn:
+                    enforce_otp_rate_limit(conn, phone)
                     conn.execute("INSERT INTO customer_login_codes(phone,code_hash,expires_at) VALUES(%s,%s,NOW()+INTERVAL '5 minutes')",(phone,otp_hash(phone,code)))
                     conn.execute("DELETE FROM customer_login_codes WHERE phone=%s AND consumed_at IS NULL AND created_at<NOW()-INTERVAL '30 minutes'",(phone,))
                 send_otp(phone,code); session["pending_customer_phone"]=phone
@@ -199,30 +200,48 @@ def cart():
 @customer_bp.route("/checkout",methods=["GET","POST"])
 @customer_required
 def checkout():
-    gateway=os.environ.get("PAYMENT_GATEWAY","").strip().lower()
-    if gateway not in {"zarinpal","idpay","nextpay"}:
-        flash("برای پرداخت آنلاین باید ارائه‌دهنده درگاه و کلید پذیرنده در هاست مشخص شود.","error"); return redirect(url_for("customer.cart"))
     basket=session.get("cart",{})
-    if not basket: flash("سبد خرید خالی است.","error"); return redirect(url_for("customer.cart"))
+    if not basket:
+        flash("سبد خرید خالی است.","error")
+        return redirect(url_for("customer.cart"))
     user=current_customer()
     with DB() as conn:
         addresses=conn.execute("SELECT id,title,recipient_name,recipient_phone,address,postal_code,is_default FROM customer_addresses WHERE customer_id=%s ORDER BY is_default DESC,id DESC",(user["id"],)).fetchall()
     if request.method=="POST":
         address=request.form.get("shipping_address","").strip()
-        if len(address)<15 or len(address)>1000: flash("آدرس باید بین ۱۵ تا ۱۰۰۰ نویسه باشد.","error"); return render_template("checkout.html",customer=user,addresses=addresses)
+        if len(address)<15 or len(address)>1000:
+            flash("آدرس باید بین ۱۵ تا ۱۰۰۰ نویسه باشد.","error")
+            return render_template("checkout.html",customer=user,addresses=addresses)
         try:
             with DB() as conn:
                 locked=[]; total=0
-                for pid in sorted(int(k) for k in basket if str(k).isdigit()):
-                    p=conn.execute("SELECT id,name,price,stock FROM products WHERE id=%s AND is_active=TRUE FOR UPDATE",(pid,)).fetchone(); qty=int(basket.get(str(pid),0))
-                    if not p or qty<1 or qty>p["stock"]: raise ValueError("موجودی یکی از کالاها کافی نیست؛ سبد خرید را اصلاح کنید.")
+                ids=sorted({int(k) for k,v in basket.items() if str(k).isdigit() and str(v).isdigit() and 1<=int(v)<=99})
+                if not ids:
+                    raise ValueError("سبد خرید معتبر نیست؛ دوباره کالاها را انتخاب کنید.")
+                for pid in ids:
+                    p=conn.execute("SELECT id,name,price,stock FROM products WHERE id=%s AND is_active=TRUE FOR UPDATE",(pid,)).fetchone()
+                    qty=int(basket.get(str(pid),0))
+                    if not p or qty<1 or qty>int(p["stock"]):
+                        raise ValueError("موجودی یکی از کالاها کافی نیست؛ سبد خرید را اصلاح کنید.")
                     locked.append((p,qty)); total+=int(p["price"])*qty
-                if total<=0: raise ValueError("مبلغ سفارش معتبر نیست.")
-                order=conn.execute("INSERT INTO store_orders(customer_id,total_amount,shipping_address,payment_provider) VALUES(%s,%s,%s,%s) RETURNING id",(user["id"],total,address,gateway)).fetchone()
-                for p,qty in locked: conn.execute("INSERT INTO store_order_items(order_id,product_id,product_name,quantity,unit_price,line_total) VALUES(%s,%s,%s,%s,%s,%s)",(order["id"],p["id"],p["name"],qty,p["price"],p["price"]*qty))
-            session["cart"]={}; flash("سفارش اولیه ثبت شد؛ اتصال درگاه و تأیید بانکی هنوز باید تکمیل شود.","warning"); return redirect(url_for("customer.customer_account"))
-        except ValueError as e: flash(str(e),"error")
+                if total<=0:
+                    raise ValueError("مبلغ سفارش معتبر نیست.")
+                order=conn.execute("""INSERT INTO store_orders
+                    (customer_id,total_amount,status,shipping_address,payment_provider)
+                    VALUES(%s,%s,'pending_confirmation',%s,'manual') RETURNING id""",
+                    (user["id"],total,address)).fetchone()
+                for p,qty in locked:
+                    conn.execute("""INSERT INTO store_order_items
+                        (order_id,product_id,product_name,quantity,unit_price,line_total)
+                        VALUES(%s,%s,%s,%s,%s,%s)""",
+                        (order["id"],p["id"],p["name"],qty,p["price"],int(p["price"])*qty))
+            session["cart"]={}
+            flash("سفارش شما ثبت شد و برای تأیید نهایی با فروشگاه هماهنگ می‌شود. پرداخت آنلاین انجام نشده است.","success")
+            return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
+        except ValueError as e:
+            flash(str(e),"error")
     return render_template("checkout.html",customer=user,addresses=addresses)
+
 
 @customer_bp.route("/account/orders/<int:order_id>")
 @customer_required
@@ -326,7 +345,7 @@ def customer_cancel_order(order_id):
         order = conn.execute("SELECT id,status,fulfillment_status FROM store_orders WHERE id=%s AND customer_id=%s FOR UPDATE", (order_id, user["id"])).fetchone()
         if not order:
             abort(404)
-        if order["status"] != "pending_payment" or order["fulfillment_status"] in ("shipped", "delivered"):
+        if order["status"] not in ("pending_payment", "pending_confirmation") or order["fulfillment_status"] in ("processing", "ready_to_ship", "shipped", "delivered"):
             flash("این سفارش از این بخش قابل لغو نیست. برای سفارش پرداخت‌شده با پشتیبانی تماس بگیرید.", "error")
         else:
             conn.execute("UPDATE store_orders SET status='cancelled',fulfillment_status='cancelled',cancelled_at=NOW() WHERE id=%s", (order_id,))
@@ -358,8 +377,10 @@ def customer_order_admin_status(order_id):
         order = conn.execute("SELECT id,status,fulfillment_status FROM store_orders WHERE id=%s FOR UPDATE", (order_id,)).fetchone()
         if not order:
             abort(404)
-        if order["status"] != "paid":
-            flash("وضعیت ارسال فقط برای سفارش پرداخت‌شده قابل تغییر است.", "error")
+        if order["status"] not in ("pending_confirmation", "pending_payment", "paid"):
+            flash("وضعیت این سفارش قابل تغییر نیست.", "error")
+        elif order["status"] == "pending_confirmation" and status in ("shipped", "delivered"):
+            flash("ابتدا سفارش را تأیید و آماده‌سازی کنید؛ وضعیت پرداخت دستی نیز باید جداگانه با مشتری هماهنگ شود.", "error")
         else:
             conn.execute("""UPDATE store_orders SET fulfillment_status=%s,tracking_code=%s,
                 shipped_at=CASE WHEN %s='shipped' THEN COALESCE(shipped_at,NOW()) ELSE shipped_at END,
