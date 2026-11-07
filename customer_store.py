@@ -467,12 +467,13 @@ def customer_phone_change_verify():
                 conn.execute("UPDATE customer_login_codes SET attempts=attempts+1 WHERE id=%s", (challenge["id"],))
                 flash("کد صحیح نیست.", "error")
             else:
-                try:
+                existing = conn.execute("SELECT id FROM customers WHERE phone=%s AND id<>%s", (phone, user["id"])).fetchone()
+                if existing:
+                    flash("این شماره در حساب دیگری ثبت شده است.", "error")
+                else:
                     conn.execute("UPDATE customers SET phone=%s WHERE id=%s", (phone, user["id"]))
                     conn.execute("UPDATE customer_login_codes SET consumed_at=NOW() WHERE id=%s", (challenge["id"],))
                     session.pop("pending_phone_change", None)
                     flash("شماره موبایل حساب با موفقیت تغییر کرد.", "success")
                     return redirect(url_for("customer.customer_profile"))
-                except Exception:
-                    flash("امکان ثبت این شماره وجود ندارد؛ شاید قبلاً استفاده شده باشد.", "error")
     return render_template("customer_phone_change_verify.html")
