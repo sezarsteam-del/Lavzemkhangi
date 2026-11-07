@@ -22,6 +22,7 @@ from flask import (
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
+from store_features import features_bp, init_features, ensure_features_schema
 
 # ==================================================
 # تنظیمات اصلی
@@ -50,6 +51,7 @@ if len(SECRET_KEY) < 32:
 
 app.config["SECRET_KEY"] = SECRET_KEY
 app.register_blueprint(customer_bp)
+app.register_blueprint(features_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -193,6 +195,7 @@ def db():
 
 # اتصال توابع حساب مشتری پس از تعریف db()
 init_customer_store(db, SECRET_KEY)
+init_features(db)
 
 
 # ==================================================
@@ -422,6 +425,7 @@ def prepare_database():
             if not _schema_ready:
                 init_db()
                 ensure_customer_schema()
+                ensure_features_schema()
                 _schema_ready = True
 
 
