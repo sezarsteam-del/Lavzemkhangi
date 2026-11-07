@@ -607,7 +607,8 @@ th{background:#e8f4fb;color:#174c73}td{border-color:#e4eef5}tr:hover td{backgrou
 .footer{background:linear-gradient(110deg,#103b60,#145f94);color:#e4f2fc;border-top:4px solid #ff8954}
 .footer-inner strong{color:#fff}.footer-inner small{color:#c5dced}
 @media(max-width:700px){.top-navigation{right:0;left:auto}.top-navigation a,.top-navigation .logout-link{color:#36536b}}
-\n
+
+
 :root{--primary:#c79b55;--primary-dark:#a77936;--dark:#101014;--text:#e8dfd2;--muted:#b2a797;--background:#101014;--surface:#19191f;--border:#39343a;--success:#79c69a;--danger:#ef8580;--radius:18px;--shadow:0 16px 42px rgba(0,0,0,.28)}
 body{background:radial-gradient(ellipse at 85% -10%,rgba(104,75,35,.22),transparent 34%),#101014;color:#e8dfd2}
 .topbar{background:rgba(16,16,20,.98);border-bottom:1px solid #51432b;box-shadow:0 8px 28px rgba(0,0,0,.38)}
