@@ -364,3 +364,55 @@ tr:hover td{background:#f7fbfa!important}
  .featured-controls{gap:6px}
  .slider-arrow{width:33px;height:33px;font-size:19px!important}
 }
+
+
+/* Responsive vertical featured-products panel: desktop/tablet/mobile */
+.featured-products{width:100%;box-sizing:border-box}
+.featured-track{
+  width:100%;box-sizing:border-box;
+  max-height:clamp(340px,58vh,620px);
+  min-height:0;
+  grid-template-columns:minmax(0,1fr);
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  scroll-snap-type:y proximity;
+}
+.featured-card{
+  width:100%;box-sizing:border-box;
+  grid-template-columns:clamp(125px,18vw,190px) minmax(0,1fr);
+  min-height:clamp(125px,16vw,180px);
+}
+.featured-image-link{min-height:clamp(125px,16vw,180px);height:100%;box-sizing:border-box}
+.featured-card-body{padding:clamp(10px,1.5vw,18px);gap:3px}
+.featured-card h3{font-size:clamp(13px,1.25vw,16px);line-height:1.8}
+.featured-card-bottom{gap:10px;flex-wrap:wrap}
+@media(min-width:1100px){
+ .featured-products{padding:24px 26px}
+ .featured-track{max-height:min(620px,65vh)}
+ .featured-card{grid-template-columns:190px minmax(0,1fr);min-height:175px}
+ .featured-image-link{min-height:175px}
+}
+@media(min-width:601px) and (max-width:1099px){
+ .featured-products{padding:19px}
+ .featured-track{max-height:55vh}
+ .featured-card{grid-template-columns:clamp(125px,22vw,175px) minmax(0,1fr);min-height:145px}
+ .featured-image-link{min-height:145px}
+}
+@media(max-width:600px){
+ .featured-products{padding:13px;width:100%;margin:18px 0 24px}
+ .featured-heading{gap:8px}
+ .featured-track{max-height:48vh;min-height:220px;gap:9px;padding:2px 3px 9px}
+ .featured-card{grid-template-columns:clamp(94px,29vw,125px) minmax(0,1fr);min-height:112px}
+ .featured-image-link{min-height:112px;padding:6px}
+ .featured-card-body{padding:8px;gap:2px}
+ .featured-card h3{font-size:clamp(11px,3.2vw,13px);line-height:1.65}
+ .featured-card-bottom{margin-top:6px;align-items:center}
+ .featured-card-bottom>strong{font-size:clamp(10px,3vw,12px)}
+ .featured-card-bottom button{font-size:10px!important;padding:6px 9px!important}
+ .featured-controls{flex-direction:column;gap:5px}
+}
+@media(max-width:360px){
+ .featured-card{grid-template-columns:88px minmax(0,1fr);min-height:105px}
+ .featured-image-link{min-height:105px}
+ .featured-card-bottom{align-items:flex-start;flex-direction:column}
+}
