@@ -3,6 +3,7 @@ package com.lavzemkhangi.app
 import android.app.Activity
 import android.app.AlertDialog
 import android.graphics.Color
+import android.graphics.BitmapFactory
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -16,6 +17,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
+import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -38,7 +40,8 @@ private data class ShopProduct(
     val category: String,
     val categoryId: Int,
     val description: String,
-    val price: Long
+    val price: Long,
+    val imageUrl: String
 )
 
 class MainActivity : Activity() {
@@ -100,7 +103,8 @@ class MainActivity : Activity() {
                         item.optString("category_name", "بدون دسته‌بندی"),
                         item.optInt("category_id"),
                         item.optString("description"),
-                        item.optLong("price")
+                        item.optLong("price"),
+                        item.optString("image_url")
                     ))
                 }
                 if (::content.isInitialized) renderProducts()
@@ -298,14 +302,13 @@ class MainActivity : Activity() {
                 setPadding(dp(14), dp(13), dp(14), dp(13))
                 background = rounded(panel, 17)
             }
-            val art = TextView(this).apply {
-                text = "✦"
-                textSize = 29f
-                setTextColor(gold)
-                gravity = Gravity.CENTER
+            val art = ImageView(this).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
                 background = rounded(panel2, 14)
+                setImageDrawable(null)
             }
-            card.addView(art, LinearLayout.LayoutParams(dp(58), dp(64)).apply { marginEnd = dp(13) })
+            card.addView(art, LinearLayout.LayoutParams(dp(64), dp(68)).apply { marginEnd = dp(13) })
+            loadProductImage(art, product.imageUrl)
             val details = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
             details.addView(label(product.name, 15f, cream, true))
             details.addView(label(product.category, 11f, muted).apply { setPadding(0, dp(4), 0, dp(6)) })
@@ -326,6 +329,22 @@ class MainActivity : Activity() {
             card.addView(viewButton)
             card.setOnClickListener { showProduct(product) }
             container.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(11) })
+        }
+    }
+
+    private fun loadProductImage(target: ImageView, imageUrl: String) {
+        if (!imageUrl.startsWith("https://")) return
+        executor.execute {
+            try {
+                val connection = URL(imageUrl).openConnection() as HttpURLConnection
+                connection.connectTimeout = 10000
+                connection.readTimeout = 15000
+                connection.instanceFollowRedirects = true
+                connection.setRequestProperty("Accept", "image/*")
+                val bitmap = connection.inputStream.use { BitmapFactory.decodeStream(it) }
+                connection.disconnect()
+                if (bitmap != null) runOnUiThread { if (!isFinishing) target.setImageBitmap(bitmap) }
+            } catch (_: Exception) { }
         }
     }
 
