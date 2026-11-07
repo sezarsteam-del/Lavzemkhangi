@@ -184,6 +184,15 @@
             <nav class="top-navigation" id="mainNavigation">
 
                 <a href="{{ url_for('index') }}">صفحه اصلی</a>
+                {% if session.get('customer_id') %}
+                    <a href="{{ url_for('customer.customer_account') }}">حساب من</a>
+                    <a href="{{ url_for('customer.cart') }}">سبد خرید</a>
+                    <form method="POST" action="{{ url_for('customer.customer_logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="logout-link" type="submit">خروج مشتری</button></form>
+                {% else %}
+                    <a href="{{ url_for('customer.customer_login') }}">ورود مشتری</a>
+                    <a href="{{ url_for('customer.customer_register') }}">ثبت‌نام مشتری</a>
+                    <a href="{{ url_for('customer.cart') }}">سبد خرید</a>
+                {% endif %}
 
                 {% if session.get('admin') %}
 
