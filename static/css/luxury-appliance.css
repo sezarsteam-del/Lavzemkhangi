@@ -203,3 +203,39 @@ input, select, textarea { color: #fff !important; font-weight: 700 !important; }
 input::placeholder, textarea::placeholder {
   color: #c8c0b5 !important; font-weight: 600 !important;
 }
+
+
+ /* Gold typography throughout the dark storefront; black on white/light panels. */
+body, body p, body span, body label, body small, body li,
+body td, body th, body a, body strong, body b,
+body h1, body h2, body h3, body h4, body h5, body h6,
+button, .btn, .secondary, .chip, .category-summary,
+.category-title, .category-name, .category-subtitle,
+.product-category, .product-brand, .product-description, .muted,
+.footer, .footer-inner, .notice, .top-navigation a,
+input, select, textarea {
+  color: #e4c27d !important;
+  font-weight: 700 !important;
+}
+input::placeholder, textarea::placeholder { color: #c6a96f !important; }
+button, .btn, .global-hero-link, .top-navigation .login-link {
+  color: #e4c27d !important;
+  font-weight: 800 !important;
+}
+/* Light/white backgrounds must retain strong black text for readability. */
+[style*="background:#fff"], [style*="background: #fff"],
+[style*="background-color:#fff"], [style*="background-color: #fff"],
+[style*="background:white"], [style*="background: white"],
+[style*="background-color:white"], [style*="background-color: white"],
+.bg-white, .white-bg, .light-surface, .card-light, .table-light,
+.product .product-image, .product-placeholder {
+  color: #171717 !important;
+}
+[style*="background:#fff"] *, [style*="background: #fff"] *,
+[style*="background-color:#fff"] *, [style*="background-color: #fff"] *,
+[style*="background:white"] *, [style*="background: white"] *,
+[style*="background-color:white"] *, [style*="background-color: white"] *,
+.bg-white *, .white-bg *, .light-surface *, .card-light *, .table-light * {
+  color: #171717 !important;
+  font-weight: 700 !important;
+}
