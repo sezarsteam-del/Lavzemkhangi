@@ -740,3 +740,8 @@ tr:hover td { background:#f1f6f6 !important; }
  .category-products-page .catalog-heading { align-items:flex-start; flex-direction:column; }
  .category-products-page .search { flex-direction:column; }
 }
+
+
+/* Lower the welcome copy by roughly two text lines and keep search only above categories. */
+.global-hero-copy { transform: translateY(36px); }
+@media(max-width:760px) { .global-hero-copy { transform: translateY(24px); } }
