@@ -11,8 +11,7 @@ def init_customer_store(db_func, secret_key):
     global DB, SECRET
     DB, SECRET = db_func, secret_key
 
-@customer_bp.before_app_request
-def ensure_schema():
+def ensure_customer_schema():
     if DB is None: return
     with DB() as conn:
         conn.execute("""CREATE TABLE IF NOT EXISTS customers (
