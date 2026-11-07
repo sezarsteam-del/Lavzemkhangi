@@ -115,7 +115,7 @@ def ensure_features_schema():
             DECLARE earned INTEGER;
             BEGIN
                 IF NEW.status = 'paid'
-                   AND OLD.status IS DISTINCT FROM 'paid'
+                   AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'paid')
                    AND NOT EXISTS (SELECT 1 FROM loyalty_ledger WHERE order_id = NEW.id) THEN
                     earned := GREATEST(1, FLOOR(NEW.total_amount / 100000)::INTEGER);
                     UPDATE customers SET loyalty_points=loyalty_points+earned WHERE id=NEW.customer_id;
@@ -129,7 +129,7 @@ def ensure_features_schema():
         conn.execute("DROP TRIGGER IF EXISTS trg_award_store_order_points ON store_orders")
         conn.execute("""
             CREATE TRIGGER trg_award_store_order_points
-            AFTER UPDATE OF status ON store_orders
+            AFTER INSERT OR UPDATE OF status ON store_orders
             FOR EACH ROW EXECUTE FUNCTION award_store_order_points()
         """)
 
