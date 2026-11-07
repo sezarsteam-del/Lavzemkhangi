@@ -7,14 +7,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const prev = document.getElementById("productsPrev");
     const next = document.getElementById("productsNext");
     if (!track || !prev || !next) return;
-    const step = () => {
-        const card = track.querySelector(".featured-card");
-        const styles = getComputedStyle(track);
-        const gap = parseFloat(styles.columnGap || styles.gap) || 12;
-        return card ? card.getBoundingClientRect().width + gap : 220;
-    };
-    prev.addEventListener("click", () => track.scrollBy({left: -step(), behavior: "smooth"}));
-    next.addEventListener("click", () => track.scrollBy({left: step(), behavior: "smooth"}));
+
+    function move(direction) {
+        const cards = Array.from(track.querySelectorAll(".featured-card"));
+        if (!cards.length) return;
+        const trackRect = track.getBoundingClientRect();
+        let current = 0;
+        let bestDistance = Infinity;
+        cards.forEach((card, index) => {
+            const rect = card.getBoundingClientRect();
+            const distance = Math.abs(rect.right - trackRect.right);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                current = index;
+            }
+        });
+        const target = Math.max(0, Math.min(cards.length - 1, current + direction));
+        cards[target].scrollIntoView({behavior: "smooth", block: "nearest", inline: "start"});
+    }
+
+    prev.addEventListener("click", () => move(-1));
+    next.addEventListener("click", () => move(1));
 });
 </script>
 
@@ -587,8 +600,8 @@ document.addEventListener("DOMContentLoaded", function () {
             <p>محصولات را ورق بزنید و مستقیم به سبد خرید اضافه کنید.</p>
         </div>
         <div class="featured-controls">
-            <button type="button" class="slider-arrow" id="productsPrev" aria-label="محصولات قبلی">‹</button>
-            <button type="button" class="slider-arrow" id="productsNext" aria-label="محصولات بعدی">›</button>
+            <button type="button" class="slider-arrow" id="productsPrev" aria-label="محصولات قبلی">›</button>
+            <button type="button" class="slider-arrow" id="productsNext" aria-label="محصولات بعدی">‹</button>
         </div>
     </div>
     <div class="featured-track" id="featuredProducts">
