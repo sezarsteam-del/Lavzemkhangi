@@ -630,7 +630,8 @@ def index():
         featured_products=featured_products,
         categories=categories,
         q=q,
-        selected_category=selected_category
+        selected_category=selected_category,
+        category_group=category_group
     )
 
 
