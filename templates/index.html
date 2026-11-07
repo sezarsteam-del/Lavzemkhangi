@@ -412,7 +412,7 @@
 <section class="appliance-showcase category-photo-grid" id="categories" aria-label="دسته‌بندی محصولات">
     {% for category in categories %}
     <a class="appliance-tile category-photo-tile {% if selected_category|string == category.id|string %}selected{% endif %}"
-       href="{{ url_for('index', category=category.id, q=q) }}">
+       href="{{ url_for('products_page', category_id=category.id) }}">
         {% if category.image_url %}
             <img src="{{ category.image_url }}" alt="{{ category.name }}" loading="lazy">
         {% elif 'یخچال' in category.name or 'فریزر' in category.name %}
@@ -438,7 +438,7 @@
 
 
 
-<form class="search" method="GET" action="{{ url_for('index') }}">
+<form class="search" method="GET" action="{{ url_for('products_page') }}">
     <input
         type="search"
         name="q"
@@ -452,96 +452,5 @@
 
     <button type="submit" data-global-i18n="searchButton">جستجو</button>
 </form>
-
-<!-- لیست محصولات -->
-<section id="catalog">
-
-    <div class="catalog-heading">
-        <h2 class="section-title" data-global-i18n="catalog">لیست قیمت محصولات</h2>
-
-        <span class="result-count">
-            {{ products|length }} محصول
-        </span>
-    </div>
-
-    {% if products %}
-
-        <div class="product-list">
-
-            {% for product in products %}
-
-                <article class="product">
-
-                    {% if product.image_url %}
-                        <img
-                            class="product-image"
-                            src="{{ product.image_url }}"
-                            alt="{{ product.name }}"
-                            loading="lazy"
-                        >
-                    {% else %}
-                        <div class="product-placeholder">بدون تصویر</div>
-                    {% endif %}
-
-                    <div class="product-info">
-
-                        <div class="product-category">
-                            {{ product.category_name or 'بدون دسته‌بندی' }}
-                        </div>
-
-                        <h3>{{ product.name }}</h3>
-
-                        {% if product.brand_name %}
-                            <div class="product-brand">
-                                برند: {{ product.brand_name }}
-                            </div>
-                        {% endif %}
-
-                        {% if product.description %}
-                            <p class="product-description">
-                                {{ product.description }}
-                            </p>
-                        {% endif %}
-
-                        <div class="product-bottom">
-
-                            <div class="price">
-                                {{ "{:,}".format(product.price) }} تومان
-                            </div>
-                            <form method="post" action="{{ url_for('customer.cart') }}">
-                                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="add">
-                                <input type="hidden" name="product_id" value="{{ product.id }}">
-                                <button type="submit" data-global-i18n="add">افزودن به سبد خرید</button>
-                            </form>
-
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-            {% endfor %}
-
-        </div>
-
-    {% else %}
-
-        <div class="empty">
-            <h3>محصولی پیدا نشد!</h3>
-
-            <p>
-                عبارت جستجو یا دسته‌بندی انتخاب‌شده را بررسی کنید.
-            </p>
-
-            <a class="clear-search" href="{{ url_for('index') }}">
-                مشاهده همه محصولات
-            </a>
-        </div>
-
-    {% endif %}
-
-</section>
 
 {% endblock %}
