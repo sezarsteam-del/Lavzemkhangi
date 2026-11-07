@@ -215,6 +215,7 @@ def init_db():
                 name TEXT UNIQUE NOT NULL
             )
         """)
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS brands (
@@ -542,12 +543,13 @@ def index():
             SELECT
                 c.id,
                 c.name,
+                c.image_url,
                 COUNT(p.id) AS product_count
             FROM categories c
             LEFT JOIN products p
                 ON p.category_id = c.id
                AND p.is_active = TRUE
-            GROUP BY c.id, c.name
+            GROUP BY c.id, c.name, c.image_url
             ORDER BY product_count DESC, c.name ASC
         """).fetchall()
 
@@ -761,12 +763,13 @@ def admin():
             SELECT
                 c.id,
                 c.name,
+                c.image_url,
                 COUNT(p.id) AS product_count
             FROM categories c
             LEFT JOIN products p
                 ON p.category_id = c.id
                 AND p.is_active = TRUE
-            GROUP BY c.id
+            GROUP BY c.id, c.name, c.image_url
             ORDER BY c.name
         """).fetchall()
 
@@ -1046,6 +1049,11 @@ def find_replace():
 def add_category():
 
     name = request.form.get("name", "").strip()
+    image_url = request.form.get("image_url", "").strip()
+
+    if image_url and not image_url.lower().startswith(("https://", "http://")):
+        flash("آدرس عکس باید با http:// یا https:// شروع شود.", "error")
+        return redirect(url_for("admin"))
 
     if not name:
 
@@ -1058,8 +1066,8 @@ def add_category():
         with db() as conn:
 
             conn.execute(
-                "INSERT INTO categories (name) VALUES (%s)",
-                (name,)
+                "INSERT INTO categories (name, image_url) VALUES (%s, %s)",
+                (name, image_url or None)
             )
 
         flash("دسته‌بندی اضافه شد.", "success")
@@ -1082,6 +1090,11 @@ def add_category():
 def edit_category(category_id):
 
     name = request.form.get("name", "").strip()
+    image_url = request.form.get("image_url", "").strip()
+
+    if image_url and not image_url.lower().startswith(("https://", "http://")):
+        flash("آدرس عکس باید با http:// یا https:// شروع شود.", "error")
+        return redirect(url_for("admin"))
 
     if not name:
 
@@ -1099,10 +1112,10 @@ def edit_category(category_id):
             conn.execute(
                 """
                 UPDATE categories
-                SET name = %s
+                SET name = %s, image_url = %s
                 WHERE id = %s
                 """,
-                (name, category_id)
+                (name, image_url or None, category_id)
             )
 
         flash("دسته‌بندی ویرایش شد.", "success")
