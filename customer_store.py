@@ -589,7 +589,7 @@ def customer_orders_admin():
         flash("ابتدا وارد حساب مدیر شوید.", "error")
         return redirect(url_for("login"))
     with DB() as conn:
-        orders = conn.execute("""SELECT o.id,o.total_amount,o.status,o.payment_provider,o.fulfillment_status,o.tracking_code,o.created_at,
+        orders = conn.execute("""SELECT o.id,o.total_amount,o.subtotal_amount,o.gift_card_discount,o.payment_amount,o.status,o.payment_provider,o.fulfillment_status,o.tracking_code,o.created_at,
             c.first_name,c.last_name,c.phone FROM store_orders o JOIN customers c ON c.id=o.customer_id
             ORDER BY o.created_at DESC LIMIT 200""").fetchall()
     return render_template("admin_customer_orders.html", orders=orders)
