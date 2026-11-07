@@ -15,8 +15,8 @@
 <body>
 <div class="announcement-bar">
     <div class="announcement-inner">
-        <span>تجربه‌ای مطمئن برای خرید لوازم خانه</span>
-        <span class="announcement-note">پشتیبانی و پاسخ‌گویی به مشتریان</span>
+        <span data-global-i18n="announcement">تجربه‌ای مطمئن برای خرید لوازم خانه</span>
+        <span class="announcement-note" data-global-i18n="support">پشتیبانی و پاسخ‌گویی به مشتریان</span>
     </div>
 </div>
 <header class="topbar">
@@ -26,34 +26,61 @@
             <span class="brand-copy"><strong>لوازم خانگی</strong><small>انتخاب هوشمند برای خانه شما</small></span>
         </a>
         <div class="header-actions">
-            <a class="header-action" href="{{ url_for('customer.cart') }}"><span class="action-icon">🛒</span><span>سبد خرید</span></a>
+            <a class="header-action" href="{{ url_for('customer.cart') }}"><span class="action-icon">🛒</span><span data-global-i18n="cart">سبد خرید</span></a>
             {% if session.get('customer_id') %}
-                <a class="header-action header-account" href="{{ url_for('customer.customer_account') }}"><span class="action-icon">♙</span><span>حساب من</span></a>
+                <a class="header-action header-account" href="{{ url_for('customer.customer_account') }}"><span class="action-icon">♙</span><span data-global-i18n="account">حساب من</span></a>
             {% else %}
-                <a class="header-action header-account" href="{{ url_for('customer.customer_login') }}"><span class="action-icon">♙</span><span>ورود / ثبت‌نام</span></a>
+                <a class="header-action header-account" href="{{ url_for('customer.customer_login') }}"><span class="action-icon">♙</span><span data-global-i18n="loginRegister">ورود / ثبت‌نام</span></a>
             {% endif %}
             <button type="button" class="menu-toggle" id="menuToggle" aria-label="باز کردن منو" aria-expanded="false" aria-controls="mainNavigation">
                 <span></span><span></span><span></span>
             </button>
         </div>
+        <div class="global-locale-controls">
+            <label class="locale-control" aria-label="انتخاب زبان">
+                <span aria-hidden="true">🌐</span>
+                <select id="globalLanguage" aria-label="انتخاب زبان">
+                    <option value="auto">خودکار / Auto</option>
+                    <option value="fa">فارسی</option>
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                    <option value="de">Deutsch</option>
+                    <option value="fr">Français</option>
+                    <option value="es">Español</option>
+                    <option value="tr">Türkçe</option>
+                </select>
+            </label>
+            <label class="locale-control locale-country" aria-label="انتخاب بازار">
+                <span aria-hidden="true">📍</span>
+                <select id="globalMarket" aria-label="انتخاب بازار">
+                    <option value="IR">ایران</option>
+                    <option value="DE">آلمان</option>
+                    <option value="US">آمریکا</option>
+                    <option value="GB">بریتانیا</option>
+                    <option value="AE">امارات</option>
+                    <option value="TR">ترکیه</option>
+                    <option value="FR">فرانسه</option>
+                </select>
+            </label>
+        </div>
         <nav class="top-navigation" id="mainNavigation" aria-label="منوی اصلی">
-            <a href="{{ url_for('index') }}">صفحه اصلی</a>
-            <a href="{{ url_for('index') }}#catalog">فروشگاه</a>
-            <a href="{{ url_for('features.compare') }}">مقایسه کالاها</a>
+            <a href="{{ url_for('index') }}" data-global-i18n="home">صفحه اصلی</a>
+            <a href="{{ url_for('index') }}#catalog" data-global-i18n="store">فروشگاه</a>
+            <a href="{{ url_for('features.compare') }}" data-global-i18n="compare">مقایسه کالاها</a>
             {% if session.get('customer_id') %}
                 <a href="{{ url_for('customer.customer_account') }}">حساب من</a>
-                <a href="{{ url_for('customer.customer_addresses') }}">نشانی‌ها</a>
-                <a href="{{ url_for('customer.customer_security') }}">امنیت حساب</a>
-                <a href="{{ url_for('features.wishlist') }}">علاقه‌مندی‌ها</a>
-                <a href="{{ url_for('features.rewards') }}">باشگاه مشتریان</a>
-                <a href="{{ url_for('features.support') }}">پشتیبانی</a>
-                <a href="{{ url_for('features.gift_card') }}">کارت هدیه</a>
+                <a href="{{ url_for('customer.customer_addresses') }}" data-global-i18n="addresses">نشانی‌ها</a>
+                <a href="{{ url_for('customer.customer_security') }}" data-global-i18n="security">امنیت حساب</a>
+                <a href="{{ url_for('features.wishlist') }}" data-global-i18n="wishlist">علاقه‌مندی‌ها</a>
+                <a href="{{ url_for('features.rewards') }}" data-global-i18n="rewards">باشگاه مشتریان</a>
+                <a href="{{ url_for('features.support') }}" data-global-i18n="help">پشتیبانی</a>
+                <a href="{{ url_for('features.gift_card') }}" data-global-i18n="gift">کارت هدیه</a>
                 <form method="POST" action="{{ url_for('customer.customer_logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="logout-link" type="submit">خروج مشتری</button></form>
             {% else %}
                 <a href="{{ url_for('customer.customer_login') }}">ورود مشتری</a>
                 <a href="{{ url_for('customer.customer_register') }}">ثبت‌نام</a>
             {% endif %}
-            <a href="mailto:m4hdisalari2343@gmail.com">تماس با ما</a>
+            <a href="mailto:m4hdisalari2343@gmail.com" data-global-i18n="contact">تماس با ما</a>
             {% if session.get('admin') %}
                 <span class="nav-divider"></span>
                 <a href="{{ url_for('admin') }}">مدیریت</a>
@@ -67,7 +94,7 @@
                 <a href="{{ url_for('installment_sms_settings') }}">پیامک اقساط</a>
                 <form method="POST" action="{{ url_for('logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="logout-link">خروج مدیر</button></form>
             {% else %}
-                <a class="admin-login-link" href="{{ url_for('login') }}">ورود مدیر</a>
+                <a class="admin-login-link" href="{{ url_for('login') }}" data-global-i18n="admin">ورود مدیر</a>
             {% endif %}
         </nav>
     </div>
@@ -80,11 +107,11 @@
 </main>
 <footer class="footer">
     <div class="footer-main">
-        <div class="footer-brand"><span class="brand-icon">خ</span><div><strong>لوازم خانگی</strong><p>انتخاب مطمئن، خرید آسان و پشتیبانی همراه شما</p></div></div>
+        <div class="footer-brand"><span class="brand-icon">خ</span><div><strong>لوازم خانگی</strong><p data-global-i18n="footer">انتخاب مطمئن، خرید آسان و پشتیبانی همراه شما</p></div></div>
         <div class="footer-links"><a href="{{ url_for('index') }}">صفحه اصلی</a><a href="{{ url_for('index') }}#catalog">محصولات</a><a href="{{ url_for('customer.cart') }}">سبد خرید</a></div>
         <div class="footer-contact"><strong>پشتیبانی مشتریان</strong><span>برای راهنمایی خرید با ما در ارتباط باشید.</span></div>
     </div>
-    <div class="footer-bottom"><span>تمام حقوق این فروشگاه محفوظ است.</span><span>ساخته‌شده برای تجربه خرید بهتر</span></div>
+    <div class="footer-bottom"><span data-global-i18n="allRights">تمام حقوق این فروشگاه محفوظ است.</span><span data-global-i18n="madeFor">ساخته‌شده برای تجربه خرید بهتر</span></div>
 </footer>
 <nav class="mobile-bottom-nav" aria-label="دسترسی سریع">
     <a href="{{ url_for('index') }}"><span>⌂</span><small>خانه</small></a>
@@ -118,6 +145,52 @@
     });
 })();
 </script>
+
+<script>
+(function(){
+  const langSelect=document.getElementById('globalLanguage');
+  const marketSelect=document.getElementById('globalMarket');
+  if(!langSelect||!marketSelect)return;
+  const supported=['fa','en','ar','de','fr','es','tr'];
+  const dictionaries={
+    fa:{announcement:'تجربه‌ای مطمئن برای خرید لوازم خانه',support:'پشتیبانی و پاسخ‌گویی به مشتریان',cart:'سبد خرید',account:'حساب من',loginRegister:'ورود / ثبت‌نام',home:'صفحه اصلی',store:'فروشگاه',compare:'مقایسه کالاها',addresses:'نشانی‌ها',security:'امنیت حساب',wishlist:'علاقه‌مندی‌ها',rewards:'باشگاه مشتریان',help:'پشتیبانی',gift:'کارت هدیه',contact:'تماس با ما',admin:'ورود مدیر',footer:'انتخاب مطمئن، خرید آسان و پشتیبانی همراه شما',allRights:'تمام حقوق این فروشگاه محفوظ است.',madeFor:'ساخته‌شده برای تجربه خرید بهتر',languageChanged:'زبان سایت تغییر کرد.'},
+    en:{announcement:'A trusted experience for home shopping',support:'Customer support and assistance',cart:'Cart',account:'My account',loginRegister:'Sign in / Register',home:'Home',store:'Shop',compare:'Compare products',addresses:'Addresses',security:'Account security',wishlist:'Wishlist',rewards:'Rewards club',help:'Support',gift:'Gift card',contact:'Contact us',admin:'Admin login',footer:'Trusted choices, easy shopping and helpful support',allRights:'All rights reserved.',madeFor:'Made for a better shopping experience',languageChanged:'Website language updated.'},
+    ar:{announcement:'تجربة موثوقة للتسوق المنزلي',support:'دعم العملاء والمساعدة',cart:'السلة',account:'حسابي',loginRegister:'دخول / تسجيل',home:'الرئيسية',store:'المتجر',compare:'مقارنة المنتجات',addresses:'العناوين',security:'أمان الحساب',wishlist:'المفضلة',rewards:'نادي المكافآت',help:'الدعم',gift:'بطاقة هدايا',contact:'اتصل بنا',admin:'دخول الإدارة',footer:'اختيارات موثوقة وتسوق سهل ودعم مستمر',allRights:'جميع الحقوق محفوظة.',madeFor:'صُمم لتجربة تسوق أفضل',languageChanged:'تم تحديث لغة الموقع.'},
+    de:{announcement:'Ein vertrauenswürdiges Einkaufserlebnis für Ihr Zuhause',support:'Kundenservice und Unterstützung',cart:'Warenkorb',account:'Mein Konto',loginRegister:'Anmelden / Registrieren',home:'Startseite',store:'Shop',compare:'Produkte vergleichen',addresses:'Adressen',security:'Kontosicherheit',wishlist:'Merkliste',rewards:'Bonusprogramm',help:'Support',gift:'Geschenkkarte',contact:'Kontakt',admin:'Admin-Anmeldung',footer:'Vertrauensvolle Auswahl, einfaches Einkaufen und hilfreicher Support',allRights:'Alle Rechte vorbehalten.',madeFor:'Für ein besseres Einkaufserlebnis',languageChanged:'Website-Sprache aktualisiert.'},
+    fr:{announcement:'Une expérience de confiance pour votre maison',support:'Assistance clientèle',cart:'Panier',account:'Mon compte',loginRegister:'Connexion / Inscription',home:'Accueil',store:'Boutique',compare:'Comparer les produits',addresses:'Adresses',security:'Sécurité du compte',wishlist:'Favoris',rewards:'Programme fidélité',help:'Assistance',gift:'Carte cadeau',contact:'Contact',admin:'Connexion admin',footer:'Des choix fiables, des achats faciles et une assistance utile',allRights:'Tous droits réservés.',madeFor:'Conçu pour une meilleure expérience',languageChanged:'Langue du site mise à jour.'},
+    es:{announcement:'Una experiencia de compra confiable para tu hogar',support:'Atención al cliente',cart:'Carrito',account:'Mi cuenta',loginRegister:'Iniciar sesión / Registro',home:'Inicio',store:'Tienda',compare:'Comparar productos',addresses:'Direcciones',security:'Seguridad de la cuenta',wishlist:'Favoritos',rewards:'Club de recompensas',help:'Soporte',gift:'Tarjeta regalo',contact:'Contacto',admin:'Acceso administrador',footer:'Elecciones fiables, compras fáciles y asistencia útil',allRights:'Todos los derechos reservados.',madeFor:'Creado para una mejor experiencia de compra',languageChanged:'Idioma del sitio actualizado.'},
+    tr:{announcement:'Eviniz için güvenilir alışveriş deneyimi',support:'Müşteri desteği',cart:'Sepet',account:'Hesabım',loginRegister:'Giriş / Kayıt',home:'Ana sayfa',store:'Mağaza',compare:'Ürünleri karşılaştır',addresses:'Adresler',security:'Hesap güvenliği',wishlist:'Favoriler',rewards:'Ödül kulübü',help:'Destek',gift:'Hediye kartı',contact:'İletişim',admin:'Yönetici girişi',footer:'Güvenilir seçimler, kolay alışveriş ve destek',allRights:'Tüm hakları saklıdır.',madeFor:'Daha iyi bir alışveriş deneyimi için',languageChanged:'Site dili güncellendi.'}
+  };
+  const browserLang=()=>{const raw=(navigator.languages&&navigator.languages[0]||navigator.language||'fa').slice(0,2).toLowerCase();return supported.includes(raw)?raw:'en';};
+  const original=new Map();
+  document.querySelectorAll('[data-global-i18n]').forEach(el=>original.set(el,el.textContent));
+  function applyLanguage(choice,notify){
+    const lang=choice==='auto'?browserLang():choice;
+    const rtl=lang==='fa'||lang==='ar';
+    document.documentElement.lang=lang;
+    document.documentElement.dir=rtl?'rtl':'ltr';
+    document.body.classList.toggle('global-ltr',!rtl);
+    const dict=dictionaries[lang]||dictionaries.en;
+    document.querySelectorAll('[data-global-i18n]').forEach(el=>{
+      const key=el.getAttribute('data-global-i18n');
+      if(dict[key])el.textContent=dict[key];
+    });
+    try{localStorage.setItem('lavzemkhangi-global-language',choice);}catch(e){}
+    if(notify&&window.console)console.info(dict.languageChanged);
+  }
+  const savedLang=(()=>{try{return localStorage.getItem('lavzemkhangi-global-language')}catch(e){return null}})();
+  langSelect.value=savedLang||'auto';
+  applyLanguage(langSelect.value,false);
+  langSelect.addEventListener('change',()=>applyLanguage(langSelect.value,true));
+  const savedMarket=(()=>{try{return localStorage.getItem('lavzemkhangi-global-market')}catch(e){return null}})();
+  if(savedMarket&&marketSelect.querySelector('option[value="'+savedMarket+'"]'))marketSelect.value=savedMarket;
+  marketSelect.addEventListener('change',()=>{
+    try{localStorage.setItem('lavzemkhangi-global-market',marketSelect.value)}catch(e){}
+    marketSelect.title='بازار انتخابی ذخیره شد؛ قیمت و پرداخت محلی تا اتصال سرویس ارزی و درگاه منطقه‌ای فعال نمی‌شود.';
+  });
+})();
+</script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>
