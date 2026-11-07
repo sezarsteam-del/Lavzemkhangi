@@ -177,7 +177,7 @@ def customer_logout():
 @customer_required
 def customer_account():
     user=current_customer()
-    with DB() as conn: orders=conn.execute("SELECT id,total_amount,status,fulfillment_status,tracking_code,created_at FROM store_orders WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],)).fetchall()
+    with DB() as conn: orders=conn.execute("SELECT id,total_amount,payment_amount,gift_card_discount,status,fulfillment_status,tracking_code,created_at FROM store_orders WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],)).fetchall()
     return render_template("customer_account.html",customer=user,orders=orders)
 
 @customer_bp.route("/cart",methods=["GET","POST"])
