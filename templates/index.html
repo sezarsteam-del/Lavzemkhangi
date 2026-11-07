@@ -386,16 +386,91 @@
 .clear-search{color:#1769aa}
 @media(max-width:600px){.hero{padding:25px 18px}.hero h1{font-size:20px}}
 
+
+/* Lavzemkhangi Global appliance photography layout */
+.global-home-hero{
+ display:grid!important;grid-template-columns:1fr 1.05fr;align-items:center;gap:24px;
+ min-height:310px;padding:28px 32px!important;
+ background:radial-gradient(ellipse at 15% 20%,rgba(194,151,78,.18),transparent 38%),linear-gradient(115deg,#09090c 0%,#1b1916 58%,#3b2d1c 100%)!important;
+ border:1px solid rgba(214,173,104,.34)!important;box-shadow:0 22px 55px rgba(0,0,0,.3)!important;
+}
+.global-home-hero:before,.global-home-hero:after{pointer-events:none}
+.global-hero-copy{position:relative;z-index:2}
+.global-hero-kicker{display:inline-block;color:#e3c27e;font-size:10px;letter-spacing:2.8px;font-weight:900;margin-bottom:12px}
+.global-home-hero h1{font-size:clamp(24px,3vw,38px)!important;line-height:1.55;margin:0 0 10px!important;color:#fff!important}
+.global-home-hero p{font-size:14px!important;color:#e5dac7!important;line-height:2;margin:0 0 20px!important}
+.global-hero-link{display:inline-flex;align-items:center;gap:12px;padding:10px 18px;border-radius:11px;background:linear-gradient(135deg,#e7c987,#b18440);color:#17120b!important;text-decoration:none;font-weight:900;font-size:12px;box-shadow:0 8px 22px rgba(190,145,67,.2)}
+.global-hero-photo{height:245px;min-width:0;border-radius:18px;overflow:hidden;border:1px solid rgba(226,192,126,.35);background:#17171b;box-shadow:0 16px 38px rgba(0,0,0,.35)}
+.global-hero-photo img{width:100%;height:100%;display:block;object-fit:cover;object-position:center}
+.appliance-showcase{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:0 0 25px}
+.appliance-tile{position:relative;display:block;min-width:0;height:145px;overflow:hidden;border-radius:16px;border:1px solid #51432b;background:#19191f;text-decoration:none;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+.appliance-tile:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.86))}
+.appliance-tile img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .35s ease}
+.appliance-tile:hover img{transform:scale(1.06)}
+.appliance-tile span{position:absolute;z-index:1;right:13px;bottom:11px;color:#fff;font-weight:800;font-size:12px;text-shadow:0 2px 8px #000}
+html[dir="ltr"] .appliance-tile span{right:auto;left:13px}
+.category-dropdown{background:#19191f!important;border-color:#39343a!important}
+.category-summary:hover{background:#242127!important}
+.category-title,.category-name{color:#f1e7d6!important}
+.category-subtitle{color:#b2a797!important}
+.category-content{background:#17171c!important;border-color:#39343a!important}
+.category-card{background:#202027!important;border-color:#39343a!important}
+.category-card:hover,.category-card.selected{background:#342a1d!important;border-color:#c7a15a!important}
+.category-total,.category-icon,.main-category-icon{background:#342a1d!important;color:#e4c27d!important}
+.category-total{color:#e4c27d!important}
+.catalog-heading{border-color:#39343a!important}
+.result-count{background:#342a1d!important;color:#e4c27d!important}
+.product-image,.product-placeholder{background:linear-gradient(145deg,#25242a,#17171c)!important}
+.product{background:#19191f!important;border-color:#39343a!important}
+.product h3 a{color:#f5eee2!important}
+.product-description,.product-brand,.product-category{color:#b2a797!important}
+.product-bottom{border-color:#39343a!important}
+.stock-available{color:#b8e5ca!important;background:#183126!important}
+.stock-low{color:#f5d58e!important;background:#3b2d18!important}
+.stock-empty{color:#ffc2b9!important;background:#3a211f!important}
+@media(max-width:760px){
+ .global-home-hero{grid-template-columns:1fr!important;padding:23px 18px!important;gap:16px;min-height:0}
+ .global-hero-photo{height:190px;order:-1}
+ .global-home-hero h1{font-size:23px!important}
+ .appliance-showcase{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .appliance-tile{height:125px}
+}
+
 </style>
 {% endblock %}
 
 {% block content %}
 
-<section class="hero">
-    <h1>به فروشگاه لوازم خانگی خوش آمدید</h1>
-    <p>
-        مشاهده محصولات و خرید آسان لوازم خانگی
-    </p>
+<section class="hero global-home-hero">
+    <div class="global-hero-copy">
+        <span class="global-hero-kicker">LAVZEMKHANGI GLOBAL</span>
+        <h1 data-global-i18n="homeTitle">به فروشگاه لوازم خانگی خوش آمدید</h1>
+        <p><span data-global-i18n="homeIntro">مشاهده محصولات و خرید آسان لوازم خانگی</span></p>
+        <a class="global-hero-link" href="#catalog">مشاهده محصولات <span aria-hidden="true">←</span></a>
+    </div>
+    <div class="global-hero-photo">
+        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dmchighres.png"
+             alt="مجموعه لوازم خانگی شامل یخچال، ماشین لباسشویی، فر و اجاق" fetchpriority="high">
+    </div>
+</section>
+
+<section class="appliance-showcase" aria-label="دسته‌های لوازم خانگی">
+    <a class="appliance-tile" href="#catalog">
+        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dff456/original.png" alt="یخچال و لوازم خانگی مدرن" loading="lazy">
+        <span>یخچال و فریزر</span>
+    </a>
+    <a class="appliance-tile" href="#catalog">
+        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/daw408newimages/DAW408B%2001%202000%20X%202000px.png" alt="ماشین لباسشویی و خشک‌کن" loading="lazy">
+        <span>شست‌وشو و نظافت</span>
+    </a>
+    <a class="appliance-tile" href="#catalog">
+        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dbo499/dboprod.png" alt="اجاق، فر و لوازم آشپزخانه" loading="lazy">
+        <span>آشپزخانه</span>
+    </a>
+    <a class="appliance-tile" href="#catalog">
+        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dwd258/original%20%286%29.png" alt="تجهیزات و لوازم مدرن خانه" loading="lazy">
+        <span>لوازم خانه</span>
+    </a>
 </section>
 
 <form class="search" method="GET" action="{{ url_for('index') }}">
@@ -403,7 +478,7 @@
         type="search"
         name="q"
         value="{{ q }}"
-        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..."
+        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..." data-global-placeholder="searchPlaceholder"
     >
 
     {% if selected_category %}
@@ -414,7 +489,7 @@
         >
     {% endif %}
 
-    <button type="submit">جستجو</button>
+    <button type="submit" data-global-i18n="searchButton">جستجو</button>
 </form>
 
 <!-- منوی کشویی دسته بندی -->
@@ -435,11 +510,11 @@
 
                 <div>
                     <div class="category-title">
-                        دسته‌بندی محصولات
+                        <span data-global-i18n="categoryHeading">دسته‌بندی محصولات</span>
                     </div>
 
                     <div class="category-subtitle">
-                        برای مشاهده دسته‌ها کلیک کنید
+                        <span data-global-i18n="categoryHint">برای مشاهده دسته‌ها کلیک کنید</span>
                     </div>
                 </div>
 
@@ -471,7 +546,7 @@
                         </svg>
                     </span>
 
-                    <span class="category-name">همه محصولات</span>
+                    <span class="category-name" data-global-i18n="allProducts">همه محصولات</span>
                 </a>
 
                 {% for category in categories %}
