@@ -409,6 +409,21 @@
     </div>
 </section>
 
+<form class="search" method="GET" action="{{ url_for('products_page') }}">
+    <input
+        type="search"
+        name="q"
+        value="{{ q }}"
+        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..." data-global-placeholder="search"
+    >
+
+    {% if selected_category %}
+        <input type="hidden" name="category" value="{{ selected_category }}">
+    {% endif %}
+
+    <button type="submit" data-global-i18n="searchButton">جستجو</button>
+</form>
+
 <section class="appliance-showcase category-photo-grid" id="categories" aria-label="دسته‌بندی محصولات">
     {% for category in categories %}
     <a class="appliance-tile category-photo-tile {% if selected_category|string == category.id|string %}selected{% endif %}"
