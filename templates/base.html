@@ -152,6 +152,11 @@
                 min-width: 180px;
             }
         }
+    
+        .menu-language-option{display:block;width:100%;margin:4px 0 8px;padding:8px 10px;border-bottom:1px solid rgba(199,155,85,.28)}
+        .menu-language-option .locale-control{width:100%;box-sizing:border-box;justify-content:space-between}
+        .menu-language-option .locale-control select{flex:1;max-width:none;min-width:0}
+
     </style>
 
     {% block head %}{% endblock %}
@@ -168,7 +173,7 @@
             <strong>لوازم خانگی</strong>
         </a>
 
-<div class="global-locale-controls"><label class="locale-control" aria-label="انتخاب زبان"><span>🌐</span><select id="globalLanguage" aria-label="انتخاب زبان"><option value="auto">خودکار / Auto</option><option value="fa">فارسی</option><option value="en">English</option><option value="ar">العربية</option><option value="de">Deutsch</option></select></label></div>
+
         <div class="menu-wrapper">
 
             <button
@@ -185,6 +190,7 @@
             </button>
 
             <nav class="top-navigation" id="mainNavigation">
+                <div class="global-locale-controls menu-language-option"><label class="locale-control" aria-label="انتخاب زبان"><span>🌐</span><select id="globalLanguage" aria-label="انتخاب زبان"><option value="auto">خودکار / Auto</option><option value="fa">فارسی</option><option value="en">English</option><option value="ar">العربية</option><option value="de">Deutsch</option></select></label></div>
 
                 <a href="{{ url_for('index') }}">صفحه اصلی</a>
                 {% if session.get('customer_id') %}
