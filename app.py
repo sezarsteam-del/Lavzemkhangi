@@ -526,6 +526,16 @@ def index():
         "category", ""
     ).strip()
 
+    category_group = request.args.get("category_group", "").strip()
+    category_group_terms = {
+        "refrigeration": ["یخچال", "فریزر", "ساید"],
+        "washing": ["لباسشویی", "ظرفشویی", "جارو", "نظافت"],
+        "cooking": ["اجاق", "گاز", "فر", "مایکرو", "توستر", "سرخ‌کن"],
+        "climate": ["کولر", "پنکه", "بخاری", "هیتر", "آب‌سردکن"],
+        "kitchen": ["چای‌ساز", "قهوه‌ساز", "مخلوط‌کن", "آبمیوه‌گیری", "غذاساز"],
+        "audio": ["تلویزیون", "اسپیکر", "صوتی", "تصویری", "سینمای خانگی"]
+    }
+
     with db() as conn:
 
         categories = conn.execute("""
@@ -576,6 +586,18 @@ def index():
             sql += " AND p.category_id = %s"
 
             params.append(int(selected_category))
+
+        if category_group in category_group_terms:
+            group_terms = category_group_terms[category_group]
+            group_conditions = []
+            for term in group_terms:
+                group_conditions.append(
+                    "(p.name ILIKE %s OR p.description ILIKE %s OR "
+                    "c.name ILIKE %s OR b.name ILIKE %s)"
+                )
+                wildcard = f"%{term}%"
+                params.extend([wildcard, wildcard, wildcard, wildcard])
+            sql += " AND (" + " OR ".join(group_conditions) + ")"
 
         sql += " ORDER BY p.created_at DESC"
 
