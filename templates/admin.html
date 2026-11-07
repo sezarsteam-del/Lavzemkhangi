@@ -137,6 +137,10 @@
                    maxlength="150"
                    placeholder="نام دسته‌بندی جدید">
 
+            <input type="url"
+                   name="image_url"
+                   placeholder="آدرس عکس دسته‌بندی (https://...)">
+
             <button type="submit">➕ افزودن دسته‌بندی</button>
         </form>
 
@@ -164,6 +168,11 @@
                                value="{{ category.name }}"
                                required
                                maxlength="150">
+
+                        <input type="url"
+                               name="image_url"
+                               value="{{ category.image_url or '' }}"
+                               placeholder="آدرس عکس دسته‌بندی">
 
                         <button type="submit" class="edit-btn">ذخیره</button>
                     </form>
