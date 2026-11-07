@@ -327,9 +327,7 @@ def gift_card(user):
             if not card:
                 flash("کارت هدیه معتبر نیست یا اعتبار آن تمام شده است.", "error")
             else:
-                conn.execute("INSERT INTO gift_card_redemptions(gift_card_id,customer_id,amount) VALUES(%s,%s,%s)", (card["id"],user["id"],card["remaining_amount"]))
-                conn.execute("UPDATE gift_cards SET remaining_amount=0 WHERE id=%s", (card["id"],))
-                flash("کد کارت هدیه در سوابق شما ثبت شد. استفاده از اعتبار در پرداخت سفارش هنوز فعال نشده است.", "error")
+                flash("کد معتبر است؛ اما اتصال اعتبار کارت هدیه به پرداخت سفارش هنوز تکمیل نشده و هیچ اعتباری مصرف نشد.", "error")
         return redirect(url_for("features.gift_card"))
     with DB() as conn:
         history = conn.execute("SELECT amount,created_at FROM gift_card_redemptions WHERE customer_id=%s ORDER BY created_at DESC", (user["id"],)).fetchall()
