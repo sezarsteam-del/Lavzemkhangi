@@ -749,3 +749,46 @@ tr:hover td { background:#f1f6f6 !important; }
     margin-top: 30px !important;
   }
 }
+
+
+/* Theme 6: clean white and elegant purple storefront palette */
+:root {
+  --store-purple: #7652a8;
+  --store-purple-dark: #56377f;
+  --store-purple-soft: #eee7f7;
+  --store-lilac: #f7f4fb;
+  --store-ink: #30283a;
+}
+body { background: #f8f7fa !important; color: var(--store-ink) !important; }
+.topbar, header, .site-header { background: #ffffff !important; color: var(--store-purple-dark) !important; border-color: #e6deef !important; }
+.brand, .brand strong, .topbar a { color: var(--store-purple-dark) !important; }
+.menu-toggle, .home-button, .topbar .home-button { background: var(--store-purple) !important; color: #fff !important; border-color: var(--store-purple) !important; }
+button, .btn, .search button, .global-hero-link, input[type="submit"] {
+  background: var(--store-purple) !important; color: #fff !important; border-color: var(--store-purple) !important;
+}
+button:hover, .btn:hover, .search button:hover, .global-hero-link:hover { background: var(--store-purple-dark) !important; }
+a { color: var(--store-purple-dark); }
+input, select, textarea { border-color: #d9cde8 !important; }
+input:focus, select:focus, textarea:focus { outline-color: var(--store-purple) !important; border-color: var(--store-purple) !important; }
+.global-home-hero {
+  background: linear-gradient(135deg,#ffffff 0%,#f2edf8 100%) !important;
+  border-color: #d9cbe9 !important;
+  box-shadow: 0 14px 34px rgba(83,55,127,.10) !important;
+}
+.global-home-hero h1 { color: var(--store-purple-dark) !important; }
+.global-home-hero p { color: #62566e !important; }
+.global-hero-link { background: var(--store-purple) !important; color: #fff !important; }
+.search, .search-box, .category-search { background: #eee8f6 !important; border-color: #ddd1eb !important; }
+.category-photo-tile, .appliance-tile {
+  background: linear-gradient(145deg,#fff,#eee8f6) !important;
+  border-color: #d9cde8 !important;
+}
+.category-photo-tile.selected { outline-color: var(--store-purple) !important; }
+.category-photo-tile span { background: linear-gradient(transparent,rgba(45,30,65,.76)); }
+.card, .product-card, .category-card, .catalog-section, .category-products-page {
+  border-color: #e1d8eb !important;
+}
+.badge, .tag, .stock-badge { background-color: var(--store-purple-soft) !important; color: var(--store-purple-dark) !important; }
+.footer { background: #30243e !important; color: #f5effb !important; border-color: #7652a8 !important; }
+.footer a, .footer strong { color: #d9c5f1 !important; }
+.notice { border-color: #cdbbe2 !important; }
