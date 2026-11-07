@@ -329,8 +329,7 @@ def gift_card(user):
             else:
                 conn.execute("INSERT INTO gift_card_redemptions(gift_card_id,customer_id,amount) VALUES(%s,%s,%s)", (card["id"],user["id"],card["remaining_amount"]))
                 conn.execute("UPDATE gift_cards SET remaining_amount=0 WHERE id=%s", (card["id"],))
-                conn.execute("INSERT INTO loyalty_ledger(customer_id,points,reason) VALUES(%s,%s,%s)", (user["id"], max(1, int(card["remaining_amount"])//10000), "اعتبار کارت هدیه (امتیاز وفاداری)"))
-                flash("کارت هدیه به حساب شما اضافه شد.", "success")
+                flash("کد کارت هدیه در سوابق شما ثبت شد. استفاده از اعتبار در پرداخت سفارش هنوز فعال نشده است.", "error")
         return redirect(url_for("features.gift_card"))
     with DB() as conn:
         history = conn.execute("SELECT amount,created_at FROM gift_card_redemptions WHERE customer_id=%s ORDER BY created_at DESC", (user["id"],)).fetchall()
