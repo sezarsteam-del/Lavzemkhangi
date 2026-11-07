@@ -285,3 +285,74 @@ input, select, textarea {
   font-weight: 700 !important;
 }
 input::placeholder, textarea::placeholder { color: #595959 !important; }
+
+
+/* Requested storefront color treatment: gold product cards, black price list, gold search. */
+/* Product cards are fully gold; all card copy and displayed prices are black for contrast. */
+.product,
+.product:hover {
+  background: linear-gradient(145deg,#f4d58f 0%,#d8ad5c 52%,#c99a45 100%) !important;
+  border: 1px solid #a77b32 !important;
+  box-shadow: 0 10px 26px rgba(0,0,0,.24) !important;
+}
+.product .product-info,
+.product .product-info *,
+.product h3,
+.product h3 a,
+.product .product-category,
+.product .product-brand,
+.product .product-description,
+.product .product-bottom,
+.product .price {
+  color: #111111 !important;
+  font-weight: 800 !important;
+}
+.product .product-bottom { border-top: 1px solid rgba(40,28,8,.28) !important; }
+.product .product-image,
+.product img.product-image {
+  background: linear-gradient(145deg,#fffdf8 0%,#eee6d5 100%) !important;
+  border: 1px solid rgba(80,55,15,.22) !important;
+}
+.product .product-placeholder {
+  background: linear-gradient(145deg,#fffdf8 0%,#eee6d5 100%) !important;
+  color: #111111 !important;
+}
+/* The "لیست قیمت محصولات" heading and its count are black on a light gold strip. */
+#catalog .catalog-heading {
+  background: linear-gradient(100deg,#e9c77f,#d8ad5c) !important;
+  border: 1px solid #b88c43 !important;
+  border-radius: 14px !important;
+  padding: 12px 15px !important;
+}
+#catalog .catalog-heading .section-title,
+#catalog .catalog-heading .result-count {
+  color: #111111 !important;
+  font-weight: 900 !important;
+}
+#catalog .catalog-heading .result-count {
+  background: rgba(255,255,255,.35) !important;
+  border: 1px solid rgba(50,35,10,.25) !important;
+}
+/* Search field and action use the same gold identity. */
+form.search {
+  background: linear-gradient(110deg,#e8c477,#c99b4b) !important;
+  border: 1px solid #a77b32 !important;
+  border-radius: 15px !important;
+  padding: 9px !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,.2) !important;
+}
+form.search input,
+form.search input[type="search"] {
+  background: #fffdf8 !important;
+  color: #111111 !important;
+  border: 1px solid #b88c43 !important;
+  font-weight: 800 !important;
+}
+form.search input::placeholder { color: #62502e !important; }
+form.search button {
+  background: linear-gradient(135deg,#f5dda5,#c99b4b) !important;
+  color: #111111 !important;
+  border: 1px solid #9e742e !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 12px rgba(80,55,15,.2) !important;
+}
