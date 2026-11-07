@@ -701,3 +701,32 @@ tr:hover td { background:#f1f6f6 !important; }
 @media(max-width:760px) {
   .global-home-hero { background:linear-gradient(145deg,#e5eeee,#f2f4f5) !important; }
 }
+
+
+/* Dynamic category photo cards on the storefront */
+.category-photo-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 20px;
+}
+.category-photo-tile {
+  min-height: 190px;
+  border-color: rgba(38,154,154,.35);
+  background: linear-gradient(145deg,#edf4f3,#c9d9d8);
+}
+.category-photo-tile img {
+  background: linear-gradient(145deg,#f8fbfa,#dce9e7);
+  object-fit: contain;
+  padding: 12px;
+}
+.category-photo-tile span {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.85);
+}
+.category-photo-tile.selected {
+  outline: 3px solid #269a9a;
+  outline-offset: 2px;
+}
+@media(max-width:760px) {
+  .category-photo-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .category-photo-tile { min-height: 150px; }
+}
