@@ -213,7 +213,7 @@ def checkout():
                 for p,qty in locked: conn.execute("INSERT INTO store_order_items(order_id,product_id,product_name,quantity,unit_price,line_total) VALUES(%s,%s,%s,%s,%s,%s)",(order["id"],p["id"],p["name"],qty,p["price"],p["price"]*qty))
             session["cart"]={}; flash("سفارش اولیه ثبت شد؛ اتصال درگاه و تأیید بانکی هنوز باید تکمیل شود.","warning"); return redirect(url_for("customer.customer_account"))
         except ValueError as e: flash(str(e),"error")
-    return render_template("checkout.html",customer=user)
+    return render_template("checkout.html",customer=user,addresses=addresses)
 
 @customer_bp.route("/account/orders/<int:order_id>")
 @customer_required
@@ -273,7 +273,13 @@ def customer_addresses():
     if request.method == "POST":
         title = request.form.get("title", "خانه").strip()[:40] or "خانه"
         recipient = request.form.get("recipient_name", "").strip()[:100]
-        phone = clean_phone(request.form.get("recipient_phone", ""))
+        try:
+            phone = clean_phone(request.form.get("recipient_phone", ""))
+        except ValueError as exc:
+            flash(str(exc), "error")
+            with DB() as conn:
+                addresses = conn.execute("SELECT * FROM customer_addresses WHERE customer_id=%s ORDER BY is_default DESC,id DESC", (user["id"],)).fetchall()
+            return render_template("customer_addresses.html", customer=user, addresses=addresses)
         address = request.form.get("address", "").strip()
         postal = re.sub(r"\D", "", request.form.get("postal_code", ""))[:10]
         if not recipient or len(address) < 15 or len(address) > 1000:
