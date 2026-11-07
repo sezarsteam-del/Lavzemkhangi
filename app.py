@@ -576,9 +576,29 @@ def index():
             sql, params
         ).fetchall()
 
+        # انتخاب تصادفیِ قطعی برای هر روز تهران؛ در طول روز ثابت می‌ماند.
+        # فقط کالاهای فعال و دارای موجودی وارد پیشنهادهای روزانه می‌شوند.
+        featured_products = conn.execute("""
+            SELECT
+                p.*,
+                c.name AS category_name,
+                b.name AS brand_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN brands b ON b.id = p.brand_id
+            WHERE p.is_active = TRUE
+              AND p.stock > 0
+            ORDER BY md5(
+                p.id::text ||
+                (NOW() AT TIME ZONE 'Asia/Tehran')::date::text
+            )
+            LIMIT 6
+        """).fetchall()
+
     return render_template(
         "index.html",
         products=products,
+        featured_products=featured_products,
         categories=categories,
         q=q,
         selected_category=selected_category
