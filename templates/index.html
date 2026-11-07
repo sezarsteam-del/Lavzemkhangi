@@ -409,23 +409,30 @@
     </div>
 </section>
 
-<section class="appliance-showcase" aria-label="تصاویر لوازم خانگی">
-    <a class="appliance-tile" href="#categories">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dff456/original.png" alt="یخچال و فریزر" loading="lazy">
-        <span>یخچال و فریزر</span>
+<section class="appliance-showcase category-photo-grid" id="categories" aria-label="دسته‌بندی محصولات">
+    {% for category in categories %}
+    <a class="appliance-tile category-photo-tile {% if selected_category|string == category.id|string %}selected{% endif %}"
+       href="{{ url_for('index', category=category.id, q=q) }}">
+        {% if category.image_url %}
+            <img src="{{ category.image_url }}" alt="{{ category.name }}" loading="lazy">
+        {% elif 'یخچال' in category.name or 'فریزر' in category.name %}
+            <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dff456/original.png" alt="{{ category.name }}" loading="lazy">
+        {% elif 'لباسشویی' in category.name or 'ظرفشویی' in category.name or 'نظافت' in category.name or 'جارو' in category.name %}
+            <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/daw408newimages/DAW408B%2001%202000%20X%202000px.png" alt="{{ category.name }}" loading="lazy">
+        {% elif 'تلویزیون' in category.name or 'صوتی' in category.name or 'تصویری' in category.name %}
+            <img src="https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=900&auto=format&fit=crop" alt="{{ category.name }}" loading="lazy">
+        {% elif 'کولر' in category.name or 'سرمایشی' in category.name or 'گرمایشی' in category.name %}
+            <img src="https://images.unsplash.com/photo-1631545806609-7c7a7c6c8b1a?w=900&auto=format&fit=crop" alt="{{ category.name }}" loading="lazy">
+        {% elif 'آشپزخانه' in category.name or 'چای' in category.name or 'قهوه' in category.name %}
+            <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dbo499/dboprod.png" alt="{{ category.name }}" loading="lazy">
+        {% else %}
+            <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dmchighres.png" alt="{{ category.name }}" loading="lazy">
+        {% endif %}
+        <span>{{ category.name }}</span>
     </a>
-    <a class="appliance-tile" href="#categories">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/daw408newimages/DAW408B%2001%202000%20X%202000px.png" alt="ماشین لباسشویی" loading="lazy">
-        <span>شست‌وشو و نظافت</span>
-    </a>
-    <a class="appliance-tile" href="#categories">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dbo499/dboprod.png" alt="فر و اجاق" loading="lazy">
-        <span>آشپزخانه</span>
-    </a>
-    <a class="appliance-tile" href="#categories">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dwd258/original%20%286%29.png" alt="لوازم خانگی" loading="lazy">
-        <span>لوازم خانه</span>
-    </a>
+    {% else %}
+    <p class="empty">هنوز دسته‌بندی‌ای ثبت نشده است.</p>
+    {% endfor %}
 </section>
 
 
@@ -440,122 +447,11 @@
     >
 
     {% if selected_category %}
-        <input
-            type="hidden"
-            name="category"
-            value="{{ selected_category }}"
-        >
-    {% endif %}
-
-    {% if category_group %}
-        <input type="hidden" name="category_group" value="{{ category_group }}">
+        <input type="hidden" name="category" value="{{ selected_category }}">
     {% endif %}
 
     <button type="submit" data-global-i18n="searchButton">جستجو</button>
 </form>
-
-<!-- منوی کشویی دسته بندی -->
-<section class="category-section" id="categories">
-
-    <details class="category-dropdown">
-
-        <summary class="category-summary">
-
-            <div class="category-summary-right">
-
-                <div class="main-category-icon">
-                    <svg viewBox="0 0 24 24">
-                        <rect x="3" y="3" width="18" height="18" rx="3"/>
-                        <path d="M8 8h8M8 12h8M8 16h5"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <div class="category-title">
-                        دسته‌بندی محصولات
-                    </div>
-
-                    <div class="category-subtitle">
-                        برای مشاهده دسته‌ها کلیک کنید
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="category-summary-left">
-                <span class="category-total">
-                    ۶ دسته
-                </span>
-
-                <span class="category-chevron">⌄</span>
-            </div>
-
-        </summary>
-
-        <div class="category-content">
-
-            <div class="category-grid">
-
-                <!-- همه محصولات -->
-                <a
-                    class="category-card {% if not selected_category %}selected{% endif %}"
-                    href="{{ url_for('index', q=q) }}"
-                >
-                    <span class="category-icon">
-                        <svg viewBox="0 0 24 24">
-                            <rect x="3" y="3" width="18" height="18" rx="3"/>
-                            <path d="M8 8h8M8 12h8M8 16h5"/>
-                        </svg>
-                    </span>
-
-                    <span class="category-name">همه محصولات</span>
-                </a>
-
-                
-                    <a class="category-card {% if category_group == 'refrigeration' %}selected{% endif %}"
-                       href="{{ url_for('index', category_group='refrigeration', q=q) }}">
-                        <span class="category-icon" aria-hidden="true">❄️</span>
-                        <span class="category-name">یخچال و فریزر</span>
-                    </a>
-
-                    <a class="category-card {% if category_group == 'washing' %}selected{% endif %}"
-                       href="{{ url_for('index', category_group='washing', q=q) }}">
-                        <span class="category-icon" aria-hidden="true">🫧</span>
-                        <span class="category-name">شست‌وشو و نظافت</span>
-                    </a>
-
-                    <a class="category-card {% if category_group == 'cooking' %}selected{% endif %}"
-                       href="{{ url_for('index', category_group='cooking', q=q) }}">
-                        <span class="category-icon" aria-hidden="true">🍳</span>
-                        <span class="category-name">لوازم پخت‌وپز</span>
-                    </a>
-
-                    <a class="category-card {% if category_group == 'climate' %}selected{% endif %}"
-                       href="{{ url_for('index', category_group='climate', q=q) }}">
-                        <span class="category-icon" aria-hidden="true">🌬️</span>
-                        <span class="category-name">لوازم سرمایشی و گرمایشی</span>
-                    </a>
-
-                    <a class="category-card {% if category_group == 'kitchen' %}selected{% endif %}"
-                       href="{{ url_for('index', category_group='kitchen', q=q) }}">
-                        <span class="category-icon" aria-hidden="true">☕</span>
-                        <span class="category-name">لوازم برقی آشپزخانه</span>
-                    </a>
-
-                    <a class="category-card {% if category_group == 'audio' %}selected{% endif %}"
-                       href="{{ url_for('index', category_group='audio', q=q) }}">
-                        <span class="category-icon" aria-hidden="true">📺</span>
-                        <span class="category-name">لوازم صوتی و تصویری</span>
-                    </a>
-
-            </div>
-
-        </div>
-
-    </details>
-
-</section>
-
 
 <!-- لیست محصولات -->
 <section id="catalog">
