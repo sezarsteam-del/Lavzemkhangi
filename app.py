@@ -265,7 +265,7 @@ def init_db():
             ("یخچال و فریزر", "https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=900&auto=format&fit=crop"),
             ("شست‌وشو و نظافت", "https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=900&auto=format&fit=crop"),
             ("لوازم پخت‌وپز", "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=900&auto=format&fit=crop"),
-            ("لوازم سرمایشی و گرمایشی", "https://images.unsplash.com/photo-1631545806609-7c7a7c6c8b1a?w=900&auto=format&fit=crop"),
+            ("لوازم سرمایشی و گرمایشی", "https://www.ozoneairconhvac.com/public/images/indoor-wall-fig.png"),
             ("لوازم برقی آشپزخانه", "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=900&auto=format&fit=crop"),
             ("لوازم صوتی و تصویری", "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=900&auto=format&fit=crop")
         ]
