@@ -356,3 +356,182 @@ form.search button {
   font-weight: 900 !important;
   box-shadow: 0 4px 12px rgba(80,55,15,.2) !important;
 }
+
+
+/* White + green storefront palette (2026-11-08). Presentation only. */
+:root {
+  --primary: #3f8b63;
+  --primary-dark: #246344;
+  --dark: #174b35;
+  --text: #20352a;
+  --muted: #64766b;
+  --background: #f7fbf8;
+  --surface: #ffffff;
+  --border: #d8e8dc;
+  --radius: 16px;
+  --shadow: 0 10px 28px rgba(28,75,51,.09);
+}
+html, body, body {
+  background: #f7fbf8 !important;
+  color: #20352a !important;
+}
+body {
+  background: linear-gradient(180deg,#f1f8f3 0,#ffffff 340px) !important;
+}
+body *:not(img):not(svg):not(path) {
+  color: #20352a !important;
+}
+.topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #d8e8dc !important;
+  box-shadow: 0 5px 20px rgba(25,75,48,.08) !important;
+}
+.brand, .brand strong { color: #174b35 !important; }
+.menu-toggle {
+  background: #246344 !important;
+  border-color: #246344 !important;
+  color: #ffffff !important;
+}
+.menu-toggle span { background: #ffffff !important; }
+.top-navigation {
+  background: #ffffff !important;
+  border: 1px solid #d8e8dc !important;
+  box-shadow: 0 14px 32px rgba(25,75,48,.14) !important;
+}
+.top-navigation a, .top-navigation .logout-link {
+  color: #174b35 !important;
+}
+.top-navigation a:hover, .top-navigation .logout-link:hover {
+  background: #eaf4ed !important;
+  color: #174b35 !important;
+}
+.container { color: #20352a !important; }
+h1,h2,h3,h4,.section-title { color: #174b35 !important; }
+.global-home-hero {
+  background: linear-gradient(115deg,#eaf5ed 0%,#d8ebdd 58%,#f7fbf8 100%) !important;
+  border: 1px solid #b9d8c2 !important;
+  box-shadow: 0 14px 34px rgba(28,75,51,.10) !important;
+}
+.global-home-hero h1 { color: #174b35 !important; }
+.global-home-hero p, .global-hero-kicker { color: #386b4d !important; }
+.global-hero-link {
+  background: #246344 !important;
+  color: #ffffff !important;
+}
+.appliance-tile {
+  background: #ffffff !important;
+  border-color: #cfe2d4 !important;
+  box-shadow: 0 8px 22px rgba(28,75,51,.08) !important;
+}
+.appliance-tile img {
+  background: linear-gradient(145deg,#ffffff,#edf6ef) !important;
+}
+.appliance-tile:after {
+  background: linear-gradient(transparent,rgba(17,65,43,.82)) !important;
+}
+.appliance-tile span { color: #ffffff !important; }
+.appliance-tile:hover { border-color: #4b9469 !important; }
+.product, .product:hover, .form-card, .category-dropdown, .category-card,
+.empty, .empty-state, .panel, .account-panel, .contact-page, .login-card,
+.invoice-card, .search, .admin-nav, .stat-card, .admin-card, .panel-section,
+.management-item, .product-item, .products-card, .add-card, .payment-choice,
+.cart-row, .info-item, .invoice-totals, .invoice-description, .installment-row {
+  background: #ffffff !important;
+  border: 1px solid #d8e8dc !important;
+  color: #20352a !important;
+  box-shadow: 0 8px 24px rgba(28,75,51,.06) !important;
+}
+.product *, .form-card *, .category-dropdown *, .category-card *,
+.empty *, .empty-state *, .panel *, .account-panel *, .contact-page *,
+.login-card *, .invoice-card *, .search *, .admin-nav *, .stat-card *,
+.admin-card *, .panel-section *, .management-item *, .product-item *,
+.products-card *, .add-card *, .payment-choice *, .cart-row *,
+.info-item *, .invoice-totals *, .invoice-description *, .installment-row * {
+  color: #20352a !important;
+}
+.product h3, .product h3 a, .product .product-info *,
+.product .product-category, .product .product-brand,
+.product .product-description, .product .product-bottom {
+  color: #20352a !important;
+}
+.product .price, .price { color: #246344 !important; }
+.product .product-image, .product img.product-image,
+.product .product-placeholder {
+  background: linear-gradient(145deg,#f8fcf9,#eaf4ed) !important;
+  border-color: #d8e8dc !important;
+}
+button, .btn, .button, .primary, .secondary,
+.global-hero-link, .top-navigation .login-link {
+  background: #246344 !important;
+  color: #ffffff !important;
+  border-color: #246344 !important;
+  font-weight: 800 !important;
+}
+button:hover, .btn:hover, .button:hover, .primary:hover {
+  background: #174b35 !important;
+  color: #ffffff !important;
+}
+.chip, .category-summary, .category-title, .category-name {
+  background-color: #edf6ef !important;
+  color: #174b35 !important;
+  border-color: #d1e5d6 !important;
+}
+.chip.active, .category-card.selected {
+  background: #dceee1 !important;
+  border-color: #70a985 !important;
+  color: #174b35 !important;
+}
+#catalog .catalog-heading {
+  background: #e6f2e9 !important;
+  border: 1px solid #c8dfce !important;
+  border-radius: 14px !important;
+}
+#catalog .catalog-heading .section-title,
+#catalog .catalog-heading .result-count {
+  color: #174b35 !important;
+  background: transparent !important;
+}
+form.search {
+  background: #e6f2e9 !important;
+  border: 1px solid #c8dfce !important;
+  box-shadow: none !important;
+}
+form.search input, form.search input[type="search"] {
+  background: #ffffff !important;
+  color: #20352a !important;
+  border: 1px solid #bfd8c6 !important;
+}
+form.search input::placeholder { color: #718477 !important; }
+form.search button {
+  background: #246344 !important;
+  color: #ffffff !important;
+  border-color: #246344 !important;
+}
+input, select, textarea {
+  background: #ffffff !important;
+  color: #20352a !important;
+  border: 1px solid #cbded0 !important;
+}
+input::placeholder, textarea::placeholder { color: #78877d !important; }
+input:focus, select:focus, textarea:focus {
+  border-color: #4b9469 !important;
+  box-shadow: 0 0 0 3px rgba(63,139,99,.14) !important;
+}
+table { background: #ffffff !important; color: #20352a !important; }
+th { background: #e6f2e9 !important; color: #174b35 !important; }
+td { border-color: #e0ebe3 !important; color: #20352a !important; }
+tr:hover td { background: #f2f8f3 !important; }
+.footer {
+  background: #174b35 !important;
+  color: #ffffff !important;
+  border-top: 1px solid #246344 !important;
+}
+.footer *, .footer-inner strong, .footer-inner small {
+  color: #ffffff !important;
+}
+.notice { background: #edf6ef !important; color: #174b35 !important; border-color: #9fc9aa !important; }
+.notice.success { background: #e2f3e7 !important; color: #205b39 !important; border-color: #78b58a !important; }
+.notice.error, .notice.danger { background: #fff0ee !important; color: #8c2e28 !important; border-color: #e2a29b !important; }
+@media(max-width:760px) {
+  .global-home-hero { background: linear-gradient(145deg,#eaf5ed,#f7fbf8) !important; }
+}
