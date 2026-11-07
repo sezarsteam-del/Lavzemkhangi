@@ -197,6 +197,65 @@ def cart():
             qty=int(basket.get(str(p["id"]),0)); line=int(p["price"])*qty; items.append({**p,"quantity":qty,"line_total":line}); total+=line
     return render_template("cart.html",items=items,total=total)
 
+def zarinpal_config():
+    merchant_id = os.environ.get("ZARINPAL_MERCHANT_ID", "").strip()
+    sandbox = os.environ.get("ZARINPAL_SANDBOX", "true").strip().lower() not in ("0", "false", "no", "off")
+    if sandbox:
+        api_base = "https://sandbox.zarinpal.com/pg/v4"
+        start_base = "https://sandbox.zarinpal.com/pg/StartPay/"
+    else:
+        api_base = "https://payment.zarinpal.com/pg/v4"
+        start_base = "https://www.zarinpal.com/pg/StartPay/"
+    return merchant_id, api_base, start_base, sandbox
+
+
+def zarinpal_is_configured():
+    return bool(os.environ.get("ZARINPAL_MERCHANT_ID", "").strip())
+
+
+def zarinpal_api(action, payload):
+    merchant_id, api_base, _start_base, _sandbox = zarinpal_config()
+    if not merchant_id:
+        raise RuntimeError("شناسه پذیرنده زرین‌پال در تنظیمات امن هاست ثبت نشده است.")
+    body = dict(payload)
+    body["merchant_id"] = merchant_id
+    req = urllib.request.Request(
+        f"{api_base}/payment/{action}.json",
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=25) as response:
+        result = json.loads(response.read(100000).decode("utf-8", "replace"))
+    return result
+
+
+def release_order_stock(conn, order_id):
+    rows = conn.execute(
+        "SELECT product_id,quantity FROM store_order_items WHERE order_id=%s",
+        (order_id,),
+    ).fetchall()
+    for row in rows:
+        conn.execute(
+            "UPDATE products SET stock=stock+%s WHERE id=%s",
+            (int(row["quantity"]), row["product_id"]),
+        )
+
+
+def fail_zarinpal_order(order_id):
+    with DB() as conn:
+        order = conn.execute(
+            "SELECT id,status,payment_provider FROM store_orders WHERE id=%s FOR UPDATE",
+            (order_id,),
+        ).fetchone()
+        if order and order["status"] == "pending_payment" and order["payment_provider"] == "zarinpal":
+            release_order_stock(conn, order_id)
+            conn.execute(
+                "UPDATE store_orders SET status='payment_failed' WHERE id=%s",
+                (order_id,),
+            )
+
+
 @customer_bp.route("/checkout",methods=["GET","POST"])
 @customer_required
 def checkout():
@@ -207,11 +266,18 @@ def checkout():
     user=current_customer()
     with DB() as conn:
         addresses=conn.execute("SELECT id,title,recipient_name,recipient_phone,address,postal_code,is_default FROM customer_addresses WHERE customer_id=%s ORDER BY is_default DESC,id DESC",(user["id"],)).fetchall()
+    zarinpal_enabled = zarinpal_is_configured()
     if request.method=="POST":
         address=request.form.get("shipping_address","").strip()
+        payment_method=request.form.get("payment_method","manual").strip()
+        if payment_method not in ("manual","zarinpal"):
+            abort(400)
         if len(address)<15 or len(address)>1000:
             flash("آدرس باید بین ۱۵ تا ۱۰۰۰ نویسه باشد.","error")
-            return render_template("checkout.html",customer=user,addresses=addresses)
+            return render_template("checkout.html",customer=user,addresses=addresses,zarinpal_enabled=zarinpal_enabled)
+        if payment_method == "zarinpal" and not zarinpal_enabled:
+            flash("درگاه زرین‌پال هنوز در تنظیمات امن هاست پیکربندی نشده است؛ فعلاً روش پرداخت پس از هماهنگی را انتخاب کنید.","error")
+            return render_template("checkout.html",customer=user,addresses=addresses,zarinpal_enabled=False)
         try:
             with DB() as conn:
                 locked=[]; total=0
@@ -226,21 +292,108 @@ def checkout():
                     locked.append((p,qty)); total+=int(p["price"])*qty
                 if total<=0:
                     raise ValueError("مبلغ سفارش معتبر نیست.")
+                order_status = "pending_payment" if payment_method == "zarinpal" else "pending_confirmation"
+                provider = "zarinpal" if payment_method == "zarinpal" else "manual"
                 order=conn.execute("""INSERT INTO store_orders
                     (customer_id,total_amount,status,shipping_address,payment_provider)
-                    VALUES(%s,%s,'pending_confirmation',%s,'manual') RETURNING id""",
-                    (user["id"],total,address)).fetchone()
+                    VALUES(%s,%s,%s,%s,%s) RETURNING id""",
+                    (user["id"],total,order_status,address,provider)).fetchone()
                 for p,qty in locked:
+                    if payment_method == "zarinpal":
+                        reserved = conn.execute(
+                            "UPDATE products SET stock=stock-%s WHERE id=%s AND stock>=%s RETURNING id",
+                            (qty,p["id"],qty),
+                        ).fetchone()
+                        if not reserved:
+                            raise ValueError("موجودی یکی از کالاها هنگام ثبت سفارش تغییر کرد؛ سبد را دوباره بررسی کنید.")
                     conn.execute("""INSERT INTO store_order_items
                         (order_id,product_id,product_name,quantity,unit_price,line_total)
                         VALUES(%s,%s,%s,%s,%s,%s)""",
                         (order["id"],p["id"],p["name"],qty,p["price"],int(p["price"])*qty))
+            if payment_method == "zarinpal":
+                try:
+                    _merchant, _api_base, start_base, _sandbox = zarinpal_config()
+                    response = zarinpal_api("request", {
+                        "amount": int(total) * 10,
+                        "callback_url": url_for("customer.zarinpal_callback", _external=True),
+                        "description": f"خرید اینترنتی سفارش شماره {order['id']}"[:250],
+                        "metadata": {"mobile": user["phone"]},
+                    })
+                    data = response.get("data") or {}
+                    authority = data.get("authority")
+                    if data.get("code") != 100 or not authority:
+                        raise RuntimeError("زرین‌پال درخواست پرداخت را تأیید نکرد؛ کد پاسخ: " + str(data.get("code", "نامشخص")))
+                    with DB() as conn:
+                        conn.execute(
+                            "UPDATE store_orders SET payment_authority=%s WHERE id=%s AND status='pending_payment'",
+                            (authority, order["id"]),
+                        )
+                    session["cart"]={}
+                    return redirect(start_base + authority)
+                except Exception as exc:
+                    fail_zarinpal_order(order["id"])
+                    app_message = str(exc)[:180]
+                    flash("ساخت درگاه پرداخت انجام نشد. مبلغی از شما کسر نشده است. " + app_message,"error")
+                    return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
             session["cart"]={}
             flash("سفارش شما ثبت شد و برای تأیید نهایی با فروشگاه هماهنگ می‌شود. پرداخت آنلاین انجام نشده است.","success")
             return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
         except ValueError as e:
             flash(str(e),"error")
-    return render_template("checkout.html",customer=user,addresses=addresses)
+    return render_template("checkout.html",customer=user,addresses=addresses,zarinpal_enabled=zarinpal_enabled)
+
+
+@customer_bp.route("/payment/zarinpal/callback", methods=["GET"])
+def zarinpal_callback():
+    authority = (request.args.get("Authority") or "").strip()
+    status = (request.args.get("Status") or "").strip().upper()
+    if not re.fullmatch(r"[A-Za-z0-9]{10,64}", authority):
+        abort(400)
+    with DB() as conn:
+        order = conn.execute(
+            "SELECT id,total_amount,status,payment_provider FROM store_orders WHERE payment_authority=%s",
+            (authority,),
+        ).fetchone()
+    if not order or order["payment_provider"] != "zarinpal":
+        abort(404)
+    order_id = order["id"]
+    if order["status"] == "paid":
+        flash("پرداخت این سفارش قبلاً تأیید شده است.","success")
+        return redirect(url_for("customer.customer_order_detail",order_id=order_id))
+    if order["status"] != "pending_payment":
+        flash("وضعیت این سفارش تغییر کرده است؛ برای پیگیری با فروشگاه تماس بگیرید.","error")
+        return redirect(url_for("customer.customer_login"))
+    if status != "OK":
+        fail_zarinpal_order(order_id)
+        flash("پرداخت انجام نشد یا از سوی شما لغو شد؛ مبلغی به‌عنوان پرداخت موفق ثبت نشده است.","error")
+        return redirect(url_for("customer.customer_login"))
+    try:
+        verification = zarinpal_api("verify", {
+            "amount": int(order["total_amount"]) * 10,
+            "authority": authority,
+        })
+        data = verification.get("data") or {}
+        code = data.get("code")
+        if code not in (100, 101):
+            fail_zarinpal_order(order_id)
+            flash("زرین‌پال پرداخت را تأیید نکرد. اگر مبلغی از حساب شما کسر شده، با پشتیبانی تماس بگیرید.","error")
+            return redirect(url_for("customer.customer_login"))
+        reference = str(data.get("ref_id") or "")
+        with DB() as conn:
+            locked = conn.execute(
+                "SELECT id,status FROM store_orders WHERE id=%s FOR UPDATE",
+                (order_id,),
+            ).fetchone()
+            if locked and locked["status"] == "pending_payment":
+                conn.execute(
+                    "UPDATE store_orders SET status='paid',payment_reference=%s,paid_at=NOW() WHERE id=%s",
+                    (reference,order_id),
+                )
+        flash("پرداخت با موفقیت تأیید شد. شماره پیگیری: " + (reference or "ثبت شد"),"success")
+        return redirect(url_for("customer.customer_order_detail",order_id=order_id))
+    except Exception:
+        flash("بررسی پرداخت موقتاً با مشکل روبه‌رو شد. سفارش در انتظار بررسی باقی مانده؛ دوباره تلاش نکنید و با فروشگاه تماس بگیرید.","error")
+        return redirect(url_for("customer.customer_login"))
 
 
 @customer_bp.route("/account/orders/<int:order_id>")
@@ -342,12 +495,16 @@ def customer_address_delete(address_id):
 def customer_cancel_order(order_id):
     user = current_customer()
     with DB() as conn:
-        order = conn.execute("SELECT id,status,fulfillment_status FROM store_orders WHERE id=%s AND customer_id=%s FOR UPDATE", (order_id, user["id"])).fetchone()
+        order = conn.execute("SELECT id,status,payment_provider,fulfillment_status FROM store_orders WHERE id=%s AND customer_id=%s FOR UPDATE", (order_id, user["id"])).fetchone()
         if not order:
             abort(404)
-        if order["status"] not in ("pending_payment", "pending_confirmation") or order["fulfillment_status"] in ("processing", "ready_to_ship", "shipped", "delivered"):
+        if order["status"] == "pending_payment" and order["payment_provider"] == "zarinpal":
+            flash("سفارش در مرحله پرداخت آنلاین است و از این صفحه قابل لغو نیست؛ اگر پرداخت را کامل نکرده‌اید از درگاه خارج شوید.", "error")
+        elif order["status"] not in ("pending_payment", "pending_confirmation") or order["fulfillment_status"] in ("processing", "ready_to_ship", "shipped", "delivered"):
             flash("این سفارش از این بخش قابل لغو نیست. برای سفارش پرداخت‌شده با پشتیبانی تماس بگیرید.", "error")
         else:
+            if order["status"] == "pending_payment":
+                release_order_stock(conn, order_id)
             conn.execute("UPDATE store_orders SET status='cancelled',fulfillment_status='cancelled',cancelled_at=NOW() WHERE id=%s", (order_id,))
             flash("سفارش لغو شد.", "success")
     return redirect(url_for("customer.customer_order_detail", order_id=order_id))
@@ -377,7 +534,7 @@ def customer_order_admin_status(order_id):
         order = conn.execute("SELECT id,status,fulfillment_status FROM store_orders WHERE id=%s FOR UPDATE", (order_id,)).fetchone()
         if not order:
             abort(404)
-        if order["status"] not in ("pending_confirmation", "pending_payment", "paid"):
+        if order["status"] not in ("pending_confirmation", "pending_payment", "paid", "paid_stock_issue"):
             flash("وضعیت این سفارش قابل تغییر نیست.", "error")
         elif order["status"] == "pending_confirmation" and status in ("shipped", "delivered"):
             flash("ابتدا سفارش را تأیید و آماده‌سازی کنید؛ وضعیت پرداخت دستی نیز باید جداگانه با مشتری هماهنگ شود.", "error")
