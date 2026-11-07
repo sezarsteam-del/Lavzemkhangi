@@ -17,10 +17,9 @@ import android.webkit.WebViewClient
 import android.widget.ProgressBar
 import android.widget.FrameLayout
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var progress: ProgressBar
 
@@ -110,11 +109,7 @@ class MainActivity : AppCompatActivity() {
             webView.restoreState(savedInstanceState)
         }
 
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (webView.canGoBack()) webView.goBack() else finish()
-            }
-        })
+        // Android system Back navigates through the WebView history first.
 
         requestNotificationPermission()
     }
@@ -128,6 +123,12 @@ class MainActivity : AppCompatActivity() {
                 REQUEST_NOTIFICATIONS
             )
         }
+    }
+
+    @Deprecated("Deprecated in Android API; retained for broad device compatibility")
+    override fun onBackPressed() {
+        if (::webView.isInitialized && webView.canGoBack()) webView.goBack()
+        else super.onBackPressed()
     }
 
     private fun dp(value: Int): Int =
