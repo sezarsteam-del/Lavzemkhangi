@@ -39,22 +39,30 @@
         <nav class="top-navigation" id="mainNavigation" aria-label="منوی اصلی">
             <a href="{{ url_for('index') }}">صفحه اصلی</a>
             <a href="{{ url_for('index') }}#catalog">فروشگاه</a>
+            <a href="{{ url_for('features.compare') }}">مقایسه کالاها</a>
             {% if session.get('customer_id') %}
                 <a href="{{ url_for('customer.customer_account') }}">حساب من</a>
                 <a href="{{ url_for('customer.customer_addresses') }}">نشانی‌ها</a>
                 <a href="{{ url_for('customer.customer_security') }}">امنیت حساب</a>
+                <a href="{{ url_for('features.wishlist') }}">علاقه‌مندی‌ها</a>
+                <a href="{{ url_for('features.rewards') }}">باشگاه مشتریان</a>
+                <a href="{{ url_for('features.support') }}">پشتیبانی</a>
+                <a href="{{ url_for('features.gift_card') }}">کارت هدیه</a>
                 <form method="POST" action="{{ url_for('customer.customer_logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="logout-link" type="submit">خروج مشتری</button></form>
             {% else %}
                 <a href="{{ url_for('customer.customer_login') }}">ورود مشتری</a>
                 <a href="{{ url_for('customer.customer_register') }}">ثبت‌نام</a>
             {% endif %}
-            <a href="{{ url_for('contact') if 'contact' in current_app.view_functions else url_for('index') }}">تماس با ما</a>
+            <a href="mailto:m4hdisalari2343@gmail.com">تماس با ما</a>
             {% if session.get('admin') %}
                 <span class="nav-divider"></span>
                 <a href="{{ url_for('admin') }}">مدیریت</a>
                 <a href="{{ url_for('inventory') }}">انبار</a>
                 <a href="{{ url_for('sales') }}">فروش</a>
                 <a href="{{ url_for('customer.customer_orders_admin') }}">سفارش‌های اینترنتی</a>
+                <a href="{{ url_for('features.admin_reviews') }}">بررسی نظرات مشتریان</a>
+                <a href="{{ url_for('features.admin_support') }}">درخواست‌های پشتیبانی</a>
+                <a href="{{ url_for('features.admin_gift_cards') }}">صدور کارت هدیه</a>
                 <a href="{{ url_for('reports') }}">گزارش‌ها</a>
                 <a href="{{ url_for('installment_sms_settings') }}">پیامک اقساط</a>
                 <form method="POST" action="{{ url_for('logout') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit" class="logout-link">خروج مدیر</button></form>
