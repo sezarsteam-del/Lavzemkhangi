@@ -98,7 +98,9 @@ def ensure_features_schema():
             CREATE OR REPLACE FUNCTION award_store_order_points() RETURNS trigger AS $$
             DECLARE earned INTEGER;
             BEGIN
-                IF NEW.status = 'paid' AND OLD.status IS DISTINCT FROM 'paid' THEN
+                IF NEW.status = 'paid'
+                   AND OLD.status IS DISTINCT FROM 'paid'
+                   AND NOT EXISTS (SELECT 1 FROM loyalty_ledger WHERE order_id = NEW.id) THEN
                     earned := GREATEST(1, FLOOR(NEW.total_amount / 100000)::INTEGER);
                     UPDATE customers SET loyalty_points=loyalty_points+earned WHERE id=NEW.customer_id;
                     INSERT INTO loyalty_ledger(customer_id,points,reason,order_id)
