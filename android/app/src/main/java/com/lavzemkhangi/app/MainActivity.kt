@@ -212,7 +212,7 @@ class MainActivity : Activity() {
             setHintTextColor(muted)
             setTextColor(cream)
             textSize = 14f
-            singleLine = true
+            isSingleLine = true
             setPadding(dp(15), 0, dp(15), 0)
             background = rounded(panel2, 14)
             setOnEditorActionListener { _, _, _ -> loadProducts(); true }
@@ -500,7 +500,7 @@ class MainActivity : Activity() {
     }
 
     private fun field(hintText: String): EditText = EditText(this).apply {
-        hint = hintText; setTextColor(cream); setHintTextColor(muted); textSize = 14f; singleLine = true
+        hint = hintText; setTextColor(cream); setHintTextColor(muted); textSize = 14f; isSingleLine = true
         setPadding(dp(12), dp(8), dp(12), dp(8)); background = rounded(panel2, 10)
         layoutParams = LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(9) }
     }
