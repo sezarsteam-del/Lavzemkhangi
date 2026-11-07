@@ -447,6 +447,10 @@
         >
     {% endif %}
 
+    {% if category_group %}
+        <input type="hidden" name="category_group" value="{{ category_group }}">
+    {% endif %}
+
     <button type="submit" data-global-i18n="searchButton">جستجو</button>
 </form>
 
