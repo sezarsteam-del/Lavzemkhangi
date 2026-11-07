@@ -398,21 +398,7 @@
 
 <section class="hero global-home-hero"><div class="global-hero-copy"><span class="global-hero-kicker">LAVZEMKHANGI · HOME APPLIANCES</span><h1 data-global-i18n="title">به فروشگاه لوازم خانگی خوش آمدید</h1><p data-global-i18n="intro">مشاهده محصولات و خرید آسان لوازم خانگی</p><a class="global-hero-link" href="#catalog">مشاهده محصولات ←</a></div></section>
 
-{% if featured_products %}
-<section class="featured-products-section" aria-label="محصولات منتخب">
-    <div class="featured-heading">
-        <div>
-            <span class="featured-eyebrow">LAVZEMKHANGI</span>
-            <h2>چند محصول منتخب</h2>
-            <p>برخی از محصولات موجود در فروشگاه</p>
-        </div>
-        <a href="#catalog" class="featured-more">مشاهده همه محصولات ←</a>
-    </div>
-    <div class="featured-products-grid">
-        {% for product in featured_products %}
-        <article class="featured-product-card">
-            <div class="featured-product-info">
-                {% if product.category_name %}<span class="featured-product-category">{{ product.category_name }}</span>{% endif %}
+
                 <h3>{{ product.name }}</h3>
                 <div class="featured-product-price">{{ "{:,}".format(product.price) }} تومان</div>
                 <form method="post" action="{{ url_for('customer.cart') }}">
@@ -623,6 +609,16 @@
 
                 <article class="product">
 
+                    {% if product.image_url %}
+                        <img
+                            class="product-image"
+                            src="{{ product.image_url }}"
+                            alt="{{ product.name }}"
+                            loading="lazy"
+                        >
+                    {% else %}
+                        <div class="product-placeholder">بدون تصویر</div>
+                    {% endif %}
 
                     <div class="product-info">
 
