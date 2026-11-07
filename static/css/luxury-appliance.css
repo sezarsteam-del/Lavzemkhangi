@@ -742,14 +742,10 @@ tr:hover td { background:#f1f6f6 !important; }
 }
 
 
-/* Lower the welcome copy by roughly two text lines and keep search only above categories. */
-.global-hero-copy { transform: translateY(36px); }
-@media(max-width:760px) { .global-hero-copy { transform: translateY(24px); } }
-
-
-/* Add more breathing room between the hero appliance image and welcome text on phones. */
+/* Keep desktop layout unchanged; add spacing only on phone screens. */
 @media (max-width: 760px) {
   .global-home-hero .global-hero-copy {
+    transform: none !important;
     margin-top: 30px !important;
   }
 }
