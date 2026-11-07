@@ -32,10 +32,19 @@
 </form>
 </section>
 <section class="panel">
+<h2>تست اتصال پیامک</h2>
+<p class="hint">شماره موبایل خودت را وارد کن و دکمه را بزن. این تست یک پیامک واقعی ارسال می‌کند و نتیجه آن در سوابق ثبت می‌شود.</p>
+<form method="POST" action="{{ url_for('installment_sms_test') }}">
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+<label>شماره موبایل مقصد تست<input name="test_phone" inputmode="tel" maxlength="20" required placeholder="09xxxxxxxxx"></label>
+<button class="primary" type="submit">ارسال پیامک آزمایشی</button>
+</form>
+</section>
+<section class="panel">
 <h2>سوابق ۵۰ پیام آخر</h2>
 <div class="scroll"><table><thead><tr><th>تاریخ</th><th>مشتری</th><th>شماره</th><th>نوع</th><th>وضعیت</th><th>خطا</th></tr></thead><tbody>
 {% for log in logs %}
-<tr><td>{{ log.created_at|jalali }}</td><td>{{ log.customer_name or 'قرارداد حذف‌شده' }}</td><td>{{ log.receptor }}</td><td>{{ 'تشکر' if log.kind == 'welcome' else 'یادآوری' }}</td><td>{{ 'ارسال موفق' if log.status == 'sent' else ('در حال پردازش' if log.status == 'processing' else 'ناموفق') }}</td><td>{{ log.error_text }}</td></tr>
+<tr><td>{{ log.created_at|jalali }}</td><td>{{ log.customer_name or ('تست اتصال' if not log.plan_id else 'قرارداد حذف‌شده') }}</td><td>{{ log.receptor }}</td><td>{{ 'آزمایشی' if not log.plan_id else ('تشکر' if log.kind == 'welcome' else 'یادآوری') }}</td><td>{{ 'ارسال موفق' if log.status == 'sent' else ('در حال پردازش' if log.status == 'processing' else 'ناموفق') }}</td><td>{{ log.error_text }}</td></tr>
 {% else %}<tr><td colspan="6">هنوز پیامکی ثبت نشده است.</td></tr>{% endfor %}
 </tbody></table></div>
 </section>
