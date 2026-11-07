@@ -620,3 +620,87 @@ tr:hover td{background:#f7fbfa!important}
 @media(max-width:360px){
  .featured-products .featured-track{grid-auto-columns:43%!important}
 }
+
+
+/* =========================================================
+   WARM IRANIAN MODERN STORE — cream, walnut and terracotta
+   Overrides the previous teal/black palette without changing
+   routes, forms, cart, inventory or business logic.
+========================================================= */
+:root{
+ --brand:#80543b;--brand-deep:#553624;--brand-soft:#f3e8dc;
+ --accent:#bd7049;--accent-deep:#9f5635;--accent-soft:#f8ece2;
+ --gold:#d9ad78;--ink:#463326;--text:#665447;--muted:#948273;
+ --paper:#f7f1e9;--surface:#fffdf9;--line:#e9dccd;
+ --radius:19px;--shadow:0 10px 30px rgba(91,61,39,.08);
+ --shadow-hover:0 16px 38px rgba(91,61,39,.14);
+}
+html{background:#f7f1e9!important}
+body{background:linear-gradient(180deg,#fbf8f2 0%,#f4ece1 100%)!important;color:#665447!important}
+h1,h2,h3,h4{color:#463326}
+a{color:#80543b}
+a:hover{color:#9f5635}
+.container{max-width:1240px!important}
+.topbar{background:linear-gradient(110deg,#493326 0%,#684832 58%,#8a6245 100%)!important;border-bottom:3px solid #d9ad78!important;box-shadow:0 8px 24px rgba(74,48,31,.16)!important}
+.brand:before{background:linear-gradient(145deg,#e7c69f,#bd8259)!important;color:#553624!important}
+.menu-toggle{background:rgba(255,248,238,.13)!important;border-color:rgba(255,239,216,.35)!important}
+.top-navigation{background:#fffaf3!important;border-color:#e8d8c7!important}
+.top-navigation a,.top-navigation .logout-link{color:#61452f!important}
+.top-navigation a:hover,.top-navigation .logout-link:hover{background:#f3e8dc!important;color:#553624!important}
+.top-navigation .login-link{background:#80543b!important;color:#fff!important}
+.hero{background:linear-gradient(118deg,#59402f 0%,#8b6245 55%,#c18b62 100%)!important;border:1px solid #d4ad89!important;box-shadow:0 18px 38px rgba(102,68,44,.16)!important}
+.hero:before{border-color:rgba(255,245,230,.28)!important;box-shadow:0 0 0 28px rgba(255,245,230,.07),0 0 0 58px rgba(255,245,230,.04)!important}
+.hero:after{background:rgba(247,224,193,.18)!important}
+.hero h1,.hero p{color:#fff8ef!important}
+.hero p{color:#f8eadd!important}
+.search{background:#fffdf9!important;border-color:#e8d8c7!important;box-shadow:0 8px 24px rgba(91,61,39,.06)!important}
+.search input{background:transparent!important;color:#463326!important}
+.category-dropdown{background:#fffdf9!important;border-color:#e8d8c7!important;box-shadow:0 8px 24px rgba(91,61,39,.06)!important}
+.category-summary:hover{background:#fbf4eb!important}
+.category-title,.category-name{color:#553e2e!important}
+.category-subtitle{color:#9a8573!important}
+.main-category-icon,.category-icon,.category-total{background:#f4e8db!important;color:#9f6846!important}
+.main-category-icon svg,.category-icon svg{stroke:#a66b48!important}
+.category-content{background:#faf4ec!important;border-color:#eadccd!important}
+.category-card{background:#fffdf9!important;border-color:#e9dccd!important}
+.category-card:hover{background:#fff7ef!important;border-color:#c9956f!important}
+.category-card.selected{background:#f5e8da!important;border-color:#b77a52!important}
+.category-card.selected .category-name{color:#80543b!important}
+.category-chevron{color:#80543b!important}
+.catalog-heading{border-color:#e8d8c7!important}
+.catalog-heading .section-title{color:#553624!important}
+.result-count{background:#f1e4d6!important;color:#80543b!important}
+.product{background:#fffdf9!important;border-color:#e8d8c7!important;box-shadow:0 6px 20px rgba(91,61,39,.06)!important}
+.product:hover{border-color:#c99b78!important;box-shadow:0 16px 34px rgba(91,61,39,.12)!important}
+.product-image,.product-placeholder{background:linear-gradient(145deg,#fffdf9,#f2e8dc)!important}
+.product h3,.product h3 a{color:#463326!important}
+.product-category,.product-description,.product-brand{color:#8b7867!important}
+.product-bottom{border-color:#eee2d5!important}
+.price{color:#a65d3c!important}
+button,.btn,.button,.primary{background:linear-gradient(135deg,#bd7951,#985638)!important;box-shadow:0 6px 16px rgba(151,85,52,.15)!important}
+button:hover,.btn:hover,.button:hover,.primary:hover{box-shadow:0 10px 22px rgba(151,85,52,.2)!important}
+.secondary,.back-btn{background:#f1e6da!important;color:#65462f!important}
+input,select,textarea{background:#fffdf9!important;border-color:#e5d6c6!important;color:#463326!important}
+input:focus,select:focus,textarea:focus{border-color:#bd8965!important;box-shadow:0 0 0 4px rgba(189,112,73,.11)!important}
+.panel,.form-card,.account-panel,.contact-page,.login-card,.invoice-card{background:#fffdf9!important;border-color:#e8d8c7!important;box-shadow:0 10px 28px rgba(91,61,39,.07)!important}
+.account-panel h1,.contact-page h1{color:#684832!important}
+.account-panel h2{border-color:#eadccd!important}
+.payment-choice{background:#fbf6ef!important;border-color:#e8d8c7!important}
+.payment-choice:has(input:checked){background:#f4e9dc!important;border-color:#bd8965!important}
+table{background:#fffdf9!important;border-color:#e8d8c7!important}
+th{background:#f2e7da!important;color:#684832!important}
+td{border-color:#eee3d8!important}
+tr:hover td{background:#fcf6ee!important}
+.footer{background:#493326!important;color:#f2e4d4!important;border-top:3px solid #d9ad78!important}
+.footer small{color:#dfcbb6!important}
+.notice{border-radius:12px!important}
+@media(max-width:600px){
+ .container{width:94%!important;margin:18px auto!important}
+ .hero{padding:25px 18px!important;border-radius:20px!important}
+ .product-list{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:11px!important}
+ .product-image,.product-placeholder{height:145px!important}
+ .product-info{padding:12px!important}
+ .product h3{font-size:13px!important}
+ .product-bottom{align-items:stretch!important;flex-direction:column!important}
+ .product-bottom button{width:100%!important}
+}
