@@ -1,22 +1,190 @@
-/* Strong readable typography: white on dark surfaces, black on light surfaces. */
-body, body *:not(img):not(svg):not(path):not(input):not(textarea):not(select) {
-  font-weight: 700;
+/* Luxury black & gold visual system for Lavzemkhangi.
+   Presentation-only overrides: keep all existing routes, forms and data intact. */
+:root {
+  --primary: #d5ad68;
+  --primary-dark: #b78945;
+  --dark: #111014;
+  --text: #eee5d7;
+  --muted: #b8ad9d;
+  --background: #101014;
+  --surface: #1b1a20;
+  --border: #403a32;
+  --radius: 18px;
+  --shadow: 0 16px 42px rgba(0,0,0,.30);
 }
+html, body { background: #101014; color: #eee5d7; }
+body {
+  background:
+    radial-gradient(ellipse at 85% -10%, rgba(126,91,39,.18), transparent 34%),
+    #101014;
+}
+.topbar {
+  background: rgba(16,16,20,.98);
+  border-bottom: 1px solid #55452d;
+  box-shadow: 0 8px 28px rgba(0,0,0,.38);
+}
+.brand, .brand strong { color: #f7eddd; }
+.menu-toggle { background: #28231d !important; border-color: #6b5533 !important; }
+.top-navigation {
+  background: #211f1c;
+  border: 1px solid #55452d;
+  box-shadow: 0 16px 38px rgba(0,0,0,.42);
+}
+.top-navigation a, .top-navigation .logout-link { color: #eee5d7; }
+.top-navigation a:hover, .top-navigation .logout-link:hover { background: #3a3021; color: #f0cf91; }
+.top-navigation .login-link { background: linear-gradient(135deg,#e8c987,#ae7d3c); color: #17120b; }
+.container { color: #eee5d7; }
+h1,h2,h3,h4,.section-title { color: #f1e4cc; }
+input,select,textarea {
+  background: #211f20; border-color: #51483a; color: #f4eee4; border-radius: 11px;
+}
+input::placeholder,textarea::placeholder { color: #a99e8e; }
+input:focus,select:focus,textarea:focus {
+  border-color: #d6ad68; box-shadow: 0 0 0 3px rgba(214,173,104,.16);
+}
+button,.btn {
+  background: linear-gradient(135deg,#e4c27d,#a77a3d);
+  color: #17120b; box-shadow: 0 5px 16px rgba(143,105,43,.2);
+}
+button:hover,.btn:hover { background: linear-gradient(135deg,#f0d39b,#bd914f); color: #100e0a; }
+.secondary { background: #342f28; color: #ead7b5; }
+.chip { background: #211f20; color: #e8dfd2; border-color: #51483a; }
+.chip:hover,.chip.active { background: #49391f; border-color: #c7a15a; color: #f4d99f; }
+.product,.form-card,.category-dropdown,.empty {
+  background: #1b1a20 !important; border-color: #403a32 !important;
+  color: #eee5d7 !important; box-shadow: 0 12px 32px rgba(0,0,0,.22);
+}
+.product:hover { border-color: #b28a4b !important; box-shadow: 0 17px 38px rgba(0,0,0,.35); }
+.product h3,.product h3 a { color: #f5eee2; }
+.product-category,.product-brand,.product-description,.muted { color: #b8ad9d; }
+.product-image,.product-placeholder { background: linear-gradient(145deg,#29272a,#17171c); }
+.price { color: #e1bd78; }
+.product-bottom { border-color: #403a32; }
+table { background: #1b1a20; color: #eee5d7; }
+th { background: #2a251d; color: #ead7ac; }
+td { border-color: #403a32; }
+tr:hover td { background: #29251f; }
+.footer { background: #09090c; color: #e5ddce; border-top: 1px solid #49391f; }
+.footer-inner strong { color: #e4c27a; }
+.footer-inner small { color: #b6aa91; }
+.notice { background: #29251f; color: #f0dfbd; border-color: #b78945; }
+.notice.success { background: #1e3027; color: #b8e0c6; border-color: #5b9a73; }
+.notice.error,.notice.danger { background: #351f20; color: #f1c2bd; border-color: #b85c57; }
+
+/* Hero and appliance photography */
+.global-home-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) minmax(240px,.9fr);
+  align-items: center;
+  gap: 22px;
+  min-height: 285px;
+  padding: 30px !important;
+  background: linear-gradient(115deg,#111014 0%,#2b2419 62%,#171511 100%) !important;
+  border: 1px solid #6d542d !important;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 18px 42px rgba(0,0,0,.35);
+}
+.global-hero-copy { position: relative; z-index: 2; }
+.global-hero-kicker { color: #d7b775; font-size: 10px; letter-spacing: 2px; font-weight: 800; }
+.global-home-hero h1 { color: #f2d49a !important; font-size: clamp(22px,3vw,34px) !important; margin: 12px 0; }
+.global-home-hero p { color: #d8c8aa !important; line-height: 2; }
+.global-hero-link {
+  display: inline-flex; margin-top: 13px; padding: 10px 18px; border-radius: 11px;
+  background: linear-gradient(135deg,#e4c27d,#a77a3d); color: #17120b; font-weight: 800;
+}
+.global-hero-photo { min-width: 0; height: 230px; display: grid; place-items: center; }
+.global-hero-photo img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 18px 18px rgba(0,0,0,.4)); }
+
+.appliance-showcase {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 13px; margin: 18px 0 24px;
+}
+.appliance-tile {
+  position: relative; min-height: 160px; overflow: hidden; display: flex; align-items: flex-end;
+  border: 1px solid #51432b; border-radius: 17px; background: #1b1a20;
+  box-shadow: 0 9px 25px rgba(0,0,0,.22); isolation: isolate;
+}
+.appliance-tile img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+  padding: 9px; transition: transform .35s ease; z-index: -1;
+  background: radial-gradient(ellipse at center,#35302a 0%,#1b1a20 72%);
+}
+.appliance-tile:after {
+  content: ""; position: absolute; inset: 48% 0 0; z-index: -1;
+  background: linear-gradient(transparent,rgba(8,8,10,.94));
+}
+.appliance-tile span {
+  width: 100%; padding: 12px 10px; text-align: center; color: #f1d69e;
+  font-weight: 800; font-size: 13px; text-shadow: 0 2px 8px #000;
+}
+.appliance-tile:hover { border-color: #d1aa64; transform: translateY(-3px); }
+.appliance-tile:hover img { transform: scale(1.05); }
+
+.category-dropdown { border-radius: 18px; }
+.category-summary { color: #eee5d7; }
+.category-summary:hover,.category-content { background: #242127 !important; }
+.category-title,.category-name { color: #f1e7d6 !important; }
+.category-subtitle { color: #b2a797 !important; }
+.main-category-icon,.category-icon,.category-total,.result-count {
+  background: #342a1d !important; color: #e4c27d !important;
+}
+.main-category-icon svg,.category-icon svg { stroke: #d8b36e !important; }
+.category-card { background: #202027 !important; border-color: #39343a !important; }
+.category-card:hover,.category-card.selected { background: #342a1d !important; border-color: #c7a15a !important; }
+.catalog-heading .section-title { color: #e8d2a6 !important; }
+
+@media(max-width:760px) {
+  .global-home-hero { grid-template-columns: 1fr; padding: 23px 18px !important; gap: 8px; }
+  .global-hero-photo { height: 165px; order: -1; }
+  .appliance-showcase { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+  .appliance-tile { min-height: 135px; }
+  .appliance-tile span { font-size: 11px; }
+}
+@media(max-width:380px) {
+  .appliance-tile { min-height: 115px; }
+  .appliance-tile img { padding: 5px; }
+}
+
+/* Improve visibility of black and dark-finish products in catalog photos.
+   Keep the overall storefront dark; only the product photo stage is light. */
+.product .product-image,
+.product img.product-image {
+  background: linear-gradient(145deg,#f8f6f1 0%,#ece8df 100%) !important;
+  border: 1px solid #d8d0c2;
+  border-radius: 12px;
+  object-fit: contain;
+  padding: 12px;
+  filter: contrast(1.06) brightness(1.04);
+}
+.product .product-placeholder {
+  background: linear-gradient(145deg,#f8f6f1 0%,#ece8df 100%) !important;
+  color: #756b5d;
+  border: 1px dashed #c9bdab;
+}
+.product {
+  border-color: #554a3a !important;
+}
+.product:hover {
+  border-color: #d0aa68 !important;
+}
+
+
+/* Strong readable typography: white on dark surfaces, black on light surfaces. */
+body, body *:not(img):not(svg):not(path) { font-weight: 700; }
 body, body p, body span, body label, body small, body li,
 body td, body th, body a, body strong, body b,
 body h1, body h2, body h3, body h4, body h5, body h6 {
   color: #fff !important;
 }
-/* Preserve intentional gold/ink button contrast and product pricing accents. */
+/* Preserve the gold buttons' dark text and the gold price accent. */
 button, .btn, .global-hero-link, .top-navigation .login-link {
-  color: #17120b !important;
-  font-weight: 800 !important;
+  color: #17120b !important; font-weight: 800 !important;
 }
 .price, .footer-inner strong, .global-hero-kicker,
 .appliance-tile span, .catalog-heading .section-title {
   color: #e4c27d !important;
 }
-/* Any explicitly white/light panel gets dark, bold text for clear contrast. */
+/* Explicit light/white panels use bold black text. */
 [style*="background:#fff"], [style*="background: #fff"],
 [style*="background-color:#fff"], [style*="background-color: #fff"],
 [style*="background:white"], [style*="background: white"],
@@ -29,15 +197,9 @@ button, .btn, .global-hero-link, .top-navigation .login-link {
 [style*="background:white"] *, [style*="background: white"] *,
 [style*="background-color:white"] *, [style*="background-color: white"] *,
 .bg-white *, .white-bg *, .light-surface *, .card-light *, .table-light * {
-  color: #171717 !important;
-  font-weight: 700 !important;
+  color: #171717 !important; font-weight: 700 !important;
 }
-/* Keep fields readable and bold regardless of browser defaults. */
-input, select, textarea {
-  color: #fff !important;
-  font-weight: 700 !important;
-}
+input, select, textarea { color: #fff !important; font-weight: 700 !important; }
 input::placeholder, textarea::placeholder {
-  color: #c8c0b5 !important;
-  font-weight: 600 !important;
+  color: #c8c0b5 !important; font-weight: 600 !important;
 }
