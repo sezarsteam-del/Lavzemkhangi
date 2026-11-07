@@ -1,6 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}لوازم خانگی | لیست قیمت محصولات{% endblock %}
+{% block title %}لوازم خانگی | لیست قیمت محصولات
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const track = document.getElementById("featuredProducts");
+    const up = document.getElementById("productsPrev");
+    const down = document.getElementById("productsNext");
+    if (!track || !up || !down) return;
+    const step = () => {
+        const card = track.querySelector(".featured-card");
+        return card ? card.getBoundingClientRect().height + 12 : 220;
+    };
+    up.addEventListener("click", () => track.scrollBy({top: -step(), behavior: "smooth"}));
+    down.addEventListener("click", () => track.scrollBy({top: step(), behavior: "smooth"}));
+});
+</script>
+
+{% endblock %}
 
 {% block head %}
 <style>
@@ -569,8 +585,8 @@
             <p>محصولات را ورق بزنید و مستقیم به سبد خرید اضافه کنید.</p>
         </div>
         <div class="featured-controls">
-            <button type="button" class="slider-arrow" id="productsPrev" aria-label="محصولات قبلی">‹</button>
-            <button type="button" class="slider-arrow" id="productsNext" aria-label="محصولات بعدی">›</button>
+            <button type="button" class="slider-arrow" id="productsPrev" aria-label="محصولات بالاتر">↑</button>
+            <button type="button" class="slider-arrow" id="productsNext" aria-label="محصولات پایین‌تر">↓</button>
         </div>
     </div>
     <div class="featured-track" id="featuredProducts">
