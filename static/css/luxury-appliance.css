@@ -144,3 +144,26 @@ tr:hover td { background: #29251f; }
   .appliance-tile { min-height: 115px; }
   .appliance-tile img { padding: 5px; }
 }
+
+/* Improve visibility of black and dark-finish products in catalog photos.
+   Keep the overall storefront dark; only the product photo stage is light. */
+.product .product-image,
+.product img.product-image {
+  background: linear-gradient(145deg,#f8f6f1 0%,#ece8df 100%) !important;
+  border: 1px solid #d8d0c2;
+  border-radius: 12px;
+  object-fit: contain;
+  padding: 12px;
+  filter: contrast(1.06) brightness(1.04);
+}
+.product .product-placeholder {
+  background: linear-gradient(145deg,#f8f6f1 0%,#ece8df 100%) !important;
+  color: #756b5d;
+  border: 1px dashed #c9bdab;
+}
+.product {
+  border-color: #554a3a !important;
+}
+.product:hover {
+  border-color: #d0aa68 !important;
+}
