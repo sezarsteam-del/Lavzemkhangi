@@ -197,3 +197,51 @@ table{background:#fff}th{background:#e8f3fb;color:#174b78}td{border-color:#e5eef
 .footer-brand strong,.footer-contact strong{color:#fff}.footer-brand p,.footer-contact span,.footer-bottom{color:#c5dced}
 .footer-links a{color:#e4f2fc}.footer-links a:hover{color:#ffd19c}.footer-bottom{border-color:rgba(255,255,255,.18)}
 .mobile-bottom-nav{background:rgba(255,255,255,.98);border-color:#dce8f1}.mobile-bottom-nav a{color:#52718a}.mobile-bottom-nav a:hover{color:#ed6045}
+
+
+/* Lavzemkhangi Global — dark luxury storefront skin */
+:root{--primary:#d1aa68;--primary-dark:#09090c;--primary-soft:#302719;--accent:#d6ad68;--accent-soft:#342a1d;--ink:#f4eee4;--text:#e8dfd2;--muted:#aaa093;--background:#101014;--surface:#19191f;--border:#39343a;--success:#79c69a;--danger:#ef8580;--radius:18px;--shadow:0 16px 42px rgba(0,0,0,.28)}
+html{background:#101014}
+body{background:radial-gradient(ellipse at 85% -10%,rgba(104,75,35,.22),transparent 34%),#101014;color:#e8dfd2}
+h1,h2,h3,h4,.section-title{color:#f7f0e5}
+.announcement-bar{background:#09090c;color:#eee5d5;border-bottom:1px solid #3a2e1d}
+.announcement-note{color:#d9b978}
+.topbar{background:rgba(16,16,20,.97);border-bottom:1px solid #403522;box-shadow:0 8px 28px rgba(0,0,0,.38)}
+.brand{color:#f8f0e2}.brand-icon{background:linear-gradient(145deg,#f0d39b,#9d7138);color:#17120a;box-shadow:0 8px 24px rgba(214,173,104,.2)}
+.brand-copy strong{color:#f8f0e2}.brand-copy small{color:#b9aa91}
+.header-action,.menu-toggle{background:#201e1b;border-color:#51432b;color:#f2e7d4}
+.header-action:hover{background:#342a1d;border-color:#d6ad68;color:#f5d99f}
+.menu-toggle{color:#d6ad68}
+.top-navigation{background:#19191f;border-color:#51432b;box-shadow:0 20px 48px rgba(0,0,0,.5)}
+.top-navigation a,.top-navigation .logout-link{color:#eee6d8}
+.top-navigation a:hover,.top-navigation .logout-link:hover{background:#342a1d;color:#f1d18b}
+.top-navigation .admin-login-link{background:linear-gradient(135deg,#e4c27d,#a77a3d);color:#17120b}
+.nav-divider{background:#4a3b24}
+.container{color:#e8dfd2}
+input,select,textarea{background:#201f20;border-color:#51483a;color:#f4eee4}
+input::placeholder,textarea::placeholder{color:#a79b8b}
+input:focus,select:focus,textarea:focus{border-color:#d6ad68;box-shadow:0 0 0 3px rgba(214,173,104,.16)}
+button,.btn{background:linear-gradient(135deg,#e4c27d,#a77a3d);color:#17120b;box-shadow:0 5px 16px rgba(143,105,43,.2)}
+button:hover,.btn:hover{background:linear-gradient(135deg,#f0d39b,#bd914f);color:#100e0a}
+.secondary{background:#302a21;color:#ead8b7;border:1px solid #51432b}.secondary:hover{background:#403321;color:#ffe5ae}
+.danger{background:#492522;color:#ffc2b9}
+.product,.form-card,.category-dropdown,.empty{background:#19191f;border-color:#39343a;color:#e8dfd2;box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.product:hover{border-color:#b28a4b;box-shadow:0 17px 38px rgba(0,0,0,.35)}
+.product-image,.product-placeholder{background:linear-gradient(145deg,#242329,#17171c)}
+.product h3,.product h3 a{color:#f5eee2}.product h3 a:hover{color:#e4c27d}
+.product-category,.muted,.product-brand,.product-description{color:#b2a797}
+.price{color:#e1bd78}.product-bottom{border-color:#39343a}
+table{background:#19191f;color:#e8dfd2}th{background:#28231b;color:#ead7ac}td{border-color:#39343a}tr:hover td{background:#242127}
+.chip{border-color:#51483a;background:#201f20;color:#d9cbb5}.chip:hover,.chip.active{background:#d6ad68;color:#17120b;border-color:#d6ad68}
+.notice{background:#302719;color:#ead8b7;border-color:#c7a15a}.notice.success{background:#183126;color:#b8e5ca;border-color:#4d9b70}.notice.error,.notice.danger{background:#3a211f;color:#ffc2b9;border-color:#c44b43}
+.footer{background:#09090c;color:#e5ddce;border-top:1px solid #49391f}
+.footer-brand strong,.footer-contact strong{color:#e4c27a}.footer-brand p,.footer-contact span,.footer-bottom{color:#b6aa91}.footer-links a{color:#e0d7c5}.footer-links a:hover{color:#e4c27a}.footer-bottom{border-color:#3c3324}
+.mobile-bottom-nav{background:rgba(17,17,20,.98);border-color:#4b3d28;box-shadow:0 -5px 22px rgba(0,0,0,.35)}.mobile-bottom-nav a{color:#d7c49d}.mobile-bottom-nav a:hover{color:#f1d18b}
+.global-locale-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.locale-control{display:flex;align-items:center;gap:7px;margin:0;padding:8px 10px;border:1px solid #51432b;border-radius:12px;background:#201e1b;color:#e4c27d;font-size:13px}
+.locale-control select{width:auto;max-width:125px;padding:0;border:0;background:transparent;color:#f3e8d6;font-size:11px;box-shadow:none}
+.locale-control option{background:#19191f;color:#f3e8d6}
+@media(max-width:650px){.topbar-inner{flex-wrap:wrap;padding:8px 0}.global-locale-controls{order:3;width:100%;padding-bottom:5px}.locale-control{flex:1;min-width:0;justify-content:center}.locale-control select{max-width:100%;min-width:0;width:100%}.locale-country{display:none}.mobile-bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom))}}
+html[dir="ltr"] body{text-align:left}
+html[dir="ltr"] .top-navigation .logout-link{text-align:left}
+html[dir="ltr"] th,html[dir="ltr"] td{text-align:left}
