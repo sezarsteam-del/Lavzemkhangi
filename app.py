@@ -21,7 +21,7 @@ from flask import (
     url_for, session, flash, abort
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
-from customer_store import customer_bp, init_customer_store
+from customer_store import customer_bp, init_customer_store, ensure_customer_schema
 
 # ==================================================
 # تنظیمات اصلی
@@ -419,6 +419,7 @@ def prepare_database():
 
             if not _schema_ready:
                 init_db()
+                ensure_customer_schema()
                 _schema_ready = True
 
 
