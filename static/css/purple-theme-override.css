@@ -1,0 +1,25 @@
+/* Purple theme override — intentionally loaded after every existing stylesheet. */
+:root { color-scheme: light; --purple:#7652a8; --purple-dark:#56377f; --purple-pale:#eee7f7; }
+html, body { background:#f8f7fa !important; color:#30283a !important; }
+body, main.container { background-color:#f8f7fa !important; }
+header, .topbar, .site-header, .topbar-inner { background:#fff !important; color:#56377f !important; border-color:#e5dced !important; }
+header *, .topbar *, .site-header * { color:#56377f !important; }
+.menu-toggle, .home-button, .topbar button, .topbar .btn { background:#7652a8 !important; color:#fff !important; border-color:#7652a8 !important; }
+button, input[type=submit], .btn, .button, .search button, .global-hero-link, .product-card button, .product-actions button {
+ background:#7652a8 !important; background-image:none !important; color:#fff !important; border-color:#7652a8 !important;
+}
+button:hover, input[type=submit]:hover, .btn:hover { background:#56377f !important; }
+a, .back-to-categories, .catalog-heading, .section-title { color:#56377f !important; }
+input, select, textarea { background:#fff !important; color:#30283a !important; border-color:#d9cde8 !important; }
+input:focus, select:focus, textarea:focus { border-color:#7652a8 !important; outline-color:#7652a8 !important; }
+.global-home-hero { background:linear-gradient(135deg,#fff 0%,#f0eaf7 100%) !important; border:1px solid #d9cde8 !important; box-shadow:0 14px 34px rgba(86,55,127,.12) !important; }
+.global-home-hero h1, .global-home-hero h2 { color:#56377f !important; }
+.global-home-hero p { color:#62566e !important; }
+.search, .search-box, .category-search { background:#eee7f7 !important; border-color:#d9cde8 !important; }
+.category-photo-tile, .appliance-tile { background:linear-gradient(145deg,#fff,#eee7f7) !important; border-color:#d9cde8 !important; }
+.category-photo-tile.selected { outline-color:#7652a8 !important; }
+.product-card, .card, .category-card, .catalog-section, .category-products-page, .featured-product-card { border-color:#dfd5ea !important; }
+.badge, .tag, .stock-badge { background:#eee7f7 !important; color:#56377f !important; }
+.footer { background:#30243e !important; color:#f5effb !important; border-top:1px solid #7652a8 !important; }
+.footer *, .footer a, .footer strong { color:#e4d6f3 !important; }
+.notice { border-color:#cdbbe2 !important; }
