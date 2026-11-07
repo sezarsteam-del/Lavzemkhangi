@@ -392,9 +392,9 @@
 {% block content %}
 
 <section class="hero">
-    <h1>به فروشگاه لوازم خانگی خوش آمدید</h1>
+    <h1 data-global-i18n="homeTitle">به فروشگاه لوازم خانگی خوش آمدید</h1>
     <p>
-        مشاهده محصولات و خرید آسان لوازم خانگی
+        <span data-global-i18n="homeIntro">مشاهده محصولات و خرید آسان لوازم خانگی</span>
     </p>
 </section>
 
@@ -403,7 +403,7 @@
         type="search"
         name="q"
         value="{{ q }}"
-        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..."
+        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..." data-global-placeholder="searchPlaceholder"
     >
 
     {% if selected_category %}
@@ -414,7 +414,7 @@
         >
     {% endif %}
 
-    <button type="submit">جستجو</button>
+    <button type="submit" data-global-i18n="searchButton">جستجو</button>
 </form>
 
 <!-- منوی کشویی دسته بندی -->
@@ -435,11 +435,11 @@
 
                 <div>
                     <div class="category-title">
-                        دسته‌بندی محصولات
+                        <span data-global-i18n="categoryHeading">دسته‌بندی محصولات</span>
                     </div>
 
                     <div class="category-subtitle">
-                        برای مشاهده دسته‌ها کلیک کنید
+                        <span data-global-i18n="categoryHint">برای مشاهده دسته‌ها کلیک کنید</span>
                     </div>
                 </div>
 
@@ -471,7 +471,7 @@
                         </svg>
                     </span>
 
-                    <span class="category-name">همه محصولات</span>
+                    <span class="category-name" data-global-i18n="allProducts">همه محصولات</span>
                 </a>
 
                 {% for category in categories %}
