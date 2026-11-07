@@ -4,13 +4,18 @@
 
 {% block head %}
 <style>
-    .hero {
-        background: linear-gradient(120deg, #123d33, #287b65);
-        color: white;
-        padding: 25px 22px;
-        border-radius: 18px;
-        margin-bottom: 20px;
+     .hero {
+        position:relative; overflow:hidden;
+        background:linear-gradient(115deg,#10213c 0%,#1c355b 58%,#3a5274 100%);
+        color:#fff; padding:34px 30px; border-radius:24px; margin-bottom:24px;
+        box-shadow:0 18px 42px rgba(16,33,60,.17);
+        border:1px solid rgba(255,255,255,.1);
     }
+    .hero:after{content:"";position:absolute;width:240px;height:240px;border:1px solid rgba(230,189,130,.25);border-radius:50%;left:-65px;top:-115px;box-shadow:0 0 0 28px rgba(255,255,255,.025),0 0 0 58px rgba(255,255,255,.02)}
+    .hero:before{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:#e6bd82;left:22%;bottom:22px;box-shadow:28px -35px 0 rgba(230,189,130,.45),55px -4px 0 rgba(230,189,130,.25)}
+    .hero h1,.hero p{position:relative;z-index:1}
+    .hero h1{color:#fff;font-size:27px;letter-spacing:-.4px}
+    .hero p{max-width:560px;color:#e2e8f0;font-size:14px;line-height:2.1}
 
     .hero h1 {
         font-size: 22px;
@@ -40,12 +45,12 @@
         margin: 18px 0 25px;
     }
 
-    .category-dropdown {
+     .category-dropdown {
         background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 15px;
+        border-radius: 18px;
         overflow: hidden;
-        box-shadow: 0 3px 12px rgba(15,23,42,.04);
+        box-shadow: 0 8px 24px rgba(23,43,77,.055);
     }
 
     .category-summary {
@@ -81,7 +86,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #e7f2ed;
+        background: #f8efe2;
         border-radius: 11px;
     }
 
@@ -89,7 +94,7 @@
         width: 23px;
         height: 23px;
         fill: none;
-        stroke: #1e6655;
+        stroke: #b27a3c;
         stroke-width: 1.8;
         stroke-linecap: round;
         stroke-linejoin: round;
@@ -116,8 +121,8 @@
 
     .category-total {
         font-size: 11px;
-        color: #1e6655;
-        background: #eff6ff;
+        color: #172b4d;
+        background: #f8efe2;
         padding: 5px 9px;
         border-radius: 20px;
     }
@@ -154,19 +159,19 @@
         padding: 8px;
         background: white;
         border: 1px solid #e5eaf1;
-        border-radius: 10px;
+        border-radius: 13px;
         text-decoration: none;
         transition: .2s;
     }
 
     .category-card:hover {
-        border-color: #93c5fd;
-        background: #f8fbff;
+        border-color: #d8bd98;
+        background: #fcf8f1;
     }
 
     .category-card.selected {
         background: #eff6ff;
-        border-color: #1e6655;
+        border-color: #c58b45;
     }
 
     .category-icon {
@@ -184,7 +189,7 @@
         width: 20px;
         height: 20px;
         fill: none;
-        stroke: #2563eb;
+        stroke: #b27a3c;
         stroke-width: 1.8;
         stroke-linecap: round;
         stroke-linejoin: round;
@@ -199,7 +204,7 @@
     }
 
     .category-card.selected .category-name {
-        color: #1d4ed8;
+        color: #172b4d;
     }
 
     /* محصولات */
@@ -216,12 +221,20 @@
         font-size: 12px;
     }
 
-    .product {
+     .product {
         position: relative;
+        border-radius:20px;
+        box-shadow:0 7px 23px rgba(23,43,77,.055);
     }
+    .product:hover{box-shadow:0 16px 34px rgba(23,43,77,.11);transform:translateY(-4px)}
+    .catalog-heading{padding-bottom:12px;border-bottom:1px solid #e4e8ef;margin-bottom:15px}
+    .result-count{background:#edf1f7;color:#34445d;padding:6px 12px;border-radius:30px}
+    .product-bottom{border-top:1px solid #edf0f5}
+    .product h3 a{color:#17243a}
+    .product h3 a:hover{color:#a96e2e}
 
-    .product-image {
-        height: 190px;
+     .product-image {
+        height: 205px;
         padding: 10px;
         object-fit: contain;
         background: #f8fafc;
@@ -290,13 +303,9 @@
     }
 
     @media(max-width: 600px) {
-        .hero {
-            padding: 21px 16px;
-        }
-
-        .hero h1 {
-            font-size: 19px;
-        }
+        .hero {padding:25px 18px;border-radius:19px}
+        .hero h1 {font-size:20px}
+        .hero p{font-size:12px}
 
         .category-summary {
             padding: 12px;
