@@ -453,19 +453,6 @@
 
 
 
-<form class="search" method="GET" action="{{ url_for('products_page') }}">
-    <input
-        type="search"
-        name="q"
-        value="{{ q }}"
-        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..." data-global-placeholder="search"
-    >
 
-    {% if selected_category %}
-        <input type="hidden" name="category" value="{{ selected_category }}">
-    {% endif %}
-
-    <button type="submit" data-global-i18n="searchButton">جستجو</button>
-</form>
 
 {% endblock %}
