@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{% if category %}{{ category.name }}{% else %}همه محصولات{% endif %} | لوازم خانگی{% endblock %}
+{% block content %}
+<section class="category-products-page">
+    <a class="back-to-categories" href="{{ url_for('index') }}">← بازگشت به دسته‌بندی‌ها</a>
+    <div class="catalog-heading">
+        <h1 class="section-title">{% if category %}محصولات {{ category.name }}{% else %}همه محصولات{% endif %}</h1>
+        <span class="result-count">{{ products|length }} محصول</span>
+    </div>
+    <form class="search" method="GET" action="{% if category %}{{ url_for('products_page', category_id=category.id) }}{% else %}{{ url_for('products_page') }}{% endif %}">
+        <input type="search" name="q" value="{{ q }}" placeholder="جستجوی محصول در این بخش...">
+        <button type="submit">جستجو</button>
+    </form>
+    {% if products %}
+    <div class="product-list">
+        {% for product in products %}
+        <article class="product">
+            {% if product.image_url %}
+            <img class="product-image" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">
+            {% else %}
+            <div class="product-placeholder">بدون تصویر</div>
+            {% endif %}
+            <div class="product-info">
+                <div class="product-category">{{ product.category_name or 'بدون دسته‌بندی' }}</div>
+                <h3>{{ product.name }}</h3>
+                {% if product.brand_name %}<div class="product-brand">برند: {{ product.brand_name }}</div>{% endif %}
+                {% if product.description %}<p class="product-description">{{ product.description }}</p>{% endif %}
+                <div class="product-bottom">
+                    <div class="price">{{ "{:,}".format(product.price) }} تومان</div>
+                    <form method="post" action="{{ url_for('customer.cart') }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <button type="submit">افزودن به سبد خرید</button>
+                    </form>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty"><h3>محصولی در این دسته پیدا نشد.</h3><p>عبارت جستجو را تغییر دهید یا دسته دیگری انتخاب کنید.</p><a class="clear-search" href="{{ url_for('index') }}">بازگشت به دسته‌بندی‌ها</a></div>
+    {% endif %}
+</section>
+{% endblock %}
