@@ -575,3 +575,35 @@ img {
         width: 190px !important;
     }
 }
+
+
+/* Modern colorful home-appliance storefront — isolated theme overrides */
+:root{--primary:#1678b8;--primary-dark:#105b91;--dark:#123e63;--text:#304b61;--muted:#71879a;--background:#f2f8fc;--surface:#fff;--border:#dce9f2;--success:#16865b;--danger:#d64545;--radius:18px;--shadow:0 12px 30px rgba(20,78,119,.10)}
+body{background:var(--background);color:var(--text)}
+.topbar{background:linear-gradient(105deg,#123e63,#1678b8);box-shadow:0 6px 22px rgba(16,73,113,.17)}
+.brand,.brand strong{color:#fff}.brand small{color:#d7edfa}
+.brand-icon{background:linear-gradient(145deg,#ff9a58,#ed5b43);box-shadow:0 7px 18px rgba(237,91,67,.25)}
+.menu-toggle{background:#0f5d91!important;border-color:rgba(255,255,255,.3)!important}
+.menu-toggle:hover{background:#0b4e7c!important}
+.top-navigation{background:#fff;border:1px solid #dce9f2;box-shadow:0 16px 38px rgba(18,62,99,.2)}
+.top-navigation a,.top-navigation .logout-link{color:#36536b}
+.top-navigation a:hover,.top-navigation .logout-link:hover{background:#eaf5fc;color:#1678b8}
+.top-navigation .login-link{background:#1678b8;color:#fff}
+input,select,textarea{border-color:#d5e4ee;border-radius:11px}
+input:focus,select:focus,textarea:focus{border-color:#2697d1;box-shadow:0 0 0 3px rgba(38,151,209,.14)}
+button,.btn{background:linear-gradient(135deg,#ff8954,#ed5c43);border-radius:11px;box-shadow:0 5px 13px rgba(237,92,67,.16)}
+button:hover,.btn:hover{background:linear-gradient(135deg,#f17145,#d94b37)}
+.secondary{background:#e7f3fb;color:#1769a4}.secondary:hover{background:#d6ebf9}
+.chip{border-color:#dce9f2;color:#42627a}.chip:hover,.chip.active{background:#1678b8;border-color:#1678b8}
+.product{border-color:#dce9f2;border-radius:19px;box-shadow:0 4px 15px rgba(23,75,111,.05)}
+.product:hover{border-color:#8bc9e9;box-shadow:0 15px 32px rgba(23,75,111,.13)}
+.product-image,.product-placeholder{background:linear-gradient(145deg,#f8fcff,#eaf5fb)}
+.product h3{color:#173e5d}.price{color:#e65e43}
+.form-card{border-color:#dce9f2;border-radius:18px;box-shadow:0 10px 28px rgba(23,75,111,.07)}
+th{background:#e8f4fb;color:#174c73}td{border-color:#e4eef5}tr:hover td{background:#f5fbff}
+.notice{background:#e8f4fb;color:#245777;border-color:#2697d1}
+.notice.success{background:#e5f6ed;color:#17613c;border-color:#2a9b61}
+.notice.error,.notice.danger{background:#ffebea;color:#943c36;border-color:#d64545}
+.footer{background:linear-gradient(110deg,#103b60,#145f94);color:#e4f2fc;border-top:4px solid #ff8954}
+.footer-inner strong{color:#fff}.footer-inner small{color:#c5dced}
+@media(max-width:700px){.top-navigation{right:0;left:auto}.top-navigation a,.top-navigation .logout-link{color:#36536b}}
