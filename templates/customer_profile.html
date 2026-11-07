@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}اطلاعات حساب{% endblock %}
+{% block content %}<section class="panel account-panel"><h1>اطلاعات حساب</h1><form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><label>نام</label><input name="first_name" maxlength="80" value="{{ customer.first_name }}" required><label>نام خانوادگی</label><input name="last_name" maxlength="80" value="{{ customer.last_name }}" required><label>شماره موبایل</label><input value="{{ customer.phone }}" disabled><button type="submit">ذخیره تغییرات</button></form><p><a href="{{ url_for('customer.customer_account') }}">بازگشت به حساب</a></p></section>{% endblock %}
