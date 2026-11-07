@@ -22,7 +22,7 @@ from flask import (
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
-from store_features import features_bp, init_features, ensure_features_schema
+from store_features import features_bp, init_features, ensure_features_schema, run_price_alerts
 
 # ==================================================
 # تنظیمات اصلی
@@ -481,6 +481,11 @@ def add_security_headers(response):
 def check_csrf():
 
     if request.method == "POST":
+        if request.path in ("/internal/sms/run", "/internal/price-alerts/run"):
+            cron_secret = os.environ.get("SMS_CRON_SECRET", "").strip()
+            auth = request.headers.get("Authorization", "")
+            if len(cron_secret) >= 32 and hmac.compare_digest(auth, "Bearer " + cron_secret):
+                return
 
         sent = (
             request.form.get("_csrf", "")
@@ -2570,6 +2575,20 @@ def run_installment_sms_reminders():
         ):
             sent_count += 1
     return {"ok": True, "sent": sent_count, "checked": len(due_rows)}
+
+
+@app.route("/internal/price-alerts/run", methods=["POST"])
+def run_price_alert_notifications():
+    secret = os.environ.get("SMS_CRON_SECRET", "").strip()
+    if len(secret) < 32 or not hmac.compare_digest(
+        request.headers.get("Authorization", ""), "Bearer " + secret
+    ):
+        abort(404)
+    try:
+        return {"ok": True, **run_price_alerts(db)}
+    except Exception:
+        app.logger.exception("Price alert worker failed")
+        return {"ok": False, "error": "worker_failed"}, 500
 
 
 @app.route("/admin/sms", methods=["GET", "POST"])
