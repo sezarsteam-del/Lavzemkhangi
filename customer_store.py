@@ -377,7 +377,8 @@ def customer_password_reset():
             with DB() as conn:
                 user = conn.execute("SELECT id FROM customers WHERE phone=%s AND is_active=TRUE", (phone,)).fetchone()
                 if not user:
-                    raise ValueError("اگر حساب فعالی با این شماره وجود داشته باشد، کد بازیابی ارسال می‌شود.")
+                    flash("اگر حساب فعالی با این شماره وجود داشته باشد، کد بازیابی ارسال می‌شود.", "success")
+                    return render_template("customer_password_reset.html")
                 code = f"{secrets.randbelow(1000000):06d}"
                 enforce_otp_rate_limit(conn, phone)
                 conn.execute("INSERT INTO customer_login_codes(phone,code_hash,expires_at) VALUES(%s,%s,NOW()+INTERVAL '5 minutes')", (phone, otp_hash(phone, code)))
