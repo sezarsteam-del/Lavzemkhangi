@@ -80,6 +80,15 @@ def customer_required(fn):
 def otp_hash(phone, code):
     return hmac.new(SECRET.encode(), f"{phone}:{code}".encode(), hashlib.sha256).hexdigest()
 
+def enforce_otp_rate_limit(conn, phone):
+    stats = conn.execute("""SELECT COUNT(*) AS total,
+        MAX(created_at) AS latest FROM customer_login_codes
+        WHERE phone=%s AND created_at>NOW()-INTERVAL '1 hour'""", (phone,)).fetchone()
+    if int(stats["total"] or 0) >= 5:
+        raise ValueError("تعداد درخواست کد بیش از حد مجاز است؛ یک ساعت دیگر تلاش کنید.")
+    if stats["latest"] and (stats["latest"] > __import__("datetime").datetime.now(__import__("datetime").timezone.utc) - __import__("datetime").timedelta(seconds=60)):
+        raise ValueError("برای دریافت کد جدید حداقل ۶۰ ثانیه صبر کنید.")
+
 def send_otp(phone, code):
     key = os.environ.get("GHASEDAK_API_KEY","").strip()
     if not key: raise RuntimeError("کلید GHASEDAK_API_KEY در هاست تنظیم نشده است.")
@@ -370,6 +379,7 @@ def customer_password_reset():
                 if not user:
                     raise ValueError("اگر حساب فعالی با این شماره وجود داشته باشد، کد بازیابی ارسال می‌شود.")
                 code = f"{secrets.randbelow(1000000):06d}"
+                enforce_otp_rate_limit(conn, phone)
                 conn.execute("INSERT INTO customer_login_codes(phone,code_hash,expires_at) VALUES(%s,%s,NOW()+INTERVAL '5 minutes')", (phone, otp_hash(phone, code)))
                 conn.execute("DELETE FROM customer_login_codes WHERE phone=%s AND consumed_at IS NULL AND created_at<NOW()-INTERVAL '30 minutes'", (phone,))
             send_otp(phone, code)
