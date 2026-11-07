@@ -39,6 +39,7 @@ def ensure_customer_schema():
             line_total BIGINT NOT NULL)""")
         conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS subtotal_amount BIGINT NOT NULL DEFAULT 0")
         conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS gift_card_discount BIGINT NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS payment_amount BIGINT")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_store_orders_customer ON store_orders(customer_id,created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_customer_codes_phone ON customer_login_codes(phone,created_at DESC)")
         conn.execute("ALTER TABLE store_orders ADD COLUMN IF NOT EXISTS sale_id BIGINT REFERENCES sales(id) ON DELETE RESTRICT")
@@ -345,9 +346,9 @@ def checkout():
                     order_status="pending_confirmation"
                 order=conn.execute(
                     """INSERT INTO store_orders
-                       (customer_id,total_amount,subtotal_amount,gift_card_discount,status,shipping_address,payment_provider)
-                       VALUES(%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
-                    (user["id"],amount_due,total,gift_discount,order_status,address,provider),
+                       (customer_id,total_amount,subtotal_amount,gift_card_discount,payment_amount,status,shipping_address,payment_provider)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+                    (user["id"],total,total,gift_discount,amount_due,order_status,address,provider),
                 ).fetchone()
                 for p,qty in locked:
                     if provider in ("zarinpal","gift_card"):
@@ -420,7 +421,7 @@ def zarinpal_callback():
         abort(400)
     with DB() as conn:
         order = conn.execute(
-            "SELECT id,total_amount,status,payment_provider FROM store_orders WHERE payment_authority=%s",
+            "SELECT id,total_amount,COALESCE(payment_amount,total_amount) AS payment_amount,status,payment_provider FROM store_orders WHERE payment_authority=%s",
             (authority,),
         ).fetchone()
     if not order or order["payment_provider"] != "zarinpal":
@@ -438,7 +439,7 @@ def zarinpal_callback():
         return redirect(url_for("customer.customer_order_detail",order_id=order_id))
     try:
         verification = zarinpal_api("verify", {
-            "amount": int(order["total_amount"]) * 10,
+            "amount": int(order["payment_amount"]) * 10,
             "authority": authority,
         })
         data = verification.get("data") or {}
