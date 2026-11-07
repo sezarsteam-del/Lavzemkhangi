@@ -485,6 +485,10 @@ def add_security_headers(response):
 def check_csrf():
 
     if request.method == "POST":
+        # Native Android API uses JSON bodies and bearer tokens, not browser sessions.
+        if request.path.startswith("/api/android/v1/") and request.is_json:
+            return
+
         if request.path in ("/internal/sms/run", "/internal/price-alerts/run"):
             cron_secret = os.environ.get("SMS_CRON_SECRET", "").strip()
             auth = request.headers.get("Authorization", "")
