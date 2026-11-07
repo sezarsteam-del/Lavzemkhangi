@@ -411,13 +411,6 @@
     <div class="featured-products-grid">
         {% for product in featured_products %}
         <article class="featured-product-card">
-            <a class="featured-product-image" href="#catalog" aria-label="{{ product.name }}">
-                {% if product.image_url %}
-                <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">
-                {% else %}
-                <div class="featured-image-placeholder">تصویر محصول</div>
-                {% endif %}
-            </a>
             <div class="featured-product-info">
                 {% if product.category_name %}<span class="featured-product-category">{{ product.category_name }}</span>{% endif %}
                 <h3>{{ product.name }}</h3>
@@ -630,18 +623,6 @@
 
                 <article class="product">
 
-                    {% if product.image_url %}
-                        <img
-                            class="product-image"
-                            src="{{ product.image_url }}"
-                            alt="{{ product.name }}"
-                            loading="lazy"
-                        >
-                    {% else %}
-                        <div class="product-placeholder">
-                            بدون تصویر
-                        </div>
-                    {% endif %}
 
                     <div class="product-info">
 
