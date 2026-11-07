@@ -156,7 +156,7 @@ def customer_verify():
             user=conn.execute("SELECT id FROM customers WHERE phone=%s AND is_active=TRUE",(phone,)).fetchone()
             conn.execute("UPDATE customer_login_codes SET consumed_at=NOW() WHERE id=%s",(challenge["id"],))
         if not user: session.pop("pending_customer_phone",None); flash("حساب پیدا نشد؛ ابتدا ثبت‌نام کنید.","error"); return redirect(url_for("customer.customer_register"))
-        session.clear(); session.permanent=True; session["customer_id"]=user["id"]; session["_csrf"]=secrets.token_urlsafe(32)
+        session.pop("customer_id", None); session.permanent=True; session["customer_id"]=user["id"]
         flash("ورود پیامکی موفق بود.","success"); return redirect(url_for("customer.customer_account"))
     return render_template("customer_verify.html")
 
