@@ -6,6 +6,7 @@ import re
 import json
 import uuid
 import urllib.request
+import urllib.error
 
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
@@ -2444,14 +2445,16 @@ def send_installment_sms(plan_id, payment_id, kind, receptor, message):
         return False
 
     settings = get_sms_settings()
+    # sendDate اختیاری است؛ برای ارسال فوری باید حذف شود، نه رشته خالی.
     payload = {
-        "sendDate": "",
         "message": message,
-        "lineNumber": settings["line_number"],
-        "receptor": receptor,
+        "lineNumber": str(settings["line_number"] or "").strip(),
+        "receptor": str(receptor).strip(),
         "clientReferenceId": str(uuid.uuid4()),
         "udh": False
     }
+    if not payload["lineNumber"]:
+        payload.pop("lineNumber")
     req = urllib.request.Request(
         GHASEDAK_URL,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -2479,10 +2482,20 @@ def send_installment_sms(plan_id, payment_id, kind, receptor, message):
             )
         return True
     except Exception as exc:
+        error_detail = str(exc)
+        if isinstance(exc, urllib.error.HTTPError):
+            try:
+                provider_body = exc.read(4000).decode("utf-8", errors="replace").strip()
+                if provider_body:
+                    error_detail = f"HTTP {exc.code}: {provider_body}"
+                else:
+                    error_detail = f"HTTP {exc.code}: {exc.reason}"
+            except Exception:
+                error_detail = f"HTTP {exc.code}: {exc.reason}"
         with db() as conn:
             conn.execute(
                 "UPDATE installment_sms_logs SET status='failed', error_text=%s WHERE id=%s",
-                (str(exc)[:1000], log_id)
+                (error_detail[:1000], log_id)
             )
         app.logger.exception("Ghasedak SMS send failed")
         return False
