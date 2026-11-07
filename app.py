@@ -696,6 +696,51 @@ def clear_login_failures(ip_hash):
 # ورود و خروج مدیر
 # ==================================================
 
+
+@app.route("/products")
+@app.route("/category/<int:category_id>")
+def products_page(category_id=None):
+    q = request.args.get("q", "").strip()
+    with db() as conn:
+        if category_id is None:
+            category = None
+            sql = """
+                SELECT p.*, c.name AS category_name, b.name AS brand_name
+                FROM products p
+                LEFT JOIN categories c ON c.id = p.category_id
+                LEFT JOIN brands b ON b.id = p.brand_id
+                WHERE p.is_active = TRUE
+            """
+            params = []
+        else:
+            category = conn.execute(
+                "SELECT id, name, image_url FROM categories WHERE id = %s",
+                (category_id,)
+            ).fetchone()
+            if not category:
+                abort(404)
+            sql = """
+                SELECT p.*, c.name AS category_name, b.name AS brand_name
+                FROM products p
+                LEFT JOIN categories c ON c.id = p.category_id
+                LEFT JOIN brands b ON b.id = p.brand_id
+                WHERE p.is_active = TRUE AND p.category_id = %s
+            """
+            params = [category_id]
+        if q:
+            sql += """
+                AND (
+                    p.name ILIKE %s OR p.description ILIKE %s
+                    OR c.name ILIKE %s OR b.name ILIKE %s
+                )
+            """
+            term = f"%{q}%"
+            params.extend([term, term, term, term])
+        sql += " ORDER BY p.created_at DESC"
+        products = conn.execute(sql, params).fetchall()
+    return render_template("products.html", products=products, category=category, q=q)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
