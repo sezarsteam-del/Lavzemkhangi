@@ -293,8 +293,8 @@ def checkout():
     if request.method=="POST":
         address=request.form.get("shipping_address","").strip()
         payment_method=request.form.get("payment_method","manual").strip()
-        gift_code_raw=request.form.get("gift_card_code","")
-        gift_code="".join(ch for ch in gift_code_raw.upper() if ch.isalnum())[:40]
+        gift_code_raw=request.form.get("gift_card_code","").strip().upper()
+        gift_code="".join(ch for ch in gift_code_raw if ch.isalnum())[:40]
         if payment_method not in ("manual","zarinpal"):
             abort(400)
         if len(address)<15 or len(address)>1000:
@@ -320,13 +320,16 @@ def checkout():
                 gift_card=None
                 gift_discount=0
                 if gift_code:
-                    digest=hashlib.sha256(gift_code.encode("ascii","ignore")).hexdigest()
+                    digests=[
+                        hashlib.sha256(gift_code.encode("ascii","ignore")).hexdigest(),
+                        hashlib.sha256(gift_code_raw.encode("utf-8")).hexdigest(),
+                    ]
                     gift_card=conn.execute(
                         """SELECT id,remaining_amount FROM gift_cards
-                           WHERE code_hash=%s AND remaining_amount>0
+                           WHERE code_hash=ANY(%s) AND remaining_amount>0
                              AND (expires_at IS NULL OR expires_at>NOW())
                            FOR UPDATE""",
-                        (digest,),
+                        (digests,),
                     ).fetchone()
                     if not gift_card:
                         raise ValueError("کد کارت هدیه معتبر نیست، منقضی شده یا اعتبار ندارد.")
