@@ -6,6 +6,9 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -16,30 +19,45 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.text.NumberFormat
+import java.util.Locale
+import java.util.concurrent.Executors
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import java.security.KeyStore
 
-private data class ShopProduct(val id: Int, val name: String, val category: String, val symbol: String, val description: String)
+private data class ShopProduct(
+    val id: Int,
+    val name: String,
+    val category: String,
+    val categoryId: Int,
+    val description: String,
+    val price: Long
+)
 
 class MainActivity : Activity() {
+    private val apiBase = "https://lavzemkhangi.ethiodeploy.app/api/android/v1"
     private val bg = Color.rgb(15, 15, 17)
     private val panel = Color.rgb(27, 27, 30)
     private val panel2 = Color.rgb(36, 35, 37)
     private val gold = Color.rgb(211, 174, 94)
     private val cream = Color.rgb(244, 239, 226)
     private val muted = Color.rgb(166, 161, 151)
-    private val products = listOf(
-        ShopProduct(1, "یخچال و فریزر", "لوازم آشپزخانه", "❄️", "انواع یخچال و فریزر از برندهای معتبر"),
-        ShopProduct(2, "ماشین لباسشویی", "لوازم شست‌وشو", "🫧", "مدل‌های متنوع ماشین لباسشویی"),
-        ShopProduct(3, "تلویزیون", "صوتی و تصویری", "📺", "تلویزیون‌های هوشمند و باکیفیت"),
-        ShopProduct(4, "اجاق گاز", "لوازم آشپزخانه", "🔥", "اجاق گاز مبله و صفحه‌ای"),
-        ShopProduct(5, "جاروبرقی", "نظافت خانه", "🧹", "انواع جاروبرقی و تجهیزات نظافت"),
-        ShopProduct(6, "ظرفشویی", "لوازم شست‌وشو", "🍽️", "ماشین ظرفشویی خانگی")
-    )
-    private val categories = listOf("همه", "لوازم آشپزخانه", "لوازم شست‌وشو", "صوتی و تصویری", "نظافت خانه")
+    private val executor = Executors.newSingleThreadExecutor()
+    private val products = mutableListOf<ShopProduct>()
+    private val categories = mutableListOf<Pair<Int, String>>()
     private val cart = linkedMapOf<Int, Int>()
     private lateinit var content: LinearLayout
     private lateinit var search: EditText
-    private var selectedCategory = "همه"
+    private var selectedCategory = 0
     private var currentTab = "خانه"
+    private val prefs by lazy { getSharedPreferences("secure_session", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +66,121 @@ class MainActivity : Activity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_RTL
         showHome()
+        loadStoreData()
+    }
+
+    private fun loadStoreData() {
+        api("/categories") { result, error ->
+            if (result != null) {
+                categories.clear()
+                val arr = result.optJSONArray("categories") ?: JSONArray()
+                for (i in 0 until arr.length()) {
+                    val item = arr.optJSONObject(i) ?: continue
+                    categories.add(Pair(item.optInt("id"), item.optString("name")))
+                }
+                showHome()
+            }
+        }
+        loadProducts()
+    }
+
+    private fun loadProducts() {
+        val q = if (::search.isInitialized) search.text.toString().trim() else ""
+        val path = "/products?page=1" + if (selectedCategory > 0) "&category_id=" + selectedCategory else ""
+        val queryPath = path + if (q.isNotBlank()) "&q=" + java.net.URLEncoder.encode(q, "UTF-8") else ""
+        api(queryPath) { result, error ->
+            if (result != null) {
+                products.clear()
+                val arr = result.optJSONArray("products") ?: JSONArray()
+                for (i in 0 until arr.length()) {
+                    val item = arr.optJSONObject(i) ?: continue
+                    products.add(ShopProduct(
+                        item.optInt("id"),
+                        item.optString("name"),
+                        item.optString("category_name", "بدون دسته‌بندی"),
+                        item.optInt("category_id"),
+                        item.optString("description"),
+                        item.optLong("price")
+                    ))
+                }
+                if (::content.isInitialized) renderProducts()
+            } else if (error != null) {
+                toast(error)
+            }
+        }
+    }
+
+    private fun api(path: String, method: String = "GET", body: JSONObject? = null, callback: (JSONObject?, String?) -> Unit) {
+        executor.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                connection = (URL(apiBase + path).openConnection() as HttpURLConnection).apply {
+                    requestMethod = method
+                    connectTimeout = 15000
+                    readTimeout = 20000
+                    setRequestProperty("Accept", "application/json")
+                    val token = getToken()
+                    if (!token.isNullOrBlank()) setRequestProperty("Authorization", "Bearer " + token)
+                    if (body != null) {
+                        doOutput = true
+                        setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                        outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+                    }
+                }
+                val code = connection.responseCode
+                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+                val raw = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "{}"
+                val json = JSONObject(raw)
+                if (code in 200..299 && json.optBoolean("ok", false)) {
+                    runOnUiThread { callback(json, null) }
+                } else {
+                    val message = json.optString("error", "ارتباط با فروشگاه انجام نشد.")
+                    runOnUiThread { callback(null, message) }
+                }
+            } catch (e: Exception) {
+                runOnUiThread { callback(null, "اتصال به فروشگاه برقرار نشد. اینترنت را بررسی کنید.") }
+            } finally {
+                connection?.disconnect()
+            }
+        }
+    }
+
+    private fun key(): SecretKey {
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val alias = "lavzemkhangi_access_token"
+        val existing = store.getKey(alias, null)
+        if (existing is SecretKey) return existing
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        generator.init(KeyGenParameterSpec.Builder(
+            alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setRandomizedEncryptionRequired(true).build())
+        return generator.generateKey()
+    }
+
+    private fun saveToken(token: String) {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, key())
+        val encrypted = cipher.doFinal(token.toByteArray(Charsets.UTF_8))
+        val combined = cipher.iv + encrypted
+        prefs.edit().putString("token", Base64.encodeToString(combined, Base64.NO_WRAP)).apply()
+    }
+
+    private fun getToken(): String? {
+        return try {
+            val encoded = prefs.getString("token", null) ?: return null
+            val bytes = Base64.decode(encoded, Base64.NO_WRAP)
+            if (bytes.size < 13) return null
+            val iv = bytes.copyOfRange(0, 12)
+            val encrypted = bytes.copyOfRange(12, bytes.size)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, iv))
+            String(cipher.doFinal(encrypted), Charsets.UTF_8)
+        } catch (_: Exception) {
+            prefs.edit().remove("token").apply()
+            null
+        }
     }
 
     private fun showHome() {
@@ -67,9 +200,9 @@ class MainActivity : Activity() {
         setContentView(root)
         addHeader()
         addHero()
-        addSectionTitle("دسته‌بندی‌ها", "مشاهده همه")
+        addSectionTitle("دسته‌بندی‌ها", "انتخاب گروه کالا")
         addCategories()
-        addSectionTitle("محصولات فروشگاه", "انتخاب و بررسی")
+        addSectionTitle("محصولات فروشگاه", "قیمت و اطلاعات واقعی")
         search = EditText(this).apply {
             hint = "جست‌وجوی محصول..."
             setHintTextColor(muted)
@@ -78,11 +211,7 @@ class MainActivity : Activity() {
             singleLine = true
             setPadding(dp(15), 0, dp(15), 0)
             background = rounded(panel2, 14)
-            addTextChangedListener(object : android.text.TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { renderProducts() }
-                override fun afterTextChanged(s: android.text.Editable?) {}
-            })
+            setOnEditorActionListener { _, _, _ -> loadProducts(); true }
         }
         content.addView(search, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(14) })
         val productContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; tag = "products" }
@@ -107,13 +236,12 @@ class MainActivity : Activity() {
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(20), dp(20), dp(20))
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
                 intArrayOf(Color.rgb(54, 46, 32), Color.rgb(27, 26, 25), Color.rgb(19, 19, 21))
             ).apply { cornerRadius = dp(20).toFloat(); setStroke(dp(1), Color.rgb(105, 84, 48)) }
         }
         hero.addView(label("تجربه‌ای لوکس برای خانه", 20f, cream, true))
-        hero.addView(label("محصولات منتخب خانه را با آرامش بررسی کنید.", 13f, muted).apply {
+        hero.addView(label("محصولات واقعی فروشگاه را ببینید و سفارش خود را ثبت کنید.", 13f, muted).apply {
             setPadding(0, dp(8), 0, dp(14))
         })
         val cta = actionButton("مشاهده محصولات", true)
@@ -131,15 +259,17 @@ class MainActivity : Activity() {
 
     private fun addCategories() {
         val horizontal = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        categories.forEach { category ->
+        val list = mutableListOf(Pair(0, "همه"))
+        list.addAll(categories)
+        list.forEach { pair ->
             val chip = TextView(this).apply {
-                text = category
+                text = pair.second
                 textSize = 12f
-                setTextColor(if (selectedCategory == category) bg else cream)
+                setTextColor(if (selectedCategory == pair.first) bg else cream)
                 gravity = Gravity.CENTER
                 setPadding(dp(14), dp(10), dp(14), dp(10))
-                background = rounded(if (selectedCategory == category) gold else panel2, 30)
-                setOnClickListener { selectedCategory = category; showHome() }
+                background = rounded(if (selectedCategory == pair.first) gold else panel2, 30)
+                setOnClickListener { selectedCategory = pair.first; showHome(); loadProducts() }
             }
             horizontal.addView(chip, LinearLayout.LayoutParams(-2, dp(39)).apply { marginEnd = dp(8) })
         }
@@ -151,14 +281,16 @@ class MainActivity : Activity() {
     }
 
     private fun renderProducts() {
+        if (!::content.isInitialized) return
         val container = content.findViewWithTag<LinearLayout>("products") ?: return
         container.removeAllViews()
-        val term = if (::search.isInitialized) search.text.toString().trim() else ""
-        val filtered = products.filter {
-            (selectedCategory == "همه" || it.category == selectedCategory) &&
-                (term.isBlank() || it.name.contains(term, true) || it.category.contains(term, true))
+        if (products.isEmpty()) {
+            container.addView(label("در حال دریافت محصولات فروشگاه...", 13f, muted))
+            return
         }
-        if (filtered.isEmpty()) container.addView(label("محصولی با این جست‌وجو پیدا نشد.", 13f, muted))
+        val term = if (::search.isInitialized) search.text.toString().trim() else ""
+        val filtered = products.filter { term.isBlank() || it.name.contains(term, true) || it.category.contains(term, true) }
+        if (filtered.isEmpty()) container.addView(label("محصولی پیدا نشد.", 13f, muted))
         filtered.forEach { product ->
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -167,125 +299,218 @@ class MainActivity : Activity() {
                 background = rounded(panel, 17)
             }
             val art = TextView(this).apply {
-                text = product.symbol
+                text = "✦"
                 textSize = 29f
+                setTextColor(gold)
                 gravity = Gravity.CENTER
                 background = rounded(panel2, 14)
             }
-            card.addView(art, LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(13) })
+            card.addView(art, LinearLayout.LayoutParams(dp(58), dp(64)).apply { marginEnd = dp(13) })
             val details = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
             details.addView(label(product.name, 15f, cream, true))
-            details.addView(label(product.category, 11f, muted).apply { setPadding(0, dp(4), 0, dp(8)) })
-            details.addView(label("برای اطلاع از قیمت و موجودی، جزئیات را ببینید", 10f, gold))
+            details.addView(label(product.category, 11f, muted).apply { setPadding(0, dp(4), 0, dp(6)) })
+            details.addView(label(money(product.price) + " تومان", 12f, gold, true))
             card.addView(details, LinearLayout.LayoutParams(0, -2, 1f))
             val viewButton = TextView(this).apply {
-                text = "جزئیات"
+                text = "افزودن"
                 textSize = 11f
-                setTextColor(gold)
-                setPadding(dp(10), dp(9), dp(10), dp(9))
-                background = rounded(Color.rgb(61, 51, 34), 10)
-                setOnClickListener { showProduct(product) }
+                setTextColor(bg)
+                setPadding(dp(11), dp(10), dp(11), dp(10))
+                background = rounded(gold, 10)
+                setOnClickListener {
+                    cart[product.id] = (cart[product.id] ?: 0) + 1
+                    toast("به سبد خرید اضافه شد")
+                    showHome()
+                }
             }
             card.addView(viewButton)
+            card.setOnClickListener { showProduct(product) }
             container.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(11) })
         }
     }
 
     private fun showProduct(product: ShopProduct) {
-        val body = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(18), dp(22), dp(8))
-            setBackgroundColor(panel)
-        }
-        body.addView(label(product.symbol, 42f, gold))
+        val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(22), dp(18), dp(22), dp(8)); setBackgroundColor(panel) }
+        body.addView(label("✦", 42f, gold))
         body.addView(label(product.name, 20f, cream, true).apply { setPadding(0, dp(10), 0, dp(8)) })
         body.addView(label(product.description, 14f, muted))
-        body.addView(label("قیمت و موجودی نهایی پس از اتصال به اطلاعات زنده فروشگاه نمایش داده می‌شود.", 12f, gold)
-            .apply { setPadding(0, dp(14), 0, dp(8)) })
-        val dialog = AlertDialog.Builder(this)
-            .setView(body)
-            .setNegativeButton("بستن", null)
+        body.addView(label(money(product.price) + " تومان", 17f, gold, true).apply { setPadding(0, dp(12), 0, dp(8)) })
+        AlertDialog.Builder(this).setView(body).setNegativeButton("بستن", null)
             .setPositiveButton("افزودن به سبد") { _, _ ->
                 cart[product.id] = (cart[product.id] ?: 0) + 1
-                Toast.makeText(this, "به سبد خرید اضافه شد", Toast.LENGTH_SHORT).show()
                 showHome()
-            }.show()
-        dialog.window?.setBackgroundDrawable(rounded(panel, 18))
+            }.show().window?.setBackgroundDrawable(rounded(panel, 18))
     }
 
     private fun showCart() {
-        val lines = cart.mapNotNull { entry ->
-            val product = products.find { it.id == entry.key }
-            if (product == null) null else "• " + product.name + "  ×  " + entry.value
+        if (cart.isEmpty()) {
+            AlertDialog.Builder(this).setTitle("سبد خرید").setMessage("سبد خرید شما خالی است.")
+                .setPositiveButton("باشه", null).show()
+            return
         }
-        val message = if (lines.isEmpty()) "سبد خرید شما خالی است." else
-            lines.joinToString("\n") + "\n\nثبت سفارش نهایی پس از اتصال امن به سرور فروشگاه فعال می‌شود."
-        AlertDialog.Builder(this)
-            .setTitle("سبد خرید")
-            .setMessage(message)
+        val lines = cart.mapNotNull { entry ->
+            products.find { it.id == entry.key }?.let { it.name + " × " + entry.value + "  |  " + money(it.price * entry.value) + " تومان" }
+        }
+        val total = cart.entries.sumOf { entry -> (products.find { it.id == entry.key }?.price ?: 0L) * entry.value }
+        AlertDialog.Builder(this).setTitle("سبد خرید")
+            .setMessage(lines.joinToString("\n") + "\n\nجمع کل: " + money(total) + " تومان")
+            .setNeutralButton("خالی کردن") { _, _ -> cart.clear(); showHome() }
             .setNegativeButton("ادامه خرید", null)
-            .setPositiveButton(if (cart.isEmpty()) "باشه" else "ثبت سفارش") { _, _ ->
-                if (cart.isNotEmpty()) Toast.makeText(this, "ثبت سفارش پس از اتصال API فروشگاه فعال می‌شود.", Toast.LENGTH_LONG).show()
+            .setPositiveButton("ادامه و ثبت سفارش") { _, _ -> checkoutDialog() }.show()
+    }
+
+    private fun checkoutDialog() {
+        if (getToken().isNullOrBlank()) {
+            AlertDialog.Builder(this).setMessage("برای ثبت سفارش ابتدا وارد حساب مشتری شوید.")
+                .setNegativeButton("بعداً", null).setPositiveButton("ورود / ثبت‌نام") { _, _ -> authDialog() }.show()
+            return
+        }
+        val address = EditText(this).apply {
+            hint = "آدرس کامل گیرنده (استان، شهر، خیابان، پلاک)"
+            setTextColor(cream); setHintTextColor(muted); minLines = 3; gravity = Gravity.TOP
+            setPadding(dp(14), dp(12), dp(14), dp(12)); background = rounded(panel2, 12)
+        }
+        val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(12), dp(18), 0); addView(label("آدرس تحویل سفارش", 14f, gold, true)); addView(address) }
+        AlertDialog.Builder(this).setTitle("ثبت سفارش").setView(wrap)
+            .setNegativeButton("بازگشت", null)
+            .setPositiveButton("ثبت نهایی سفارش") { _, _ ->
+                val items = JSONArray()
+                cart.forEach { (id, qty) -> items.put(JSONObject().put("product_id", id).put("quantity", qty)) }
+                val payload = JSONObject().put("shipping_address", address.text.toString().trim()).put("items", items)
+                api("/orders", "POST", payload) { result, error ->
+                    if (result != null) {
+                        val order = result.optJSONObject("order")
+                        cart.clear()
+                        showHome()
+                        AlertDialog.Builder(this).setTitle("سفارش ثبت شد")
+                            .setMessage("شماره سفارش: " + (order?.optLong("id") ?: 0) + "\nسفارش شما در انتظار تأیید فروشگاه است. برای هماهنگی با شما تماس گرفته می‌شود.")
+                            .setPositiveButton("متوجه شدم", null).show()
+                    } else toast(error ?: "ثبت سفارش ناموفق بود.")
+                }
             }.show()
     }
 
-    private fun bottomBar(): View {
-        val bar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.rgb(23, 23, 25))
-            setPadding(dp(8), dp(7), dp(8), dp(7))
+    private fun authDialog() {
+        val fields = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(8), dp(18), 0) }
+        val phone = field("شماره موبایل")
+        val password = field("رمز عبور")
+        password.inputType = 129
+        val first = field("نام (فقط برای ثبت‌نام)")
+        val last = field("نام خانوادگی (فقط برای ثبت‌نام)")
+        fields.addView(phone); fields.addView(password); fields.addView(first); fields.addView(last)
+        val register = TextView(this).apply { text = "ثبت‌نام: نام و نام خانوادگی را هم تکمیل کنید"; setTextColor(gold); textSize = 11f; setPadding(0, dp(8), 0, 0) }
+        fields.addView(register)
+        AlertDialog.Builder(this).setTitle("ورود یا ساخت حساب مشتری").setView(fields)
+            .setNegativeButton("انصراف", null)
+            .setNeutralButton("ثبت‌نام") { _, _ ->
+                val body = JSONObject().put("phone", phone.text.toString()).put("password", password.text.toString())
+                    .put("first_name", first.text.toString()).put("last_name", last.text.toString())
+                api("/auth/register", "POST", body) { result, error ->
+                    if (result != null) { saveToken(result.optString("token")); toast("حساب شما ساخته شد."); showAccount() }
+                    else toast(error ?: "ثبت‌نام انجام نشد.")
+                }
+            }
+            .setPositiveButton("ورود") { _, _ ->
+                val body = JSONObject().put("phone", phone.text.toString()).put("password", password.text.toString())
+                api("/auth/login", "POST", body) { result, error ->
+                    if (result != null) { saveToken(result.optString("token")); toast("با موفقیت وارد شدید."); showAccount() }
+                    else toast(error ?: "ورود انجام نشد.")
+                }
+            }.show()
+    }
+
+    private fun showAccount() {
+        if (getToken().isNullOrBlank()) { authDialog(); return }
+        api("/me") { result, error ->
+            if (result == null) {
+                prefs.edit().remove("token").apply()
+                toast(error ?: "لطفاً دوباره وارد شوید.")
+                authDialog()
+                return@api
+            }
+            val customer = result.optJSONObject("customer")
+            val name = customer?.optString("first_name", "") + " " + customer?.optString("last_name", "")
+            AlertDialog.Builder(this).setTitle("حساب مشتری")
+                .setMessage("خوش آمدید، " + name + "\n" + (customer?.optString("phone") ?: ""))
+                .setItems(arrayOf("سفارش‌های من", "خروج از حساب")) { _, which ->
+                    if (which == 0) showOrders() else {
+                        api("/auth/logout", "POST", JSONObject()) { _, _ ->
+                            prefs.edit().remove("token").apply()
+                            toast("از حساب خارج شدید.")
+                        }
+                    }
+                }.setNegativeButton("بستن", null).show()
         }
+    }
+
+    private fun showOrders() {
+        api("/orders") { result, error ->
+            if (result == null) { toast(error ?: "دریافت سفارش‌ها ناموفق بود."); return@api }
+            val arr = result.optJSONArray("orders") ?: JSONArray()
+            val lines = mutableListOf<String>()
+            for (i in 0 until arr.length()) {
+                val order = arr.optJSONObject(i) ?: continue
+                lines.add("سفارش شماره " + order.optLong("id") + "  |  " + money(order.optLong("total_amount")) + " تومان\nوضعیت: " + order.optString("status") + " / " + order.optString("fulfillment_status"))
+            }
+            AlertDialog.Builder(this).setTitle("سفارش‌های من")
+                .setMessage(if (lines.isEmpty()) "هنوز سفارشی ثبت نکرده‌اید." else lines.joinToString("\n\n"))
+                .setPositiveButton("باشه", null).show()
+        }
+    }
+
+    private fun bottomBar(): View {
+        val bar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setBackgroundColor(Color.rgb(23, 23, 25)); setPadding(dp(8), dp(7), dp(8), dp(7)) }
         listOf("خانه" to "⌂", "دسته‌ها" to "▦", "سبد خرید" to "🛒", "حساب من" to "♙").forEach { pair ->
             val name = pair.first
-            val icon = pair.second
             val item = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
                 setOnClickListener {
                     when (name) {
                         "سبد خرید" -> showCart()
-                        "خانه" -> { currentTab = name; showHome() }
-                        else -> Toast.makeText(this@MainActivity, "این بخش در مرحله بعد تکمیل می‌شود.", Toast.LENGTH_SHORT).show()
+                        "حساب من" -> showAccount()
+                        "دسته‌ها" -> { selectedCategory = 0; showHome() }
+                        else -> { currentTab = name; showHome() }
                     }
                 }
             }
-            item.addView(label(icon, 20f, if (currentTab == name) gold else muted))
+            item.addView(label(pair.second, 20f, if (currentTab == name) gold else muted))
             item.addView(label(name, 10f, if (currentTab == name) gold else muted))
             bar.addView(item, LinearLayout.LayoutParams(0, -1, 1f))
         }
         return bar
     }
 
+    private fun field(hintText: String): EditText = EditText(this).apply {
+        hint = hintText; setTextColor(cream); setHintTextColor(muted); textSize = 14f; singleLine = true
+        setPadding(dp(12), dp(8), dp(12), dp(8)); background = rounded(panel2, 10)
+        layoutParams = LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(9) }
+    }
+
     private fun addFooterNote() {
-        content.addView(label("نسخه اولیه رابط بومی اندروید • اتصال اطلاعات فروشگاه در مرحله بعد", 10f, muted)
+        content.addView(label("فروشگاه مستقل اندروید • متصل به محصولات و سفارش‌های فروشگاه", 10f, muted)
             .apply { gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(4)) })
     }
 
     private fun actionButton(text: String, primary: Boolean): Button = Button(this).apply {
-        this.text = text
-        textSize = 12f
-        isAllCaps = false
-        setTextColor(if (primary) bg else gold)
-        background = rounded(if (primary) gold else panel2, 12)
-        minHeight = 0
-        minimumHeight = 0
-        setPadding(dp(14), 0, dp(14), 0)
+        this.text = text; textSize = 12f; isAllCaps = false
+        setTextColor(if (primary) bg else gold); background = rounded(if (primary) gold else panel2, 12)
+        minHeight = 0; minimumHeight = 0; setPadding(dp(14), 0, dp(14), 0)
     }
 
     private fun label(text: String, size: Float, color: Int, bold: Boolean = false) =
         TextView(this).apply {
-            this.text = text
-            textSize = size
-            setTextColor(color)
+            this.text = text; textSize = size; setTextColor(color)
             typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
             gravity = Gravity.CENTER_VERTICAL
         }
 
-    private fun rounded(color: Int, radius: Int) = GradientDrawable().apply {
-        setColor(color)
-        cornerRadius = dp(radius).toFloat()
-    }
-
+    private fun rounded(color: Int, radius: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat() }
+    private fun money(value: Long): String = NumberFormat.getNumberInstance(Locale("fa", "IR")).format(value)
+    private fun toast(message: String) { if (!isFinishing) Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    override fun onDestroy() {
+        executor.shutdown()
+        super.onDestroy()
+    }
 }
