@@ -151,13 +151,7 @@
                 right: auto;
                 min-width: 180px;
             }
-        }
-    
-        .menu-language-option{display:block;width:100%;margin:4px 0 8px;padding:8px 10px;border-bottom:1px solid rgba(199,155,85,.28)}
-        .menu-language-option .locale-control{width:100%;box-sizing:border-box;justify-content:space-between}
-        .menu-language-option .locale-control select{flex:1;max-width:none;min-width:0}
-
-    </style>
+        }</style>
 
     {% block head %}{% endblock %}
 
@@ -190,7 +184,7 @@
             </button>
 
             <nav class="top-navigation" id="mainNavigation">
-                <div class="global-locale-controls menu-language-option"><label class="locale-control" aria-label="انتخاب زبان"><span>🌐</span><select id="globalLanguage" aria-label="انتخاب زبان"><option value="auto">خودکار / Auto</option><option value="fa">فارسی</option><option value="en">English</option><option value="ar">العربية</option><option value="de">Deutsch</option></select></label></div>
+                
 
                 <a href="{{ url_for('index') }}">صفحه اصلی</a>
                 {% if session.get('customer_id') %}
@@ -261,15 +255,7 @@
 </footer>
 
 <script>
-(function(){const s=document.getElementById('globalLanguage');if(!s)return;
-const langs=['fa','en','ar','de'];const detect=()=>{const l=(navigator.language||'fa').slice(0,2).toLowerCase();return langs.includes(l)?l:'en'};
-const d={
-fa:{home:'صفحه اصلی',title:'به فروشگاه لوازم خانگی خوش آمدید',intro:'مشاهده محصولات و خرید آسان لوازم خانگی',search:'نام محصول، برند یا دسته‌بندی را جستجو کنید...',searchButton:'جستجو',categories:'دسته‌بندی محصولات',categoryHint:'برای مشاهده دسته‌ها کلیک کنید',catalog:'لیست قیمت محصولات',add:'افزودن به سبد خرید'},
-en:{home:'Home',title:'Welcome to our home appliance store',intro:'Discover products and shop for home appliances with ease',search:'Search products, brands or categories...',searchButton:'Search',categories:'Product categories',categoryHint:'Select to browse categories',catalog:'Product price list',add:'Add to cart'},
-ar:{home:'الرئيسية',title:'مرحباً بكم في متجر الأجهزة المنزلية',intro:'اكتشف المنتجات وتسوق الأجهزة المنزلية بسهولة',search:'ابحث عن منتج أو علامة تجارية أو فئة...',searchButton:'بحث',categories:'فئات المنتجات',categoryHint:'اضغط لعرض الفئات',catalog:'قائمة أسعار المنتجات',add:'أضف إلى السلة'},
-de:{home:'Startseite',title:'Willkommen im Haushaltsgeräte-Shop',intro:'Entdecken Sie Produkte und kaufen Sie einfach ein',search:'Produkt, Marke oder Kategorie suchen...',searchButton:'Suchen',categories:'Produktkategorien',categoryHint:'Klicken Sie zum Anzeigen',catalog:'Produktpreisliste',add:'In den Warenkorb'}};
-function apply(choice){const lang=choice==='auto'?detect():choice,rtl=lang==='fa'||lang==='ar',t=d[lang]||d.en;document.documentElement.lang=lang;document.documentElement.dir=rtl?'rtl':'ltr';document.querySelectorAll('[data-global-i18n]').forEach(e=>{if(t[e.dataset.globalI18n])e.textContent=t[e.dataset.globalI18n]});document.querySelectorAll('[data-global-placeholder]').forEach(e=>{if(t[e.dataset.globalPlaceholder])e.placeholder=t[e.dataset.globalPlaceholder]});try{localStorage.setItem('lavzemkhangi-language',choice)}catch(e){}}
-let saved='auto';try{saved=localStorage.getItem('lavzemkhangi-language')||'auto'}catch(e){}s.value=saved;apply(saved);s.addEventListener('change',()=>apply(s.value));})();
+
     const menuToggle = document.getElementById('menuToggle');
     const mainNavigation = document.getElementById('mainNavigation');
 
