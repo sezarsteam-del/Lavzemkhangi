@@ -39,7 +39,8 @@ def confirmed(fn):
     return wrapped
 
 def body():
-    return request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
+    return payload if isinstance(payload, dict) else {}
 
 @chatgpt_bp.get("/health")
 def health():
@@ -48,119 +49,73 @@ def health():
 
 @chatgpt_bp.get("/openapi.json")
 def openapi():
-    # Public API schema; business data and mutations remain protected.
+    """OpenAPI 3.1 schema suitable for importing as a GPT Action."""
+    confirm = {"$ref": "#/components/parameters/ConfirmAction"}
+    def path_id(name):
+        return {"name": name, "in": "path", "required": True, "schema": {"type": "integer", "minimum": 1}}
+    def json_body(schema):
+        return {"required": True, "content": {"application/json": {"schema": schema}}}
+    responses = {
+        "200": {"description": "عملیات موفق"},
+        "400": {"description": "ورودی نامعتبر"},
+        "401": {"description": "توکن نامعتبر"},
+        "409": {"description": "تعارض یا نیاز به تأیید"},
+        "503": {"description": "توکن روی سرور تنظیم نشده"}
+    }
+    name_schema = {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "minLength": 1, "maxLength": 120}}}
     return jsonify({
         "openapi": "3.1.0",
-        "info": {
-            "title": "Lavzemkhangi AI Manager API",
-            "version": "1.0.0",
-            "description": "مدیریت امن فروشگاه لوازم خانگی از طریق ChatGPT."
-        },
+        "info": {"title": "Lavzemkhangi Store Manager", "version": "1.1.0", "description": "مدیریت فروشگاه. تمام عملیات تغییردهنده نیازمند X-Confirm-Action: yes هستند."},
         "servers": [{"url": request.url_root.rstrip("/") + "/api/chatgpt/v1"}],
         "components": {
-            "securitySchemes": {
-                "BearerAuth": {"type": "http", "scheme": "bearer"}
-            },
-            "parameters": {
-                "ConfirmAction": {
-                    "name": "X-Confirm-Action", "in": "header",
-                    "required": True,
-                    "schema": {"type": "string", "enum": ["yes"]}
-                }
+            "securitySchemes": {"BearerAuth": {"type": "http", "scheme": "bearer"}},
+            "parameters": {"ConfirmAction": {"name": "X-Confirm-Action", "in": "header", "required": True, "schema": {"type": "string", "enum": ["yes"]}}},
+            "schemas": {
+                "ProductInput": {"type": "object", "required": ["name", "price"], "properties": {
+                    "name": {"type": "string", "maxLength": 200}, "description": {"type": "string", "maxLength": 5000},
+                    "price": {"type": "integer", "minimum": 0}, "image_url": {"type": ["string", "null"], "maxLength": 2000},
+                    "category_id": {"type": ["integer", "null"], "minimum": 1}, "brand_id": {"type": ["integer", "null"], "minimum": 1},
+                    "stock": {"type": "integer", "minimum": 0}, "min_stock": {"type": "integer", "minimum": 0}}},
+                "ProductUpdate": {"type": "object", "minProperties": 1, "properties": {
+                    "name": {"type": "string", "minLength": 1, "maxLength": 200}, "description": {"type": "string", "maxLength": 5000},
+                    "price": {"type": "integer", "minimum": 0}, "image_url": {"type": ["string", "null"], "maxLength": 2000},
+                    "category_id": {"type": ["integer", "null"], "minimum": 1}, "brand_id": {"type": ["integer", "null"], "minimum": 1},
+                    "min_stock": {"type": "integer", "minimum": 0}}},
+                "InventoryInput": {"type": "object", "required": ["product_id", "quantity", "movement_type"], "properties": {
+                    "product_id": {"type": "integer", "minimum": 1}, "quantity": {"type": "integer", "minimum": 1},
+                    "movement_type": {"type": "string", "enum": ["in", "out", "adjustment"]}, "note": {"type": "string", "maxLength": 500}}},
+                "OrderUpdate": {"type": "object", "minProperties": 1, "properties": {
+                    "fulfillment_status": {"type": "string", "enum": ["awaiting_confirmation", "preparing", "shipped", "delivered", "cancelled"]},
+                    "tracking_code": {"type": "string", "maxLength": 100}}}
             }
         },
         "security": [{"BearerAuth": []}],
         "paths": {
-            "/health": {
-                "get": {
-                    "security": [], "operationId": "apiHealth",
-                    "summary": "وضعیت اتصال افزونه",
-                    "responses": {"200": {"description": "وضعیت سرویس"}}
-                }
-            },
-            "/dashboard": {
-                "get": {
-                    "operationId": "getDashboard",
-                    "summary": "آمار کلی فروشگاه",
-                    "responses": {"200": {"description": "آمار فروشگاه"}}
-                }
-            },
+            "/health": {"get": {"security": [], "operationId": "apiHealth", "summary": "بررسی سلامت API", "responses": {"200": {"description": "وضعیت سرویس"}}}},
+            "/dashboard": {"get": {"operationId": "getDashboard", "summary": "آمار کلی فروشگاه", "responses": responses}},
             "/products": {
-                "get": {
-                    "operationId": "listProducts",
-                    "summary": "فهرست محصولات",
-                    "responses": {"200": {"description": "محصولات"}}
-                },
-                "post": {
-                    "operationId": "createProduct",
-                    "summary": "افزودن محصول",
-                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
-                    "responses": {"201": {"description": "محصول ثبت شد"}}
-                }
-            },
+                "get": {"operationId": "listProducts", "summary": "جستجوی محصولات", "parameters": [{"name": "q", "in": "query", "schema": {"type": "string"}}, {"name": "include_inactive", "in": "query", "schema": {"type": "boolean"}}], "responses": responses},
+                "post": {"operationId": "createProduct", "summary": "ایجاد محصول", "parameters": [confirm], "requestBody": json_body({"$ref": "#/components/schemas/ProductInput"}), "responses": responses}},
             "/products/{product_id}": {
-                "patch": {
-                    "operationId": "updateProduct",
-                    "summary": "ویرایش محصول",
-                    "parameters": [
-                        {"name": "product_id", "in": "path", "required": True,
-                         "schema": {"type": "integer"}},
-                        {"$ref": "#/components/parameters/ConfirmAction"}
-                    ],
-                    "responses": {"200": {"description": "محصول ویرایش شد"}}
-                },
-                "delete": {
-                    "operationId": "archiveProduct",
-                    "summary": "غیرفعال کردن محصول",
-                    "parameters": [
-                        {"name": "product_id", "in": "path", "required": True,
-                         "schema": {"type": "integer"}},
-                        {"$ref": "#/components/parameters/ConfirmAction"}
-                    ],
-                    "responses": {"200": {"description": "محصول غیرفعال شد"}}
-                }
-            },
+                "patch": {"operationId": "updateProduct", "summary": "ویرایش محصول", "parameters": [path_id("product_id"), confirm], "requestBody": json_body({"$ref": "#/components/schemas/ProductUpdate"}), "responses": responses},
+                "delete": {"operationId": "archiveProduct", "summary": "غیرفعال‌سازی محصول", "parameters": [path_id("product_id"), confirm], "responses": responses}},
             "/categories": {
-                "get": {"operationId": "listCategories", "responses": {"200": {"description": "دسته‌بندی‌ها"}}},
-                "post": {
-                    "operationId": "createCategory",
-                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
-                    "responses": {"201": {"description": "ثبت شد"}}
-                }
-            },
+                "get": {"operationId": "listCategories", "summary": "فهرست دسته‌بندی‌ها", "responses": responses},
+                "post": {"operationId": "createCategory", "summary": "ایجاد دسته‌بندی", "parameters": [confirm], "requestBody": json_body(name_schema), "responses": responses}},
+            "/categories/{category_id}": {"patch": {"operationId": "updateCategory", "summary": "ویرایش دسته‌بندی", "parameters": [path_id("category_id"), confirm], "requestBody": json_body(name_schema), "responses": responses}},
             "/brands": {
-                "get": {"operationId": "listBrands", "responses": {"200": {"description": "برندها"}}},
-                "post": {
-                    "operationId": "createBrand",
-                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
-                    "responses": {"201": {"description": "ثبت شد"}}
-                }
-            },
+                "get": {"operationId": "listBrands", "summary": "فهرست برندها", "responses": responses},
+                "post": {"operationId": "createBrand", "summary": "ایجاد برند", "parameters": [confirm], "requestBody": json_body(name_schema), "responses": responses}},
+            "/brands/{brand_id}": {"patch": {"operationId": "updateBrand", "summary": "ویرایش برند", "parameters": [path_id("brand_id"), confirm], "requestBody": json_body(name_schema), "responses": responses}},
             "/inventory": {
-                "get": {"operationId": "getInventory", "responses": {"200": {"description": "موجودی انبار"}}},
-                "post": {
-                    "operationId": "adjustInventory",
-                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
-                    "responses": {"200": {"description": "موجودی تغییر کرد"}}
-                }
-            },
-            "/orders": {
-                "get": {"operationId": "listOrders", "responses": {"200": {"description": "سفارش‌ها"}}}
-            },
+                "get": {"operationId": "getInventory", "summary": "موجودی و گردش انبار", "responses": responses},
+                "post": {"operationId": "adjustInventory", "summary": "ثبت ورود یا خروج یا اصلاح موجودی", "parameters": [confirm], "requestBody": json_body({"$ref": "#/components/schemas/InventoryInput"}), "responses": responses}},
+            "/orders": {"get": {"operationId": "listOrders", "summary": "فهرست سفارش‌ها", "parameters": [{"name": "status", "in": "query", "schema": {"type": "string"}}], "responses": responses}},
             "/orders/{order_id}": {
-                "get": {"operationId": "getOrder", "responses": {"200": {"description": "جزئیات سفارش"}}},
-                "patch": {
-                    "operationId": "updateOrder",
-                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
-                    "responses": {"200": {"description": "سفارش به‌روزرسانی شد"}}
-                }
-            },
-            "/customers": {
-                "get": {"operationId": "listCustomers", "responses": {"200": {"description": "مشتریان"}}}
-            },
-            "/reports/sales": {
-                "get": {"operationId": "getSalesReport", "responses": {"200": {"description": "گزارش فروش"}}}
-            }
+                "get": {"operationId": "getOrder", "summary": "جزئیات سفارش", "parameters": [path_id("order_id")], "responses": responses},
+                "patch": {"operationId": "updateOrder", "summary": "تغییر وضعیت ارسال و کد رهگیری", "parameters": [path_id("order_id"), confirm], "requestBody": json_body({"$ref": "#/components/schemas/OrderUpdate"}), "responses": responses}},
+            "/customers": {"get": {"operationId": "listCustomers", "summary": "جستجوی مشتریان", "parameters": [{"name": "q", "in": "query", "schema": {"type": "string"}}], "responses": responses}},
+            "/reports/sales": {"get": {"operationId": "getSalesReport", "summary": "گزارش فروش", "parameters": [{"name": "days", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 365}}], "responses": responses}}
         }
     })
 
@@ -384,8 +339,12 @@ def list_orders():
 @manager_required
 def get_order(order_id):
     with DB() as conn:
-        order = conn.execute("""SELECT o.*,c.first_name,c.last_name,c.phone FROM store_orders o
-            JOIN customers c ON c.id=o.customer_id WHERE o.id=%s""", (order_id,)).fetchone()
+        order = conn.execute("""SELECT o.id,o.customer_id,o.total_amount,o.subtotal_amount,
+            o.gift_card_discount,o.payment_amount,o.status,o.payment_provider,o.paid_at,
+            o.fulfillment_status,o.tracking_code,o.shipped_at,o.delivered_at,o.cancelled_at,
+            o.created_at,c.first_name,c.last_name,c.phone,o.shipping_address
+            FROM store_orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=%s""",
+            (order_id,)).fetchone()
         if not order:
             return api_error("سفارش پیدا نشد.", 404)
         items = conn.execute("SELECT product_id,product_name,quantity,unit_price,line_total FROM store_order_items WHERE order_id=%s ORDER BY id", (order_id,)).fetchall()
