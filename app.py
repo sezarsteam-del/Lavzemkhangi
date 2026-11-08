@@ -24,6 +24,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
 from store_features import features_bp, init_features, ensure_features_schema, run_price_alerts
 from android_api import android_api_bp, init_android_api, ensure_android_api_schema
+from chatgpt_api import chatgpt_bp, init_chatgpt_api
 
 # ==================================================
 # تنظیمات اصلی
@@ -54,6 +55,7 @@ app.config["SECRET_KEY"] = SECRET_KEY
 app.register_blueprint(customer_bp)
 app.register_blueprint(features_bp)
 app.register_blueprint(android_api_bp)
+app.register_blueprint(chatgpt_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -199,6 +201,7 @@ def db():
 init_customer_store(db, SECRET_KEY)
 init_features(db)
 init_android_api(db, SECRET_KEY)
+init_chatgpt_api(db)
 
 
 # ==================================================
