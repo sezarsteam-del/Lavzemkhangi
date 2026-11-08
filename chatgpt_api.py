@@ -48,47 +48,119 @@ def health():
 
 @chatgpt_bp.get("/openapi.json")
 def openapi():
-    # The schema is intentionally public; all business data and mutations remain protected.
+    # Public API schema; business data and mutations remain protected.
     return jsonify({
         "openapi": "3.1.0",
-        "info": {"title": "Lavzemkhangi AI Manager API", "version": "1.0.0", "description": "مدیریت امن فروشگاه لوازم خانگی از طریق ChatGPT. تمام عملیات تغییردهنده به تأیید صریح نیاز دارند."},
+        "info": {
+            "title": "Lavzemkhangi AI Manager API",
+            "version": "1.0.0",
+            "description": "مدیریت امن فروشگاه لوازم خانگی از طریق ChatGPT."
+        },
         "servers": [{"url": request.url_root.rstrip("/") + "/api/chatgpt/v1"}],
         "components": {
-            "securitySchemes": {"BearerAuth": {"type": "http", "scheme": "bearer"}},
-            "parameters": {"ConfirmAction": {"name": "X-Confirm-Action", "in": "header", "required": True, "schema": {"type": "string", "enum": ["yes"]}, "description": "برای تأیید اجرای تغییر مقدار yes بفرستید."}},
-            "schemas": {
-                "ProductInput": {"type": "object", "required": ["name", "price"], "properties": {"name": {"type": "string"}, "price": {"type": "integer", "minimum": 0}, "description": {"type": "string"}, "category_id": {"type": ["integer", "null"]}, "brand_id": {"type": ["integer", "null"]}, "image_url": {"type": ["string", "null"]}, "stock": {"type": "integer", "minimum": 0}, "min_stock": {"type": "integer", "minimum": 0}}},
-                "CategoryInput": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}}},
-                "BrandInput": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}}}
+            "securitySchemes": {
+                "BearerAuth": {"type": "http", "scheme": "bearer"}
+            },
+            "parameters": {
+                "ConfirmAction": {
+                    "name": "X-Confirm-Action", "in": "header",
+                    "required": True,
+                    "schema": {"type": "string", "enum": ["yes"]}
+                }
             }
         },
         "security": [{"BearerAuth": []}],
         "paths": {
-            "/health": {"get": {"security": [], "operationId": "apiHealth", "summary": "وضعیت اتصال افزونه", "responses": {"200": {"description": "وضعیت سرویس"}}}},
-            "/dashboard": {"get": {"operationId": "getDashboard", "summary": "آمار کلی فروشگاه", "responses": {"200": {"description": "آمار محصولات، انبار و فروش امروز"}}}},
+            "/health": {
+                "get": {
+                    "security": [], "operationId": "apiHealth",
+                    "summary": "وضعیت اتصال افزونه",
+                    "responses": {"200": {"description": "وضعیت سرویس"}}
+                }
+            },
+            "/dashboard": {
+                "get": {
+                    "operationId": "getDashboard",
+                    "summary": "آمار کلی فروشگاه",
+                    "responses": {"200": {"description": "آمار فروشگاه"}}
+                }
+            },
             "/products": {
-                "get": {"operationId": "listProducts", "summary": "فهرست و جست‌وجوی محصولات", "parameters": [{"name": "q", "in": "query", "schema": {"type": "string"}}, {"name": "include_inactive", "in": "query", "schema": {"type": "boolean"}}], "responses": {"200": {"description": "محصولات"}}},
-                "post": {"operationId": "createProduct", "summary": "افزودن محصول", "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProductInput"}}}}, "responses": {"201": {"description": "محصول ثبت شد"}}}
+                "get": {
+                    "operationId": "listProducts",
+                    "summary": "فهرست محصولات",
+                    "responses": {"200": {"description": "محصولات"}}
+                },
+                "post": {
+                    "operationId": "createProduct",
+                    "summary": "افزودن محصول",
+                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
+                    "responses": {"201": {"description": "محصول ثبت شد"}}
+                }
             },
             "/products/{product_id}": {
-                "patch": {"operationId": "updateProduct", "summary": "ویرایش محصول و قیمت", "parameters": [{"name": "product_id", "in": "path", "required": true, "schema": {"type": "integer"}}, {"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProductInput"}}}}, "responses": {"200": {"description": "محصول ویرایش شد"}}},
-                "delete": {"operationId": "archiveProduct", "summary": "غیرفعال کردن محصول بدون حذف سوابق", "parameters": [{"name": "product_id", "in": "path", "required": true, "schema": {"type": "integer"}}, {"$ref": "#/components/parameters/ConfirmAction"}], "responses": {"200": {"description": "محصول غیرفعال شد"}}}
+                "patch": {
+                    "operationId": "updateProduct",
+                    "summary": "ویرایش محصول",
+                    "parameters": [
+                        {"name": "product_id", "in": "path", "required": True,
+                         "schema": {"type": "integer"}},
+                        {"$ref": "#/components/parameters/ConfirmAction"}
+                    ],
+                    "responses": {"200": {"description": "محصول ویرایش شد"}}
+                },
+                "delete": {
+                    "operationId": "archiveProduct",
+                    "summary": "غیرفعال کردن محصول",
+                    "parameters": [
+                        {"name": "product_id", "in": "path", "required": True,
+                         "schema": {"type": "integer"}},
+                        {"$ref": "#/components/parameters/ConfirmAction"}
+                    ],
+                    "responses": {"200": {"description": "محصول غیرفعال شد"}}
+                }
             },
             "/categories": {
-                "get": {"operationId": "listCategories", "summary": "فهرست دسته‌بندی‌ها", "responses": {"200": {"description": "دسته‌بندی‌ها"}}},
-                "post": {"operationId": "createCategory", "summary": "افزودن دسته‌بندی", "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CategoryInput"}}}}, "responses": {"201": {"description": "ثبت شد"}}}
+                "get": {"operationId": "listCategories", "responses": {"200": {"description": "دسته‌بندی‌ها"}}},
+                "post": {
+                    "operationId": "createCategory",
+                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
+                    "responses": {"201": {"description": "ثبت شد"}}
+                }
             },
-            "/categories/{category_id}": {"patch": {"operationId": "updateCategory", "summary": "ویرایش دسته‌بندی", "parameters": [{"name": "category_id", "in": "path", "required": true, "schema": {"type": "integer"}}, {"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CategoryInput"}}}}, "responses": {"200": {"description": "ویرایش شد"}}}},
             "/brands": {
-                "get": {"operationId": "listBrands", "summary": "فهرست برندها", "responses": {"200": {"description": "برندها"}}},
-                "post": {"operationId": "createBrand", "summary": "افزودن برند", "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BrandInput"}}}}, "responses": {"201": {"description": "ثبت شد"}}}
+                "get": {"operationId": "listBrands", "responses": {"200": {"description": "برندها"}}},
+                "post": {
+                    "operationId": "createBrand",
+                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
+                    "responses": {"201": {"description": "ثبت شد"}}
+                }
             },
-            "/brands/{brand_id}": {"patch": {"operationId": "updateBrand", "summary": "ویرایش برند", "parameters": [{"name": "brand_id", "in": "path", "required": true, "schema": {"type": "integer"}}, {"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BrandInput"}}}}, "responses": {"200": {"description": "ویرایش شد"}}}},
-            "/inventory": {"get": {"operationId": "getInventory", "summary": "گزارش موجودی انبار", "responses": {"200": {"description": "موجودی‌ها"}}}, "post": {"operationId": "adjustInventory", "summary": "ثبت ورود، خروج یا اصلاح موجودی", "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["product_id", "movement_type", "quantity"], "properties": {"product_id": {"type": "integer"}, "movement_type": {"type": "string", "enum": ["in", "out", "adjustment"]}, "quantity": {"type": "integer", "minimum": 1}, "note": {"type": "string"}}}}}}, "responses": {"200": {"description": "موجودی تغییر کرد"}}}},
-            "/orders": {"get": {"operationId": "listOrders", "summary": "فهرست سفارش‌های فروشگاه", "parameters": [{"name": "status", "in": "query", "schema": {"type": "string"}}], "responses": {"200": {"description": "سفارش‌ها"}}}},
-            "/orders/{order_id}": {"get": {"operationId": "getOrder", "summary": "جزئیات سفارش", "parameters": [{"name": "order_id", "in": "path", "required": true, "schema": {"type": "integer"}}], "responses": {"200": {"description": "جزئیات سفارش"}}}, "patch": {"operationId": "updateOrder", "summary": "به‌روزرسانی وضعیت ارسال سفارش", "parameters": [{"name": "order_id", "in": "path", "required": true, "schema": {"type": "integer"}}, {"$ref": "#/components/parameters/ConfirmAction"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "properties": {"fulfillment_status": {"type": "string", "enum": ["awaiting_confirmation", "preparing", "shipped", "delivered", "cancelled"]}, "tracking_code": {"type": "string"}}}}}}, "responses": {"200": {"description": "سفارش به‌روزرسانی شد"}}}},
-            "/customers": {"get": {"operationId": "listCustomers", "summary": "جست‌وجوی مشتریان", "parameters": [{"name": "q", "in": "query", "schema": {"type": "string"}}], "responses": {"200": {"description": "فهرست مشتریان"}}}},
-            "/reports/sales": {"get": {"operationId": "getSalesReport", "summary": "گزارش فروش", "parameters": [{"name": "days", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 365}}], "responses": {"200": {"description": "گزارش فروش روزانه"}}}
+            "/inventory": {
+                "get": {"operationId": "getInventory", "responses": {"200": {"description": "موجودی انبار"}}},
+                "post": {
+                    "operationId": "adjustInventory",
+                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
+                    "responses": {"200": {"description": "موجودی تغییر کرد"}}
+                }
+            },
+            "/orders": {
+                "get": {"operationId": "listOrders", "responses": {"200": {"description": "سفارش‌ها"}}}
+            },
+            "/orders/{order_id}": {
+                "get": {"operationId": "getOrder", "responses": {"200": {"description": "جزئیات سفارش"}}},
+                "patch": {
+                    "operationId": "updateOrder",
+                    "parameters": [{"$ref": "#/components/parameters/ConfirmAction"}],
+                    "responses": {"200": {"description": "سفارش به‌روزرسانی شد"}}
+                }
+            },
+            "/customers": {
+                "get": {"operationId": "listCustomers", "responses": {"200": {"description": "مشتریان"}}}
+            },
+            "/reports/sales": {
+                "get": {"operationId": "getSalesReport", "responses": {"200": {"description": "گزارش فروش"}}}
+            }
         }
     })
 
