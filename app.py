@@ -488,8 +488,15 @@ def add_security_headers(response):
 def check_csrf():
 
     if request.method == "POST":
-        # Native Android API uses JSON bodies and bearer tokens, not browser sessions.
-        if request.path.startswith("/api/android/v1/") and request.is_json:
+        # Machine APIs authenticate with Bearer tokens in their own endpoint guards.
+        # Browser form routes continue to require the session CSRF token.
+        if (
+            request.is_json
+            and (
+                request.path.startswith("/api/android/v1/")
+                or request.path.startswith("/api/chatgpt/v1/")
+            )
+        ):
             return
 
         if request.path in ("/internal/sms/run", "/internal/price-alerts/run"):
