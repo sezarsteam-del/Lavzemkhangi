@@ -498,6 +498,7 @@ def check_csrf():
             and (
                 request.path.startswith("/api/android/v1/")
                 or request.path.startswith("/api/chatgpt/v1/")
+                or request.path.startswith("/api/assistant/")
             )
         ):
             return
