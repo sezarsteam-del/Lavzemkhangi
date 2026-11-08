@@ -377,5 +377,3 @@ def sales_report():
             GROUP BY day ORDER BY day""", (days,)).fetchall()
     return jsonify({"ok": True, "days": days, "summary": totals, "daily": daily})
 
-# Nested blueprint is registered by app.py when it registers android_api_bp.
-android_api_bp.register_blueprint(chatgpt_bp)
