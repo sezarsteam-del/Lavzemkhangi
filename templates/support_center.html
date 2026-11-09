@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}مرکز پشتیبانی | لوازم خانگی{% endblock %}
+{% block head %}<style>
+.support-wrap{max-width:980px;margin:24px auto;padding:18px;background:#211f24;border:1px solid #705b37;border-radius:16px;color:#f6ead0}
+.support-wrap h1,.support-wrap h2{color:#e8cc91}.support-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.support-card{padding:14px;border:1px solid #5a4b32;border-radius:12px;background:#29262b;color:inherit;text-decoration:none}
+.support-wrap input,.support-wrap textarea{box-sizing:border-box;width:100%;padding:11px;margin:7px 0 12px;border-radius:8px;border:1px solid #77613b;background:#171619;color:white;font:inherit}
+.support-wrap button{padding:10px 16px;border:0;border-radius:8px;background:#b38b48;color:#17130c;font:inherit;cursor:pointer}
+.support-msg{padding:13px;margin:10px 0;border-radius:10px;background:#302c32;border:1px solid #554832;white-space:pre-wrap}
+.support-msg.admin{border-color:#8c713e;background:#383126}.muted{color:#c5b99f;font-size:12px}
+</style>{% endblock %}
+{% block content %}
+<section class="support-wrap">
+{% if admin_mode and not conversation %}
+<h1>صندوق پشتیبانی مشتریان</h1>
+{% if conversations %}<div class="support-grid">{% for c in conversations %}
+<a class="support-card" href="{{ url_for('suite.admin_support_thread',conversation_id=c.id) }}"><strong>#{{ c.id }} — {{ c.subject }}</strong><p>{{ c.first_name }} {{ c.last_name }} · {{ c.phone }}</p><p>وضعیت: {{ 'باز' if c.status=='open' else 'بسته' }} · پیام خوانده‌نشده: {{ c.unread }}</p></a>
+{% endfor %}</div>{% else %}<p>گفتگویی ثبت نشده است.</p>{% endif %}
+{% elif not conversation %}
+<h1>پشتیبانی آنلاین</h1>
+<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><label>موضوع درخواست</label><input name="subject" maxlength="160" required><label>شرح درخواست</label><textarea name="body" rows="5" maxlength="4000" required></textarea><button>ثبت گفتگو</button></form>
+<h2>گفتگوهای قبلی</h2>
+{% if conversations %}<div class="support-grid">{% for c in conversations %}<a class="support-card" href="{{ url_for('suite.customer_support_thread',conversation_id=c.id) }}"><strong>{{ c.subject }}</strong><p>وضعیت: {{ 'باز' if c.status=='open' else 'بسته' }}</p><small>{{ c.message_count }} پیام</small></a>{% endfor %}</div>{% else %}<p>هنوز گفتگویی ندارید.</p>{% endif %}
+{% else %}
+<h1>{{ conversation.subject }}</h1><p class="muted">گفتگو شماره {{ conversation.id }} · {{ 'باز' if conversation.status=='open' else 'بسته' }}</p>
+{% for m in messages %}<div class="support-msg {{ 'admin' if m.sender_type=='admin' else '' }}"><strong>{{ 'پشتیبانی فروشگاه' if m.sender_type=='admin' else 'شما' }}</strong><p>{{ m.body }}</p><small class="muted">{{ m.created_at|jalali }}</small></div>{% endfor %}
+{% if conversation.status=='open' or admin_mode %}
+<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><label>پیام جدید</label><textarea name="body" rows="4" maxlength="4000" required></textarea><button name="action" value="reply">ارسال پیام</button></form>
+{% endif %}
+{% if admin_mode %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button name="action" value="{{ 'close' if conversation.status=='open' else 'reopen' }}">{{ 'بستن گفتگو' if conversation.status=='open' else 'بازکردن گفتگو' }}</button></form><p><a href="{{ url_for('suite.admin_support') }}">بازگشت به صندوق</a></p>
+{% else %}<p><a href="{{ url_for('suite.customer_support') }}">بازگشت به گفتگوها</a></p>{% endif %}
+{% endif %}
+</section>{% endblock %}
