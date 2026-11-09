@@ -169,7 +169,10 @@ def compare():
                 LEFT JOIN product_reviews r ON r.product_id=p.id
                 WHERE p.id=ANY(%s) AND p.is_active=TRUE
                 GROUP BY p.id,c.name,b.name ORDER BY p.name""",(ids,)).fetchall()
-    return render_template("store_compare.html", products=products, selected_ids=ids)
+    q=request.args.get("q","").strip()[:100]
+    with DB() as conn:
+        choices=conn.execute("SELECT id,name,price FROM products WHERE is_active=TRUE AND name ILIKE %s ORDER BY name LIMIT 150",("%"+q+"%",)).fetchall()
+    return render_template("store_compare.html", products=products, selected_ids=ids, choices=choices, q=q)
 
 @extras_bp.route("/products/<int:product_id>/reviews",methods=["GET","POST"])
 def reviews(product_id):
