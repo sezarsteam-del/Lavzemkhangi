@@ -724,3 +724,33 @@ def customer_phone_change_verify():
                     flash("شماره موبایل حساب با موفقیت تغییر کرد.", "success")
                     return redirect(url_for("customer.customer_profile"))
     return render_template("customer_phone_change_verify.html")
+
+
+# -------------------- سفارش مجدد از سفارش قبلی --------------------
+@customer_bp.post("/account/orders/<int:order_id>/reorder")
+@customer_required
+def customer_reorder(order_id):
+    user=current_customer()
+    basket=session.get("cart",{})
+    added=0
+    with DB() as conn:
+        order=conn.execute("SELECT id FROM store_orders WHERE id=%s AND customer_id=%s",(order_id,user["id"])).fetchone()
+        if not order:
+            abort(404)
+        items=conn.execute("""SELECT i.product_id,i.quantity,p.stock,p.is_active
+            FROM store_order_items i JOIN products p ON p.id=i.product_id
+            WHERE i.order_id=%s ORDER BY i.id""",(order_id,)).fetchall()
+        for item in items:
+            if not item["is_active"] or int(item["stock"] or 0)<=0:
+                continue
+            key=str(int(item["product_id"]))
+            current=int(basket.get(key,0)) if str(basket.get(key,0)).isdigit() else 0
+            basket[key]=min(99,current+min(int(item["quantity"]),int(item["stock"])))
+            added+=1
+    session["cart"]=basket
+    persist_abandoned_cart(user["id"],basket)
+    if added:
+        flash(str(added)+" قلم از سفارش قبلی به سبد خرید اضافه شد؛ قیمت و موجودی نهایی هنگام تسویه دوباره بررسی می‌شود.","success")
+    else:
+        flash("هیچ‌یک از کالاهای سفارش قبلی در حال حاضر قابل افزودن نیست.","error")
+    return redirect(url_for("customer.cart"))

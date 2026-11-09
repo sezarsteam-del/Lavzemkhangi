@@ -312,3 +312,84 @@ def review_delete(review_id):
     with DB() as conn:
         conn.execute("DELETE FROM product_reviews WHERE id=%s",(review_id,))
     return redirect(url_for("extras.reviews_admin"))
+
+
+# -------------------- اعلان موجودشدن کالا --------------------
+# مشتری می‌تواند برای کالای ناموجود اعلان ثبت کند؛ مقدار موجودی هرگز در ویترین نمایش داده نمی‌شود.
+def ensure_stock_alert_schema():
+    with DB() as conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS customer_stock_alerts (
+            customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            notified_at TIMESTAMPTZ,
+            PRIMARY KEY(customer_id,product_id)
+        )""")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_stock_alert_product_pending ON customer_stock_alerts(product_id,notified_at)")
+
+@extras_bp.post("/stock-alert/<int:product_id>")
+@customer_required
+def stock_alert_subscribe(product_id):
+    ensure_stock_alert_schema()
+    with DB() as conn:
+        product=conn.execute("SELECT id,name,stock FROM products WHERE id=%s AND is_active=TRUE",(product_id,)).fetchone()
+        if not product:
+            abort(404)
+        if int(product["stock"] or 0)>0:
+            flash("این کالا در حال حاضر موجود است؛ می‌توانید آن را به سبد خرید اضافه کنید.","info")
+        else:
+            conn.execute("""INSERT INTO customer_stock_alerts(customer_id,product_id)
+                VALUES(%s,%s) ON CONFLICT(customer_id,product_id)
+                DO UPDATE SET created_at=NOW(),notified_at=NULL""",
+                (session["customer_id"],product_id))
+            flash("به‌محض ثبت موجودی این کالا، اعلان آن در حساب شما نمایش داده می‌شود.","success")
+    return redirect(request.referrer or url_for("index"))
+
+@extras_bp.get("/stock-alerts")
+@customer_required
+def stock_alerts():
+    ensure_stock_alert_schema()
+    with DB() as conn:
+        ready=conn.execute("""UPDATE customer_stock_alerts a
+            SET notified_at=NOW()
+            FROM products p
+            WHERE p.id=a.product_id AND a.customer_id=%s AND p.is_active=TRUE
+              AND COALESCE(p.stock,0)>0 AND a.notified_at IS NULL
+            RETURNING p.name,p.id""",(session["customer_id"],)).fetchall()
+        for product in ready:
+            conn.execute("""INSERT INTO customer_notifications(customer_id,title,body)
+                VALUES(%s,%s,%s)""",(session["customer_id"],"کالا موجود شد",f"محصول «{product['name']}» اکنون موجود است و می‌توانید آن را سفارش دهید."))
+        rows=conn.execute("""SELECT p.id,p.name,p.price,p.image_url,p.stock,a.created_at,a.notified_at
+            FROM customer_stock_alerts a JOIN products p ON p.id=a.product_id
+            WHERE a.customer_id=%s AND p.is_active=TRUE
+            ORDER BY a.created_at DESC""",(session["customer_id"],)).fetchall()
+    return render_template("store_stock_alerts.html",alerts=rows)
+
+@extras_bp.post("/stock-alert/<int:product_id>/delete")
+@customer_required
+def stock_alert_delete(product_id):
+    ensure_stock_alert_schema()
+    with DB() as conn:
+        conn.execute("DELETE FROM customer_stock_alerts WHERE customer_id=%s AND product_id=%s",
+            (session["customer_id"],product_id))
+    flash("اعلان موجودشدن کالا حذف شد.","success")
+    return redirect(url_for("extras.stock_alerts"))
+
+
+@extras_bp.post("/notifications/<int:notification_id>/delete")
+@customer_required
+def notification_delete(notification_id):
+    with DB() as conn:
+        conn.execute("DELETE FROM customer_notifications WHERE id=%s AND customer_id=%s",
+                     (notification_id,session["customer_id"]))
+    flash("اعلان حذف شد.","success")
+    return redirect(url_for("extras.notifications"))
+
+@extras_bp.post("/notifications/clear")
+@customer_required
+def notifications_clear():
+    with DB() as conn:
+        conn.execute("DELETE FROM customer_notifications WHERE customer_id=%s",
+                     (session["customer_id"],))
+    flash("اعلان‌های حساب شما پاک شدند.","success")
+    return redirect(url_for("extras.notifications"))

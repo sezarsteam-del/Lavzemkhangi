@@ -64,6 +64,13 @@
     <!-- دسترسی سریع -->
     <section class="admin-cards">
 
+        <a href="{{ url_for('category_manager') }}" class="admin-card">
+            <div class="admin-card-icon">🗂️</div>
+            <h3>دسته‌بندی حرفه‌ای</h3>
+            <p>ساخت دسته و زیردسته، ترتیب نمایش، توضیحات و سئوی دسته‌ها</p>
+            <span>مدیریت ساختار دسته‌بندی ←</span>
+        </a>
+
         <a href="{{ url_for('manage_products') }}" class="admin-card products-card">
             <div class="admin-card-icon">🛍️</div>
             <h3>مدیریت محصولات</h3>

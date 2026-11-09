@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}هشدارهای قیمت من{% endblock %}
+{% block head %}<style>.price-alerts{max-width:900px;margin:24px auto;color:var(--text,#eee)}.price-alerts h1{color:#d9bb7b}.price-alert-item{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:15px;margin:12px 0;border:1px solid #705b37;border-radius:12px;background:#211f24}.price-alert-item img{width:72px;height:72px;object-fit:contain}.price-alert-item button{padding:9px 14px;border:0;border-radius:8px;background:#a77d3b;color:white}</style>{% endblock %}
+{% block content %}<main class="price-alerts"><h1>هشدارهای قیمت من</h1><p>هشدارهایی که برای کاهش قیمت کالاها ثبت کرده‌اید.</p>
+{% for a in alerts %}<article class="price-alert-item">{% if a.image_url %}<img src="{{ a.image_url }}" alt="{{ a.name }}">{% endif %}<div><strong>{{ a.name }}</strong><p>قیمت فعلی: {{ "{:,}".format(a.price) }} تومان</p><p>قیمت هدف: {{ "{:,}".format(a.target_price) + " تومان" if a.target_price else "بدون قیمت هدف" }}</p></div><form method="post" action="{{ url_for('suite.customer_price_alert_delete',product_id=a.product_id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>حذف هشدار</button></form></article>{% else %}<p>هنوز هشدار قیمتی ثبت نکرده‌اید.</p>{% endfor %}
+</main>{% endblock %}
