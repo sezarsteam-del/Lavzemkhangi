@@ -380,3 +380,63 @@ def export_csv(kind):
         for row in conn.execute(sql).fetchall(): writer.writerow([row.get(k) for k in keys])
     return Response("\ufeff"+output.getvalue(),mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition":"attachment; filename="+kind+".csv"})
+
+
+# -------------------- مرکز هوشمندی و تحلیل فروشگاه --------------------
+@advanced_bp.get("/intelligence")
+@admin_required
+def intelligence():
+    """Read-only management analytics; does not mutate catalog, prices, stock or orders."""
+    with DB() as conn:
+        kpis = conn.execute("""SELECT
+            COUNT(*) FILTER (WHERE created_at >= date_trunc('day', NOW())) AS orders_today,
+            COUNT(*) FILTER (WHERE created_at >= date_trunc('month', NOW())) AS orders_month,
+            COALESCE(SUM(total_amount) FILTER (WHERE status IN ('paid','paid_stock_issue')
+                AND created_at >= date_trunc('day', NOW())),0) AS revenue_today,
+            COALESCE(SUM(total_amount) FILTER (WHERE status IN ('paid','paid_stock_issue')
+                AND created_at >= date_trunc('month', NOW())),0) AS revenue_month,
+            COUNT(*) FILTER (WHERE status IN ('pending_payment','pending_confirmation')) AS pending_orders,
+            COUNT(*) FILTER (WHERE status='cancelled') AS cancelled_orders
+            FROM store_orders""").fetchone()
+        monthly = conn.execute("""SELECT to_char(date_trunc('month',created_at),'YYYY-MM') AS month,
+            COUNT(*) AS orders,
+            COALESCE(SUM(total_amount) FILTER (WHERE status IN ('paid','paid_stock_issue')),0) AS revenue
+            FROM store_orders WHERE created_at >= NOW()-INTERVAL '12 months'
+            GROUP BY date_trunc('month',created_at) ORDER BY date_trunc('month',created_at)""").fetchall()
+        top_products = conn.execute("""SELECT i.product_name,
+            SUM(i.quantity)::BIGINT AS units,
+            SUM(i.line_total)::BIGINT AS revenue
+            FROM store_order_items i JOIN store_orders o ON o.id=i.order_id
+            WHERE o.status IN ('paid','paid_stock_issue')
+              AND o.created_at >= NOW()-INTERVAL '90 days'
+            GROUP BY i.product_name ORDER BY revenue DESC LIMIT 15""").fetchall()
+        low_stock = conn.execute("""SELECT id,name,stock,min_stock,
+            GREATEST(min_stock-stock,0) AS shortage
+            FROM products WHERE is_active=TRUE AND stock<=min_stock
+            ORDER BY (min_stock-stock) DESC, stock ASC LIMIT 100""").fetchall()
+        category_mix = conn.execute("""SELECT COALESCE(c.name,'بدون دسته‌بندی') AS category,
+            COUNT(DISTINCT p.id) AS products,
+            COALESCE(SUM(i.line_total),0)::BIGINT AS revenue
+            FROM store_order_items i JOIN store_orders o ON o.id=i.order_id
+            JOIN products p ON p.id=i.product_id
+            LEFT JOIN categories c ON c.id=p.category_id
+            WHERE o.status IN ('paid','paid_stock_issue')
+              AND o.created_at >= NOW()-INTERVAL '90 days'
+            GROUP BY c.name ORDER BY revenue DESC LIMIT 15""").fetchall()
+        customer_stats = conn.execute("""SELECT
+            COUNT(*) AS total_customers,
+            COUNT(*) FILTER (WHERE created_at >= NOW()-INTERVAL '30 days') AS new_customers
+            FROM customers WHERE is_active=TRUE""").fetchone()
+        repeat_customers = conn.execute("""SELECT COUNT(*) AS count FROM (
+            SELECT customer_id FROM store_orders
+            WHERE status IN ('paid','paid_stock_issue')
+            GROUP BY customer_id HAVING COUNT(*)>1
+        ) x""").fetchone()["count"]
+        fulfillment = conn.execute("""SELECT COALESCE(fulfillment_status,'نامشخص') AS status,
+            COUNT(*) AS count FROM store_orders
+            WHERE status IN ('paid','paid_stock_issue')
+            GROUP BY fulfillment_status ORDER BY count DESC""").fetchall()
+    return render_template("store_intelligence.html", kpis=kpis, monthly=monthly,
+        top_products=top_products, low_stock=low_stock, category_mix=category_mix,
+        customer_stats=customer_stats, repeat_customers=repeat_customers,
+        fulfillment=fulfillment)
