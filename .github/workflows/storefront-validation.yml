@@ -1,5 +1,9 @@
 name: Storefront validation
 
+concurrency:
+  group: storefront-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main, feature/complete-storefront-features, feature/all-in-one-store-platform]
