@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}مرکز مدیریت پیشرفته{% endblock %}
+{% block content %}
+<div class="admin-page" dir="rtl">
+<h1>مرکز مدیریت پیشرفته</h1>
+<section class="stats-grid">
+<div class="stat-card"><span>تأمین‌کنندگان</span><strong>{{ stats.suppliers }}</strong></div>
+<div class="stat-card"><span>خرید در انتظار</span><strong>{{ stats.purchases }}</strong></div>
+<div class="stat-card"><span>ارسال‌های باز</span><strong>{{ stats.shipments }}</strong></div>
+<div class="stat-card"><span>پرسش‌های بررسی‌نشده</span><strong>{{ stats.questions }}</strong></div>
+<div class="stat-card"><span>کالاهای کم‌موجود</span><strong>{{ stats.low_stock }}</strong></div>
+</section>
+<nav class="admin-nav"><a href="#suppliers">تأمین‌کنندگان</a><a href="#purchases">خرید</a><a href="#shipments">ارسال</a><a href="#questions">پرسش‌ها</a><a href="#banners">بنرها</a><a href="#loyalty">امتیاز مشتری</a><a href="#exports">خروجی</a></nav>
+<section class="panel-section" id="suppliers"><h2>تأمین‌کنندگان</h2>
+<form method="post" action="{{ url_for('advanced.supplier_create') }}" class="create-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input name="name" required placeholder="نام تأمین‌کننده"><input name="phone" placeholder="تلفن"><input name="email" type="email" placeholder="ایمیل"><input name="notes" placeholder="یادداشت"><button>ثبت تأمین‌کننده</button></form>
+{% for s in suppliers %}<div class="management-item"><strong>{{ s.name }}</strong> {{ s.phone }} {{ s.email }}</div>{% endfor %}</section>
+<section class="panel-section" id="purchases"><h2>سفارش خرید</h2>
+<form method="post" action="{{ url_for('advanced.purchase_create') }}" class="create-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><select name="supplier_id" required><option value="">تأمین‌کننده</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select><select name="product_id" required><option value="">محصول</option>{% for p in products %}<option value="{{ p.id }}">{{ p.name }} ({{ p.stock }})</option>{% endfor %}</select><input type="number" name="quantity" min="1" required placeholder="تعداد"><input type="number" name="unit_cost" min="0" required placeholder="قیمت خرید"><input type="date" name="expected_date"><button>ثبت سفارش خرید</button></form>
+{% for p in purchases %}<div class="management-item"><strong>#{{ p.id }} {{ p.product_name }}</strong> {{ p.supplier_name }} · {{ p.quantity }} · {{ p.status }} {% if p.status=='pending' %}<form method="post" action="{{ url_for('advanced.purchase_receive',purchase_id=p.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>تأیید دریافت و افزایش موجودی</button></form>{% endif %}</div>{% endfor %}</section>
+<section class="panel-section" id="shipments"><h2>مدیریت ارسال</h2>
+<form method="post" action="{{ url_for('advanced.shipment_create') }}" class="create-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><select name="order_id" required><option value="">شماره سفارش</option>{% for o in orders %}<option value="{{ o.id }}">سفارش #{{ o.id }}</option>{% endfor %}</select><input name="carrier" placeholder="شرکت حمل‌ونقل"><input name="tracking_code" placeholder="کد رهگیری"><button>ذخیره ارسال</button></form>
+{% for sh in shipments %}<div class="management-item">سفارش #{{ sh.order_number }} · {{ sh.carrier }} · {{ sh.tracking_code }}<form method="post" action="{{ url_for('advanced.shipment_status',shipment_id=sh.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><select name="status"><option value="preparing">آماده‌سازی</option><option value="shipped">ارسال‌شده</option><option value="delivered">تحویل‌شده</option><option value="returned">مرجوع‌شده</option></select><button>ثبت وضعیت</button></form></div>{% endfor %}</section>
+<section class="panel-section" id="questions"><h2>پرسش مشتریان</h2>
+{% for q in questions %}<div class="management-item"><strong>{{ q.product_name }}</strong><p>{{ q.question }}</p><form method="post" action="{{ url_for('advanced.question_answer',question_id=q.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><textarea name="answer" required placeholder="پاسخ مدیر"></textarea><button>ثبت پاسخ و انتشار</button></form></div>{% endfor %}</section>
+<section class="panel-section" id="banners"><h2>بنر تبلیغاتی</h2>
+<form method="post" action="{{ url_for('advanced.banner_create') }}" class="create-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input name="title" required placeholder="عنوان"><input name="body" placeholder="متن بنر"><input name="image_url" type="url" placeholder="لینک تصویر"><input name="target_url" type="url" placeholder="لینک مقصد"><button>ثبت بنر</button></form>
+{% for b in banners %}<div class="management-item">{{ b.title }} · {{ 'فعال' if b.is_active else 'غیرفعال' }}<form method="post" action="{{ url_for('advanced.banner_toggle',banner_id=b.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button>تغییر وضعیت</button></form></div>{% endfor %}</section>
+<section class="panel-section" id="loyalty"><h2>امتیاز باشگاه مشتریان</h2>
+<form method="post" action="{{ url_for('advanced.loyalty_adjust') }}" class="create-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><select name="customer_id" required><option value="">مشتری</option>{% for c in customers %}<option value="{{ c.id }}">{{ c.first_name }} {{ c.last_name }} · {{ c.phone }}</option>{% endfor %}</select><input type="number" name="points" required placeholder="امتیاز مثبت یا منفی"><input name="reason" placeholder="علت"><button>ثبت امتیاز</button></form></section>
+<section class="panel-section" id="exports"><h2>خروجی CSV</h2><a href="{{ url_for('advanced.export_csv',kind='products') }}">محصولات</a> · <a href="{{ url_for('advanced.export_csv',kind='orders') }}">سفارش‌ها</a> · <a href="{{ url_for('advanced.export_csv',kind='customers') }}">مشتریان</a></section>
+<section class="panel-section"><h2>هشدار موجودی پایین</h2>{% for p in low_stock %}<div class="management-item">{{ p.name }} · موجودی {{ p.stock }} · حد هشدار {{ p.min_stock }}</div>{% else %}<p>همه کالاها بالاتر از حد هشدار هستند.</p>{% endfor %}</section>
+</div>
+{% endblock %}
