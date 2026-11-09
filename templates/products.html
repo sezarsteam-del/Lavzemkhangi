@@ -10,6 +10,9 @@
 <section class="category-products-page">
 <a class="back-to-categories" href="{{ url_for('index') }}">← بازگشت به دسته‌بندی‌ها</a>
 <div class="catalog-heading"><h1 class="section-title">{% if category %}محصولات {{ category.name }}{% else %}همه محصولات{% endif %}</h1><span class="result-count">{{ products|length }} محصول</span></div>
+{% if subcategories %}<nav class="subcategory-nav" aria-label="زیردسته‌ها" style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0 18px">
+{% for sub in subcategories %}<a href="{{ url_for('products_page',category_id=sub.id) }}" style="padding:9px 13px;border:1px solid #80683c;border-radius:10px;color:#ead4a3;text-decoration:none;background:#29262a">{{ sub.name }}</a>{% endfor %}
+</nav>{% endif %}
 <form class="catalog-filters" method="get">
 <label>جستجوی محصول<input type="search" name="q" value="{{ q }}" placeholder="نام یا توضیحات"></label>
 <label>برند<select name="brand"><option value="">همه برندها</option>{% for b in brands %}<option value="{{ b.id }}" {% if selected_brand|string == b.id|string %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
