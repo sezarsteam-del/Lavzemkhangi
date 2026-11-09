@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}فاکتور سفارش شماره {{ order.id }}{% endblock %}
+{% block head %}<style>
+.invoice{max-width:850px;margin:24px auto;padding:28px;background:#fff;color:#222;border-radius:14px}
+.invoice-head{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;border-bottom:2px solid #b28a48;padding-bottom:15px}
+.invoice table{width:100%;border-collapse:collapse;margin-top:22px}.invoice th,.invoice td{padding:12px;border-bottom:1px solid #ddd;text-align:right}
+.invoice .total{text-align:left;font-size:20px;font-weight:bold;margin-top:20px}
+.invoice button{padding:10px 18px;background:#222;color:#fff;border:0;border-radius:8px;cursor:pointer}
+@media print{.topbar,.footer,.no-print{display:none!important}.invoice{margin:0;box-shadow:none;max-width:none}}
+</style>{% endblock %}
+{% block content %}<section class="invoice">
+<div class="invoice-head"><div><h1>فاکتور فروش لوازم خانگی</h1><p>شماره سفارش: {{ order.id }}</p><p>تاریخ: {{ order.created_at|jalali }}</p></div><div><strong>{{ order.first_name }} {{ order.last_name }}</strong><p>{{ order.phone }}</p><p>{{ order.shipping_address }}</p></div></div>
+<table><thead><tr><th>شرح کالا</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead><tbody>
+{% for item in items %}<tr><td>{{ item.product_name }}</td><td>{{ item.quantity }}</td><td>{{ "{:,}".format(item.unit_price) }} تومان</td><td>{{ "{:,}".format(item.line_total) }} تومان</td></tr>{% endfor %}
+</tbody></table><p class="total">مبلغ نهایی: {{ "{:,}".format(order.total_amount) }} تومان</p>
+<p class="no-print"><button onclick="window.print()" type="button">چاپ / ذخیره PDF</button></p>
+</section>{% endblock %}
