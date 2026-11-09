@@ -70,6 +70,7 @@ def ensure_customer_schema():
             reminder_sent_at TIMESTAMPTZ
         )""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_abandoned_carts_updated ON store_abandoned_carts(last_updated DESC)")
+        conn.execute("ALTER TABLE customer_loyalty_ledger ADD COLUMN IF NOT EXISTS source_order_id BIGINT UNIQUE REFERENCES store_orders(id) ON DELETE SET NULL")
 
 def clean_phone(value):
     value = str(value or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩","01234567890123456789"))
@@ -399,6 +400,9 @@ def zarinpal_callback():
                     "UPDATE store_orders SET status='paid',payment_reference=%s,paid_at=NOW() WHERE id=%s",
                     (reference,order_id),
                 )
+                conn.execute("""INSERT INTO customer_loyalty_ledger(customer_id,points,reason,source_order_id)
+                    SELECT customer_id,GREATEST(1,(total_amount/100000)::INTEGER),'امتیاز خرید اینترنتی',id
+                    FROM store_orders WHERE id=%s ON CONFLICT(source_order_id) DO NOTHING""",(order_id,))
                 create_customer_notification(conn, order["customer_id"], "پرداخت تأیید شد",
                     "پرداخت سفارش شماره "+str(order_id)+" با موفقیت تأیید شد.")
         flash("پرداخت با موفقیت تأیید شد. شماره پیگیری: " + (reference or "ثبت شد"),"success")
@@ -596,6 +600,9 @@ def customer_order_admin_confirm_payment(order_id):
             flash("این سفارش در انتظار تأیید پرداخت دستی نیست.", "error")
         else:
             conn.execute("UPDATE store_orders SET status='paid',paid_at=NOW() WHERE id=%s",(order_id,))
+            conn.execute("""INSERT INTO customer_loyalty_ledger(customer_id,points,reason,source_order_id)
+                SELECT customer_id,GREATEST(1,(total_amount/100000)::INTEGER),'امتیاز خرید اینترنتی',id
+                FROM store_orders WHERE id=%s ON CONFLICT(source_order_id) DO NOTHING""",(order_id,))
             create_customer_notification(conn,order["customer_id"],"پرداخت سفارش تأیید شد","پرداخت سفارش شماره "+str(order_id)+" توسط فروشگاه تأیید شد.")
             notify_customer=True
             flash("پرداخت سفارش تأیید شد.", "success")
