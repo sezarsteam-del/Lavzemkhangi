@@ -550,3 +550,24 @@ def order_invoice(order_id):
     return render_template("order_invoice.html", order=order, items=items)
 
 
+
+
+# -------------------- مدیریت هشدارهای قیمت توسط مشتری --------------------
+@suite_bp.get("/store/my-price-alerts")
+@customer_required
+def customer_price_alerts():
+    with DB() as conn:
+        rows=conn.execute("""SELECT a.product_id,a.target_price,a.created_at,p.name,p.price,p.image_url
+            FROM customer_price_alerts a JOIN products p ON p.id=a.product_id
+            WHERE a.customer_id=%s AND p.is_active=TRUE
+            ORDER BY a.created_at DESC""",(session["customer_id"],)).fetchall()
+    return render_template("customer_price_alerts.html",alerts=rows)
+
+@suite_bp.post("/store/my-price-alerts/<int:product_id>/delete")
+@customer_required
+def customer_price_alert_delete(product_id):
+    with DB() as conn:
+        conn.execute("DELETE FROM customer_price_alerts WHERE customer_id=%s AND product_id=%s",
+            (session["customer_id"],product_id))
+    flash("هشدار قیمت حذف شد.","success")
+    return redirect(url_for("suite.customer_price_alerts"))
