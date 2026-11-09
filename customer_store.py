@@ -345,7 +345,8 @@ def checkout():
                     data=response.get("data") or {}; authority=data.get("authority")
                     if data.get("code")!=100 or not authority: raise RuntimeError("زرین‌پال درخواست پرداخت را تأیید نکرد؛ کد پاسخ: "+str(data.get("code","نامشخص")))
                     with DB() as conn: conn.execute("UPDATE store_orders SET payment_authority=%s WHERE id=%s AND status='pending_payment'",(authority,order["id"]))
-                    session["cart"]={}; return redirect(start_base+authority)
+                    session["cart"]={}; persist_abandoned_cart(user["id"], {})
+                    return redirect(start_base+authority)
                 except Exception as exc:
                     fail_zarinpal_order(order["id"]); flash("ساخت درگاه پرداخت انجام نشد. مبلغی از شما کسر نشده است. "+str(exc)[:180],"error")
                     return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
