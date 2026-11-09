@@ -221,6 +221,7 @@ def cart():
             session["cart"]=new; flash("سبد خرید به‌روزرسانی شد.","success")
         elif action=="remove" and pid.isdigit():
             basket.pop(str(int(pid)),None); session["cart"]=basket
+        basket=session.get("cart",{})
         persist_abandoned_cart(session.get("customer_id"), basket)
         return redirect(url_for("customer.cart"))
     persist_abandoned_cart(session.get("customer_id"), basket)
