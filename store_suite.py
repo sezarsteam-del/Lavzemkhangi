@@ -300,8 +300,17 @@ def customer_services():
             (customer_id,)).fetchall()
         credit = conn.execute("SELECT COALESCE(SUM(amount),0) total FROM customer_credit_ledger WHERE customer_id=%s",
                               (customer_id,)).fetchone()["total"]
+        products = conn.execute("SELECT id,name FROM products WHERE is_active=TRUE ORDER BY name").fetchall()
+        orders = conn.execute("""SELECT id,created_at FROM store_orders
+            WHERE customer_id=%s AND status IN ('paid','paid_stock_issue')
+            ORDER BY created_at DESC""", (customer_id,)).fetchall()
+        purchased_products = conn.execute("""SELECT DISTINCT p.id,p.name FROM store_order_items i
+            JOIN store_orders o ON o.id=i.order_id JOIN products p ON p.id=i.product_id
+            WHERE o.customer_id=%s AND o.status IN ('paid','paid_stock_issue')
+            ORDER BY p.name""", (customer_id,)).fetchall()
     return render_template("customer_services.html", warranties=warranties, tickets=tickets,
-                           returns=returns, credit=credit)
+                           returns=returns, credit=credit, products=products,
+                           orders=orders, purchased_products=purchased_products)
 
 
 @suite_bp.post("/store/services/tickets")
