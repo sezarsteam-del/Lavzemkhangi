@@ -350,6 +350,15 @@ def stock_alert_subscribe(product_id):
 def stock_alerts():
     ensure_stock_alert_schema()
     with DB() as conn:
+        ready=conn.execute("""UPDATE customer_stock_alerts a
+            SET notified_at=NOW()
+            FROM products p
+            WHERE p.id=a.product_id AND a.customer_id=%s AND p.is_active=TRUE
+              AND COALESCE(p.stock,0)>0 AND a.notified_at IS NULL
+            RETURNING p.name,p.id""",(session["customer_id"],)).fetchall()
+        for product in ready:
+            conn.execute("""INSERT INTO customer_notifications(customer_id,title,body)
+                VALUES(%s,%s,%s)""",(session["customer_id"],"کالا موجود شد",f"محصول «{product['name']}» اکنون موجود است و می‌توانید آن را سفارش دهید."))
         rows=conn.execute("""SELECT p.id,p.name,p.price,p.image_url,p.stock,a.created_at,a.notified_at
             FROM customer_stock_alerts a JOIN products p ON p.id=a.product_id
             WHERE a.customer_id=%s AND p.is_active=TRUE
