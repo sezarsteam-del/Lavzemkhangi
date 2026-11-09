@@ -1,9 +1,14 @@
 import csv
 import io
+import json
+import os
+import urllib.request
+import urllib.error
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort, Response
 
 advanced_bp = Blueprint("advanced", __name__, url_prefix="/admin/advanced")
+assistant_bp = Blueprint("assistant", __name__, url_prefix="/store")
 DB = None
 
 def init_advanced_store(db_func):
@@ -59,6 +64,46 @@ def admin_required(fn):
 def audit(conn, action, entity, entity_id, details=""):
     conn.execute("INSERT INTO store_admin_audit(admin_name,action,entity_type,entity_id,details) VALUES(%s,%s,%s,%s,%s)",
         (str(session.get("admin_username") or "admin")[:120], action, entity, entity_id, details[:1000]))
+
+@assistant_bp.route("/assistant", methods=["GET", "POST"])
+def shopping_assistant():
+    history=session.get("shopping_assistant_history",[])
+    if request.method=="POST":
+        message=request.form.get("message","").strip()
+        if not 2<=len(message)<=1500:
+            flash("پیام باید بین ۲ تا ۱۵۰۰ نویسه باشد.","error")
+        else:
+            api_key=os.environ.get("OPENAI_API_KEY","").strip()
+            if not api_key:
+                flash("دستیار هوشمند آماده اتصال است؛ ابتدا OPENAI_API_KEY را در متغیرهای امن هاست تنظیم کنید.","error")
+            else:
+                try:
+                    with DB() as conn:
+                        matches=conn.execute("""SELECT p.name,p.price,c.name AS category,b.name AS brand
+                            FROM products p LEFT JOIN categories c ON c.id=p.category_id
+                            LEFT JOIN brands b ON b.id=p.brand_id
+                            WHERE p.is_active=TRUE AND (p.name ILIKE %s OR p.description ILIKE %s OR b.name ILIKE %s)
+                            ORDER BY p.created_at DESC LIMIT 8""",
+                            ("%"+message[:80]+"%","%"+message[:80]+"%","%"+message[:80]+"%")).fetchall()
+                    catalog="\n".join(f"- {x['name']} | {x['price']} تومان | {x['category'] or ''} | {x['brand'] or ''}" for x in matches)
+                    messages=[{"role":"system","content":"تو دستیار خرید فروشگاه لوازم خانگی هستی. فقط فارسی پاسخ بده. برای قیمت و موجودی حدس نزن؛ فقط از فهرست محصولات داده‌شده استفاده کن و اگر اطلاعات کافی نیست از مشتری سؤال روشن بپرس. اطلاعات محرمانه یا سفارش مشتریان را افشا نکن.\nمحصولات مرتبط فعلی:\n"+(catalog or "محصول منطبق در جستجوی سریع پیدا نشد.")}]
+                    messages.extend(history[-8:])
+                    messages.append({"role":"user","content":message})
+                    endpoint=os.environ.get("OPENAI_BASE_URL","https://api.openai.com/v1/chat/completions").strip()
+                    if not endpoint.endswith("/chat/completions"):
+                        endpoint=endpoint.rstrip("/")+"/chat/completions"
+                    payload={"model":os.environ.get("OPENAI_MODEL","gpt-4o-mini"),"messages":messages,"temperature":0.4}
+                    req=urllib.request.Request(endpoint,data=json.dumps(payload,ensure_ascii=False).encode(),
+                        headers={"Authorization":"Bearer "+api_key,"Content-Type":"application/json"},method="POST")
+                    with urllib.request.urlopen(req,timeout=35) as response:
+                        data=json.loads(response.read(200000).decode("utf-8","replace"))
+                    answer=data["choices"][0]["message"]["content"].strip()
+                    history=(history+[{"role":"user","content":message},{"role":"assistant","content":answer}])[-12:]
+                    session["shopping_assistant_history"]=history
+                except Exception:
+                    flash("ارتباط با سرویس هوش مصنوعی برقرار نشد؛ کلید، مدل و آدرس سرویس را بررسی کنید.","error")
+    return render_template("shopping_assistant.html",history=history)
+
 
 @advanced_bp.get("")
 @admin_required
