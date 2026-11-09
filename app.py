@@ -3063,8 +3063,8 @@ def advanced_reports():
             GROUP BY p.id,p.name ORDER BY quantity DESC LIMIT 20
         """, (start_date, end_date)).fetchall()
         online = conn.execute("""
-            SELECT COUNT(*) AS orders, COALESCE(SUM(total_amount),0) AS revenue,
-                   COUNT(*) FILTER (WHERE status='paid') AS paid_orders,
+            SELECT COUNT(*) AS orders, COALESCE(SUM(total_amount) FILTER (WHERE status IN ('paid','paid_stock_issue')),0) AS revenue,
+                   COUNT(*) FILTER (WHERE status IN ('paid','paid_stock_issue')) AS paid_orders,
                    COUNT(*) FILTER (WHERE status IN ('pending_payment','pending_confirmation')) AS pending_orders,
                    COUNT(*) FILTER (WHERE status IN ('cancelled','payment_failed')) AS cancelled_orders
             FROM store_orders
