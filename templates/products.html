@@ -21,7 +21,7 @@
 {% if products %}<div class="product-list">{% for product in products %}
 <article class="product">
 {% if product.image_url %}<img class="product-image" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">{% else %}<div class="product-placeholder">بدون تصویر</div>{% endif %}
-<div class="product-info"><div class="product-category">{{ product.category_name or 'بدون دسته‌بندی' }}</div><h3>{{ product.name }}</h3>
+<div class="product-info"><div class="product-category">{{ product.category_name or 'بدون دسته‌بندی' }}</div><h3><a href="{{ url_for('product_detail',product_id=product.id) }}">{{ product.name }}</a></h3>
 {% if product.brand_name %}<div class="product-brand">برند: {{ product.brand_name }}</div>{% endif %}{% if product.description %}<p class="product-description">{{ product.description }}</p>{% endif %}
 <div class="product-bottom"><div class="price">{{ "{:,}".format(product.price) }} تومان</div>
 <form method="post" action="{{ url_for('customer.cart') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add"><input type="hidden" name="product_id" value="{{ product.id }}"><button type="submit">افزودن به سبد خرید</button></form></div>
