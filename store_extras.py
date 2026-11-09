@@ -1,5 +1,8 @@
 """Storefront features: wishlist, comparison, reviews, coupons and customer notices."""
 import re
+import os
+import json
+import urllib.request
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 
@@ -102,6 +105,23 @@ def release_coupon_reservation(conn, order_id):
 def create_customer_notification(conn, customer_id, title, body):
     conn.execute("INSERT INTO customer_notifications(customer_id,title,body) VALUES(%s,%s,%s)",
                  (customer_id, str(title)[:160], str(body)[:2000]))
+
+def send_customer_sms(phone, message):
+    api_key=os.environ.get("GHASEDAK_API_KEY","").strip()
+    if not api_key or not phone:
+        return False
+    payload={"message":str(message)[:900],"receptor":phone,"clientReferenceId":os.urandom(16).hex(),"udh":False}
+    line=os.environ.get("GHASEDAK_LINE_NUMBER","").strip()
+    if line: payload["lineNumber"]=line
+    req=urllib.request.Request("https://gateway.ghasedak.me/rest/api/v1/WebService/SendSingleSMS",
+        data=json.dumps(payload,ensure_ascii=False).encode("utf-8"),
+        headers={"ApiKey":api_key,"Content-Type":"application/json","Accept":"application/json"},method="POST")
+    try:
+        with urllib.request.urlopen(req,timeout=12) as response:
+            result=json.loads(response.read(50000).decode("utf-8","replace"))
+        return result.get("IsSuccess") is True or str(result.get("StatusCode",""))=="200"
+    except Exception:
+        return False
 
 @extras_bp.get("/wishlist")
 @customer_required
