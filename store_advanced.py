@@ -147,6 +147,7 @@ def shipment_create():
             if oid<1 or not conn.execute("SELECT id FROM store_orders WHERE id=%s",(oid,)).fetchone(): raise ValueError
             row=conn.execute("INSERT INTO store_shipments(order_id,carrier,tracking_code) VALUES(%s,%s,%s) ON CONFLICT(order_id) DO UPDATE SET carrier=EXCLUDED.carrier,tracking_code=EXCLUDED.tracking_code,updated_at=NOW() RETURNING id",
                 (oid,carrier,tracking)).fetchone()
+            conn.execute("UPDATE store_orders SET tracking_code=%s WHERE id=%s",(tracking,oid))
             audit(conn,"shipment_saved","shipment",row["id"],"order="+str(oid))
         flash("اطلاعات ارسال ذخیره شد.","success")
     except (ValueError,TypeError):
@@ -159,8 +160,11 @@ def shipment_status(shipment_id):
     status=request.form.get("status","")
     if status not in ("preparing","shipped","delivered","returned"): abort(400)
     with DB() as conn:
-        row=conn.execute("UPDATE store_shipments SET status=%s,updated_at=NOW() WHERE id=%s RETURNING id",(status,shipment_id)).fetchone()
+        row=conn.execute("UPDATE store_shipments SET status=%s,updated_at=NOW() WHERE id=%s RETURNING id,order_id",(status,shipment_id)).fetchone()
         if not row: abort(404)
+        fulfillment={"preparing":"processing","shipped":"shipped","delivered":"delivered","returned":"returned"}[status]
+        conn.execute("UPDATE store_orders SET fulfillment_status=%s,shipped_at=CASE WHEN %s='shipped' THEN NOW() ELSE shipped_at END,delivered_at=CASE WHEN %s='delivered' THEN NOW() ELSE delivered_at END WHERE id=%s",
+            (fulfillment,status,status,row["order_id"]))
         audit(conn,"shipment_status","shipment",shipment_id,status)
     return redirect(url_for("advanced.dashboard")+"#shipments")
 
