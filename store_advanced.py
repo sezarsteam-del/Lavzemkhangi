@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import os
+import secrets
 import urllib.request
 import urllib.error
 from openpyxl import Workbook
@@ -54,6 +55,10 @@ def ensure_advanced_schema():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_purchase_status ON store_purchase_orders(status,created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_shipments_status ON store_shipments(status,updated_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_questions_product ON product_questions(product_id,is_approved,created_at DESC)")
+        conn.execute("""CREATE TABLE IF NOT EXISTS store_ai_usage (
+            id BIGSERIAL PRIMARY KEY, session_key TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_store_ai_usage_session ON store_ai_usage(session_key,created_at DESC)")
 
 def admin_required(fn):
     @wraps(fn)
@@ -83,7 +88,13 @@ def shopping_assistant():
                 flash("دستیار هوشمند آماده اتصال است؛ ابتدا OPENAI_API_KEY را در متغیرهای امن هاست تنظیم کنید.","error")
             else:
                 try:
+                    ai_session=session.setdefault("ai_session_key",secrets.token_urlsafe(24))
                     with DB() as conn:
+                        used=conn.execute("SELECT COUNT(*) AS n FROM store_ai_usage WHERE session_key=%s AND created_at>NOW()-INTERVAL '1 hour'",(ai_session,)).fetchone()["n"]
+                        if int(used)>=15:
+                            raise RuntimeError("سقف استفاده ساعتی دستیار به پایان رسیده است.")
+                        conn.execute("INSERT INTO store_ai_usage(session_key) VALUES(%s)",(ai_session,))
+                        conn.execute("DELETE FROM store_ai_usage WHERE created_at<NOW()-INTERVAL '2 days'")
                         matches=conn.execute("""SELECT p.name,p.price,c.name AS category,b.name AS brand
                             FROM products p LEFT JOIN categories c ON c.id=p.category_id
                             LEFT JOIN brands b ON b.id=p.brand_id
