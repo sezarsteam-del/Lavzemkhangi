@@ -23,6 +23,7 @@ from flask import (
 from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
 from store_extras import extras_bp, init_store_extras, ensure_store_extras_schema
+from store_advanced import advanced_bp, init_advanced_store, ensure_advanced_schema
 
 # ==================================================
 # تنظیمات اصلی
@@ -52,6 +53,7 @@ if len(SECRET_KEY) < 32:
 app.config["SECRET_KEY"] = SECRET_KEY
 app.register_blueprint(customer_bp)
 app.register_blueprint(extras_bp)
+app.register_blueprint(advanced_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -196,6 +198,7 @@ def db():
 # اتصال توابع حساب مشتری پس از تعریف db()
 init_customer_store(db, SECRET_KEY)
 init_store_extras(db)
+init_advanced_store(db)
 
 
 # ==================================================
@@ -443,6 +446,7 @@ def prepare_database():
                 init_db()
                 ensure_customer_schema()
                 ensure_store_extras_schema()
+                ensure_advanced_schema()
                 _schema_ready = True
 
 
