@@ -222,11 +222,14 @@ def coupons_admin():
             limit=int(limit) if limit else None
             max_discount=request.form.get("max_discount","").strip()
             max_discount=int(max_discount) if max_discount else None
+            starts_at=request.form.get("starts_at","").strip() or None
+            expires_at=request.form.get("expires_at","").strip() or None
             if len(code)<3 or kind not in ("percent","fixed") or value<=0 or minimum<0 or (kind=="percent" and value>100) or (limit is not None and limit<1) or (max_discount is not None and max_discount<1):
                 raise ValueError
+            if starts_at and expires_at and starts_at>=expires_at: raise ValueError
             with DB() as conn:
-                conn.execute("""INSERT INTO store_coupons(code,discount_type,discount_value,min_order_amount,max_discount,usage_limit)
-                    VALUES(%s,%s,%s,%s,%s,%s)""",(code,kind,value,minimum,max_discount,limit))
+                conn.execute("""INSERT INTO store_coupons(code,discount_type,discount_value,min_order_amount,max_discount,usage_limit,starts_at,expires_at)
+                    VALUES(%s,%s,%s,%s,%s,%s,%s,%s)""",(code,kind,value,minimum,max_discount,limit,starts_at,expires_at))
             flash("کد تخفیف ساخته شد.","success")
         except Exception:
             flash("اطلاعات کد تخفیف نامعتبر است یا کد تکراری است.","error")
