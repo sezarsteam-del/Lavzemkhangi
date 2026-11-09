@@ -10,7 +10,7 @@
 <div class="stat-card"><span>پرسش‌های بررسی‌نشده</span><strong>{{ stats.questions }}</strong></div>
 <div class="stat-card"><span>کالاهای کم‌موجود</span><strong>{{ stats.low_stock }}</strong></div>
 </section>
-<nav class="admin-nav"><a href="#suppliers">تأمین‌کنندگان</a><a href="#purchases">خرید</a><a href="#shipments">ارسال</a><a href="#questions">پرسش‌ها</a><a href="#banners">بنرها</a><a href="#loyalty">امتیاز مشتری</a><a href="#exports">خروجی</a></nav>
+<nav class="admin-nav"><a href="#suppliers">تأمین‌کنندگان</a><a href="#purchases">خرید</a><a href="#shipments">ارسال</a><a href="#questions">پرسش‌ها</a><a href="#abandoned-carts">سبدهای رهاشده</a><a href="#banners">بنرها</a><a href="#loyalty">امتیاز مشتری</a><a href="#exports">خروجی</a></nav>
 <section class="panel-section" id="suppliers"><h2>تأمین‌کنندگان</h2>
 <form method="post" action="{{ url_for('advanced.supplier_create') }}" class="create-form"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input name="name" required placeholder="نام تأمین‌کننده"><input name="phone" placeholder="تلفن"><input name="email" type="email" placeholder="ایمیل"><input name="notes" placeholder="یادداشت"><button>ثبت تأمین‌کننده</button></form>
 {% for s in suppliers %}<div class="management-item"><strong>{{ s.name }}</strong> {{ s.phone }} {{ s.email }}</div>{% endfor %}</section>
