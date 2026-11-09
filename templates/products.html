@@ -34,6 +34,16 @@
                         <button type="submit">افزودن به سبد خرید</button>
                     </form>
                 </div>
+                <div class="product-extra-actions">
+                    {% if session.get('customer_id') %}
+                    <form method="post" action="{{ url_for('extras.wishlist_toggle',product_id=product.id) }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                        <button type="submit">♡ علاقه‌مندی</button>
+                    </form>
+                    {% endif %}
+                    <a href="{{ url_for('extras.compare',ids=product.id) }}">مقایسه</a>
+                    <a href="{{ url_for('extras.reviews',product_id=product.id) }}">امتیاز و نظرات</a>
+                </div>
             </div>
         </article>
         {% endfor %}

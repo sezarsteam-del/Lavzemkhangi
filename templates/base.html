@@ -192,6 +192,8 @@
                 {% if session.get('customer_id') %}
                     <a href="{{ url_for('customer.customer_account') }}">حساب من</a>
                     <a href="{{ url_for('customer.cart') }}">سبد خرید</a>
+                    <a href="{{ url_for('extras.wishlist') }}">علاقه‌مندی‌ها</a>
+                    <a href="{{ url_for('extras.notifications') }}">اعلان‌ها</a>
                     <a href="{{ url_for('customer.customer_profile') }}">اطلاعات حساب</a>
                     <a href="{{ url_for('customer.customer_addresses') }}">نشانی‌های من</a>
                     <a href="{{ url_for('customer.customer_security') }}">تغییر رمز عبور</a>
@@ -209,6 +211,8 @@
                     <a href="{{ url_for('sales') }}">فروش</a>
                     <a href="{{ url_for('customer.customer_orders_admin') }}">سفارش‌های اینترنتی</a>
                     <a href="{{ url_for('reports') }}">گزارش‌ها</a>
+                    <a href="{{ url_for('extras.coupons_admin') }}">کدهای تخفیف</a>
+                    <a href="{{ url_for('extras.reviews_admin') }}">مدیریت نظرات</a>
                     <a href="{{ url_for('installment_sms_settings') }}">پیامک اقساط</a>
 
                     <form method="POST" action="{{ url_for('logout') }}">
