@@ -187,8 +187,10 @@ def customer_logout():
 @customer_required
 def customer_account():
     user=current_customer()
-    with DB() as conn: orders=conn.execute("SELECT id,total_amount,status,fulfillment_status,tracking_code,created_at FROM store_orders WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],)).fetchall()
-    return render_template("customer_account.html",customer=user,orders=orders)
+    with DB() as conn:
+        orders=conn.execute("SELECT id,total_amount,status,fulfillment_status,tracking_code,created_at FROM store_orders WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],)).fetchall()
+        loyalty=conn.execute("SELECT COALESCE(SUM(points),0) AS points FROM customer_loyalty_ledger WHERE customer_id=%s",(user["id"],)).fetchone()
+    return render_template("customer_account.html",customer=user,orders=orders,loyalty_points=loyalty["points"])
 
 def persist_abandoned_cart(customer_id, basket):
     if not customer_id:
@@ -224,7 +226,6 @@ def cart():
         basket=session.get("cart",{})
         persist_abandoned_cart(session.get("customer_id"), basket)
         return redirect(url_for("customer.cart"))
-    persist_abandoned_cart(session.get("customer_id"), basket)
     items=[]; total=0
     if basket:
         ids=[int(k) for k in basket if str(k).isdigit()]
