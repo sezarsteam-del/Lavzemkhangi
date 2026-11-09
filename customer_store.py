@@ -2,7 +2,7 @@ import os, re, hmac, hashlib, secrets, json, urllib.request
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
-from store_extras import coupon_for_update, release_coupon_reservation, create_customer_notification
+from store_extras import coupon_for_update, release_coupon_reservation, create_customer_notification, send_customer_sms
 
 customer_bp = Blueprint("customer", __name__)
 DB = None
@@ -542,6 +542,13 @@ def customer_order_admin_status(order_id):
                  + ((" کد رهگیری: " + tracking) if status == "shipped" and tracking else ""))
             )
             flash("وضعیت سفارش به‌روزرسانی شد.", "success")
+    with DB() as conn:
+        recipient=conn.execute("SELECT phone,sms_notifications_enabled FROM customers WHERE id=%s",(order["customer_id"],)).fetchone()
+    if recipient and recipient["sms_notifications_enabled"]:
+        labels={"awaiting_confirmation":"در انتظار تأیید","processing":"در حال آماده‌سازی","ready_to_ship":"آماده ارسال","shipped":"ارسال‌شده","delivered":"تحویل‌شده"}
+        sms_text="وضعیت سفارش "+str(order_id)+" تغییر کرد: "+labels[status]
+        if status=="shipped" and tracking: sms_text+=". کد رهگیری: "+tracking
+        send_customer_sms(recipient["phone"],sms_text)
     return redirect(url_for("customer.customer_orders_admin"))
 
 
