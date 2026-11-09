@@ -151,11 +151,45 @@ def admin_dashboard():
             FROM store_return_requests r JOIN customers c ON c.id=r.customer_id
             JOIN products p ON p.id=r.product_id ORDER BY r.created_at DESC LIMIT 100""").fetchall()
         expenses = conn.execute("SELECT * FROM store_expenses ORDER BY expense_date DESC,id DESC LIMIT 100").fetchall()
+        warranties = conn.execute("""SELECT w.*,c.first_name,c.last_name,p.name product_name FROM store_warranties w
+            JOIN customers c ON c.id=w.customer_id JOIN products p ON p.id=w.product_id
+            ORDER BY w.created_at DESC LIMIT 100""").fetchall()
         serials = conn.execute("""SELECT s.*,p.name product_name FROM store_product_serials s
             JOIN products p ON p.id=s.product_id ORDER BY s.created_at DESC LIMIT 100""").fetchall()
     return render_template("store_suite_admin.html", stats=stats, tickets=tickets,
-                           returns=returns, expenses=expenses, serials=serials)
+                           returns=returns, expenses=expenses, serials=serials, warranties=warranties)
 
+
+
+
+@suite_bp.post("/admin/suite/warranties")
+@admin_required
+def add_warranty():
+    try:
+        customer_id = int(request.form.get("customer_id", "0"))
+        product_id = int(request.form.get("product_id", "0"))
+        order_raw = request.form.get("order_id", "").strip()
+        order_id = int(order_raw) if order_raw else None
+        serial = request.form.get("serial_number", "").strip()[:120]
+        provider = request.form.get("warranty_provider", "").strip()[:180]
+        starts = request.form.get("starts_on", "").strip() or None
+        ends = request.form.get("ends_on", "").strip()
+        if customer_id < 1 or product_id < 1 or not serial or not ends:
+            raise ValueError
+        with DB() as conn:
+            if not conn.execute("SELECT id FROM customers WHERE id=%s AND is_active=TRUE", (customer_id,)).fetchone():
+                raise ValueError
+            if not conn.execute("SELECT id FROM products WHERE id=%s", (product_id,)).fetchone():
+                raise ValueError
+            if order_id and not conn.execute("SELECT id FROM store_orders WHERE id=%s AND customer_id=%s", (order_id, customer_id)).fetchone():
+                raise ValueError
+            conn.execute("""INSERT INTO store_warranties(customer_id,order_id,product_id,serial_number,warranty_provider,starts_on,ends_on,notes)
+                VALUES(%s,%s,%s,%s,%s,COALESCE(%s::date,CURRENT_DATE),%s::date,%s)""",
+                (customer_id, order_id, product_id, serial, provider, starts, ends, request.form.get("notes", "").strip()[:1000]))
+        flash("ضمانت کالا ثبت شد.", "success")
+    except Exception:
+        flash("ثبت ضمانت انجام نشد؛ شناسه مشتری و محصول، تاریخ‌ها و یکتا بودن سریال را بررسی کنید.", "error")
+    return redirect(url_for("suite.admin_dashboard") + "#warranties")
 
 @suite_bp.post("/admin/suite/expenses")
 @admin_required
