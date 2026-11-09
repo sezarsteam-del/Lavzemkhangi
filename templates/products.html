@@ -33,7 +33,7 @@
 <div class="product-bottom"><div class="price">{{ "{:,}".format(product.price) }} تومان</div>
 <form method="post" action="{{ url_for('customer.cart') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add"><input type="hidden" name="product_id" value="{{ product.id }}"><button type="submit">افزودن به سبد خرید</button></form></div>
 <div class="product-extra-actions">{% if session.get('customer_id') %}<form method="post" action="{{ url_for('extras.wishlist_toggle',product_id=product.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit">♡ علاقه‌مندی</button></form>{% endif %}
-<a href="{{ url_for('extras.compare',ids=product.id) }}">مقایسه</a><a href="{{ url_for('extras.reviews',product_id=product.id) }}">نظرات</a><a href="{{ url_for('advanced.product_questions',product_id=product.id) }}">پرسش و پاسخ</a></div>
+<a href="{{ url_for('extras.compare',ids=product.id) }}">مقایسه</a><a href="{{ url_for('extras.reviews',product_id=product.id) }}">نظرات</a><a href="{{ url_for('advanced.product_questions',product_id=product.id) }}">پرسش و پاسخ</a><a href="{{ url_for('suite.price_history',product_id=product.id) }}">تاریخچه قیمت</a>{% if session.get('customer_id') %}<form method="post" action="{{ url_for('suite.toggle_price_alert',product_id=product.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit">اعلان کاهش قیمت</button></form>{% endif %}</div>
 </div></article>{% endfor %}</div>
 {% else %}<div class="empty"><h3>محصولی پیدا نشد.</h3><p>فیلترها یا عبارت جستجو را تغییر دهید.</p></div>{% endif %}
 </section>{% endblock %}
