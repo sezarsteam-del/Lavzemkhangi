@@ -5,6 +5,7 @@ import os
 import secrets
 import urllib.request
 import urllib.error
+from urllib.parse import urlparse
 from openpyxl import Workbook
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort, Response
@@ -68,6 +69,12 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapped
 
+def safe_web_url(value):
+    value=str(value or "").strip()[:1000]
+    parsed=urlparse(value)
+    return value if parsed.scheme in ("http","https") and parsed.netloc else ""
+
+
 def audit(conn, action, entity, entity_id, details=""):
     conn.execute("INSERT INTO store_admin_audit(admin_name,action,entity_type,entity_id,details) VALUES(%s,%s,%s,%s,%s)",
         (str(session.get("admin_username") or "admin")[:120], action, entity, entity_id, details[:1000]))
@@ -103,7 +110,7 @@ def shopping_assistant():
                             ("%"+message[:80]+"%","%"+message[:80]+"%","%"+message[:80]+"%")).fetchall()
                     catalog="\n".join(f"- {x['name']} | {x['price']} تومان | {x['category'] or ''} | {x['brand'] or ''}" for x in matches)
                     messages=[{"role":"system","content":"تو دستیار خرید فروشگاه لوازم خانگی هستی. فقط فارسی پاسخ بده. برای قیمت و موجودی حدس نزن؛ فقط از فهرست محصولات داده‌شده استفاده کن و اگر اطلاعات کافی نیست از مشتری سؤال روشن بپرس. اطلاعات محرمانه یا سفارش مشتریان را افشا نکن.\nمحصولات مرتبط فعلی:\n"+(catalog or "محصول منطبق در جستجوی سریع پیدا نشد.")}]
-                    messages.extend(history[-8:])
+                    messages.extend(history[-4:])
                     messages.append({"role":"user","content":message})
                     endpoint=os.environ.get("OPENAI_BASE_URL","https://api.openai.com/v1/chat/completions").strip()
                     if not endpoint.endswith("/chat/completions"):
@@ -114,8 +121,10 @@ def shopping_assistant():
                     with urllib.request.urlopen(req,timeout=35) as response:
                         data=json.loads(response.read(200000).decode("utf-8","replace"))
                     answer=data["choices"][0]["message"]["content"].strip()
-                    history=(history+[{"role":"user","content":message},{"role":"assistant","content":answer}])[-12:]
+                    history=(history+[{"role":"user","content":message[:600]},{"role":"assistant","content":answer[:1200]}])[-4:]
                     session["shopping_assistant_history"]=history
+                except RuntimeError as exc:
+                    flash(str(exc),"error")
                 except Exception:
                     flash("ارتباط با سرویس هوش مصنوعی برقرار نشد؛ کلید، مدل و آدرس سرویس را بررسی کنید.","error")
     return render_template("shopping_assistant.html",history=history)
@@ -234,12 +243,16 @@ def shipment_status(shipment_id):
 @admin_required
 def banner_create():
     title=request.form.get("title","").strip()[:180]
+    image_url=request.form.get("image_url","").strip()
+    target_url=request.form.get("target_url","").strip()
     if not title:
         flash("عنوان بنر الزامی است.","error")
+    elif (image_url and not safe_web_url(image_url)) or (target_url and not safe_web_url(target_url)):
+        flash("لینک تصویر و مقصد باید با http یا https شروع شود.","error")
     else:
         with DB() as conn:
             row=conn.execute("INSERT INTO store_banners(title,body,image_url,target_url) VALUES(%s,%s,%s,%s) RETURNING id",
-                (title,request.form.get("body","")[:1000],request.form.get("image_url","")[:1000],request.form.get("target_url","")[:1000])).fetchone()
+                (title,request.form.get("body","")[:1000],safe_web_url(image_url),safe_web_url(target_url))).fetchone()
             audit(conn,"banner_created","banner",row["id"],title)
         flash("بنر ثبت شد.","success")
     return redirect(url_for("advanced.dashboard")+"#banners")
