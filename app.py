@@ -24,6 +24,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
 from store_extras import extras_bp, init_store_extras, ensure_store_extras_schema
 from store_advanced import advanced_bp, assistant_bp, init_advanced_store, ensure_advanced_schema
+from store_suite import suite_bp, init_store_suite, ensure_store_suite_schema
 
 # ==================================================
 # تنظیمات اصلی
@@ -55,6 +56,7 @@ app.register_blueprint(customer_bp)
 app.register_blueprint(extras_bp)
 app.register_blueprint(advanced_bp)
 app.register_blueprint(assistant_bp)
+app.register_blueprint(suite_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -200,6 +202,7 @@ def db():
 init_customer_store(db, SECRET_KEY)
 init_store_extras(db)
 init_advanced_store(db)
+init_store_suite(db)
 
 
 # ==================================================
@@ -448,6 +451,7 @@ def prepare_database():
                 ensure_customer_schema()
                 ensure_store_extras_schema()
                 ensure_advanced_schema()
+                ensure_store_suite_schema()
                 _schema_ready = True
 
 
