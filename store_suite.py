@@ -97,6 +97,12 @@ def ensure_store_suite_schema():
               IF OLD.price IS DISTINCT FROM NEW.price THEN
                 INSERT INTO product_price_history(product_id, old_price, new_price)
                 VALUES(OLD.id, OLD.price, NEW.price);
+                INSERT INTO customer_notifications(customer_id,title,body)
+                SELECT a.customer_id, 'تغییر قیمت محصول',
+                       'قیمت ' || NEW.name || ' تغییر کرد. قیمت جدید: ' || NEW.price::text || ' تومان'
+                FROM customer_price_alerts a
+                WHERE a.product_id=NEW.id
+                  AND (a.target_price IS NULL OR NEW.price<=a.target_price);
               END IF;
               RETURN NEW;
             END;
