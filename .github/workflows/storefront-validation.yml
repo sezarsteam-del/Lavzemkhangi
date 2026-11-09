@@ -1,0 +1,33 @@
+name: Storefront validation
+
+on:
+  push:
+    branches: [main, feature/complete-storefront-features]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install application dependencies
+        run: pip install -r requirements.txt
+      - name: Compile Python sources
+        run: python -m compileall -q .
+      - name: Run coupon unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Parse Jinja templates
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from jinja2 import Environment
+          env = Environment()
+          files = list(Path("templates").glob("*.html"))
+          for path in files:
+              env.parse(path.read_text(encoding="utf-8"))
+          print(f"Parsed {len(files)} templates")
+          PY

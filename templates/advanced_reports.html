@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}گزارش پیشرفته فروش{% endblock %}
+{% block head %}<style>
+.advanced-reports{max-width:1150px;margin:20px auto}.report-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.report-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}.report-card small{display:block;color:#64748b}.report-card strong{display:block;font-size:23px;margin-top:8px}.report-table{width:100%;border-collapse:collapse}.report-table th,.report-table td{padding:11px;text-align:right;border-bottom:1px solid #e5eaf1}.table-wrap{overflow:auto;background:#fff;border:1px solid #e5eaf1;border-radius:12px;padding:12px;margin:18px 0}.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:15px 0}.filters label{display:grid;gap:5px}.filters input{padding:9px;border:1px solid #cbd5e1;border-radius:8px}
+</style>{% endblock %}
+{% block content %}<main class="advanced-reports">
+<h1>گزارش پیشرفته فروش</h1>
+<form class="filters" method="get"><label>از تاریخ<input type="date" name="start" value="{{ start_date.isoformat() }}"></label><label>تا تاریخ<input type="date" name="end" value="{{ end_date.isoformat() }}"></label><button type="submit">اعمال بازه</button><button type="button" onclick="window.print()">چاپ گزارش</button></form>
+<h2>فروش حضوری و فاکتورها</h2><section class="report-cards">
+<div class="report-card"><small>تعداد فاکتور</small><strong>{{ "{:,}".format(sales_summary.invoices or 0) }}</strong></div>
+<div class="report-card"><small>درآمد ثبت‌شده</small><strong>{{ "{:,}".format(sales_summary.revenue or 0) }} تومان</strong></div>
+<div class="report-card"><small>تخفیف فاکتورها</small><strong>{{ "{:,}".format(sales_summary.discounts or 0) }} تومان</strong></div>
+</section>
+<div class="table-wrap"><h2>روند فروش روزانه</h2><table class="report-table"><tr><th>تاریخ</th><th>تعداد فاکتور</th><th>مبلغ فروش</th></tr>{% for r in daily %}<tr><td>{{ r.day|jalali_date }}</td><td>{{ r.invoices }}</td><td>{{ "{:,}".format(r.revenue or 0) }} تومان</td></tr>{% else %}<tr><td colspan="3">داده‌ای در این بازه نیست.</td></tr>{% endfor %}</table></div>
+<div class="table-wrap"><h2>۲۰ محصول پرفروش</h2><table class="report-table"><tr><th>محصول</th><th>تعداد فروخته‌شده</th><th>مبلغ ردیف‌ها</th></tr>{% for p in products %}<tr><td>{{ p.name }}</td><td>{{ p.quantity }}</td><td>{{ "{:,}".format(p.gross or 0) }} تومان</td></tr>{% else %}<tr><td colspan="3">داده‌ای وجود ندارد.</td></tr>{% endfor %}</table></div>
+<h2>سفارش‌های اینترنتی</h2><section class="report-cards">
+<div class="report-card"><small>تعداد سفارش</small><strong>{{ online.orders }}</strong></div>
+<div class="report-card"><small>مجموع مبلغ سفارش‌ها</small><strong>{{ "{:,}".format(online.revenue or 0) }} تومان</strong></div>
+<div class="report-card"><small>پرداخت‌شده</small><strong>{{ online.paid_orders }}</strong></div>
+<div class="report-card"><small>در انتظار</small><strong>{{ online.pending_orders }}</strong></div>
+<div class="report-card"><small>لغو یا ناموفق</small><strong>{{ online.cancelled_orders }}</strong></div>
+</section>
+<p><small>فروش فاکتورها و سفارش‌های اینترنتی جداگانه نمایش داده شده‌اند تا مبلغ‌ها دوباره‌شماری نشوند.</small></p>
+</main>{% endblock %}

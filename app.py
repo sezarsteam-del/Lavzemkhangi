@@ -3028,6 +3028,52 @@ def reports():
     )
 
 
+
+@app.route("/admin/reports/advanced")
+@admin_required
+def advanced_reports():
+    try:
+        end_date = date.fromisoformat(request.args.get("end", "")) if request.args.get("end") else tehran_now().date()
+        start_date = date.fromisoformat(request.args.get("start", "")) if request.args.get("start") else end_date - timedelta(days=29)
+        if start_date > end_date or (end_date - start_date).days > 366:
+            raise ValueError
+    except ValueError:
+        flash("بازه تاریخ گزارش معتبر نیست؛ حداکثر یک سال انتخاب کنید.", "error")
+        return redirect(url_for("advanced_reports"))
+    with db() as conn:
+        sales_summary = conn.execute("""
+            SELECT COUNT(*) AS invoices, COALESCE(SUM(final_amount),0) AS revenue,
+                   COALESCE(SUM(discount),0) AS discounts
+            FROM sales WHERE status='completed'
+              AND (created_at AT TIME ZONE 'Asia/Tehran')::date BETWEEN %s AND %s
+        """, (start_date, end_date)).fetchone()
+        daily = conn.execute("""
+            SELECT (created_at AT TIME ZONE 'Asia/Tehran')::date AS day,
+                   COUNT(*) AS invoices, COALESCE(SUM(final_amount),0) AS revenue
+            FROM sales WHERE status='completed'
+              AND (created_at AT TIME ZONE 'Asia/Tehran')::date BETWEEN %s AND %s
+            GROUP BY day ORDER BY day
+        """, (start_date, end_date)).fetchall()
+        products = conn.execute("""
+            SELECT p.name, SUM(si.quantity) AS quantity, COALESCE(SUM(si.line_total),0) AS gross
+            FROM sale_items si JOIN sales s ON s.id=si.sale_id
+            JOIN products p ON p.id=si.product_id
+            WHERE s.status='completed'
+              AND (s.created_at AT TIME ZONE 'Asia/Tehran')::date BETWEEN %s AND %s
+            GROUP BY p.id,p.name ORDER BY quantity DESC LIMIT 20
+        """, (start_date, end_date)).fetchall()
+        online = conn.execute("""
+            SELECT COUNT(*) AS orders, COALESCE(SUM(total_amount) FILTER (WHERE status IN ('paid','paid_stock_issue')),0) AS revenue,
+                   COUNT(*) FILTER (WHERE status IN ('paid','paid_stock_issue')) AS paid_orders,
+                   COUNT(*) FILTER (WHERE status IN ('pending_payment','pending_confirmation')) AS pending_orders,
+                   COUNT(*) FILTER (WHERE status IN ('cancelled','payment_failed')) AS cancelled_orders
+            FROM store_orders
+            WHERE (created_at AT TIME ZONE 'Asia/Tehran')::date BETWEEN %s AND %s
+        """, (start_date, end_date)).fetchone()
+    return render_template("advanced_reports.html", start_date=start_date,
+        end_date=end_date, sales_summary=sales_summary, daily=daily,
+        products=products, online=online)
+
 # ==================================================
 # صفحات خطا
 # ==================================================
