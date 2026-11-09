@@ -515,6 +515,7 @@ def customer_order_admin_status(order_id):
     if status not in allowed:
         abort(400)
     tracking = request.form.get("tracking_code", "").strip()[:100]
+    notify_customer = False
     with DB() as conn:
         order = conn.execute("SELECT id,customer_id,status,fulfillment_status FROM store_orders WHERE id=%s FOR UPDATE", (order_id,)).fetchone()
         if not order:
@@ -541,10 +542,12 @@ def customer_order_admin_status(order_id):
                  "وضعیت سفارش شماره " + str(order_id) + " به «" + status_labels[status] + "» تغییر کرد."
                  + ((" کد رهگیری: " + tracking) if status == "shipped" and tracking else ""))
             )
+            notify_customer = True
             flash("وضعیت سفارش به‌روزرسانی شد.", "success")
-    with DB() as conn:
-        recipient=conn.execute("SELECT phone,sms_notifications_enabled FROM customers WHERE id=%s",(order["customer_id"],)).fetchone()
-    if recipient and recipient["sms_notifications_enabled"]:
+    if notify_customer:
+        with DB() as conn:
+                recipient=conn.execute("SELECT phone,sms_notifications_enabled FROM customers WHERE id=%s",(order["customer_id"],)).fetchone()
+    if notify_customer and recipient and recipient["sms_notifications_enabled"]:
         labels={"awaiting_confirmation":"در انتظار تأیید","processing":"در حال آماده‌سازی","ready_to_ship":"آماده ارسال","shipped":"ارسال‌شده","delivered":"تحویل‌شده"}
         sms_text="وضعیت سفارش "+str(order_id)+" تغییر کرد: "+labels[status]
         if status=="shipped" and tracking: sms_text+=". کد رهگیری: "+tracking
