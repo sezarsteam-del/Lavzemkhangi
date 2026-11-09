@@ -535,7 +535,7 @@ def customer_order_admin_status(order_id):
         abort(400)
     tracking = request.form.get("tracking_code", "").strip()[:100]
     with DB() as conn:
-        order = conn.execute("SELECT id,status,fulfillment_status FROM store_orders WHERE id=%s FOR UPDATE", (order_id,)).fetchone()
+        order = conn.execute("SELECT id,customer_id,status,fulfillment_status FROM store_orders WHERE id=%s FOR UPDATE", (order_id,)).fetchone()
         if not order:
             abort(404)
         if order["status"] not in ("pending_confirmation", "pending_payment", "paid", "paid_stock_issue"):
@@ -547,6 +547,19 @@ def customer_order_admin_status(order_id):
                 shipped_at=CASE WHEN %s='shipped' THEN COALESCE(shipped_at,NOW()) ELSE shipped_at END,
                 delivered_at=CASE WHEN %s='delivered' THEN COALESCE(delivered_at,NOW()) ELSE delivered_at END
                 WHERE id=%s""", (status, tracking or None, status, status, order_id))
+            status_labels = {
+                "awaiting_confirmation": "در انتظار تأیید",
+                "processing": "در حال آماده‌سازی",
+                "ready_to_ship": "آماده ارسال",
+                "shipped": "ارسال‌شده",
+                "delivered": "تحویل‌شده",
+            }
+            conn.execute(
+                "INSERT INTO customer_notifications(customer_id,title,body) VALUES(%s,%s,%s)",
+                (order["customer_id"], "به‌روزرسانی سفارش",
+                 "وضعیت سفارش شماره " + str(order_id) + " به «" + status_labels[status] + "» تغییر کرد."
+                 + ((" کد رهگیری: " + tracking) if status == "shipped" and tracking else ""))
+            )
             flash("وضعیت سفارش به‌روزرسانی شد.", "success")
     return redirect(url_for("customer.customer_orders_admin"))
 
