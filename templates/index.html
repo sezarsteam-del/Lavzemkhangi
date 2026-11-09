@@ -409,6 +409,8 @@
     </div>
 </section>
 
+{% if banners %}<section class="home-promotions" aria-label="پیشنهادهای فروشگاه" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:18px 0">{% for banner in banners %}<a href="{{ banner.target_url or url_for('products_page') }}" style="display:block;padding:16px;border:1px solid #6b5733;border-radius:14px;background:#201e22;color:#f0d9a5;text-decoration:none">{% if banner.image_url %}<img src="{{ banner.image_url }}" alt="{{ banner.title }}" loading="lazy" style="width:100%;height:130px;object-fit:cover;border-radius:9px">{% endif %}<strong>{{ banner.title }}</strong>{% if banner.body %}<p>{{ banner.body }}</p>{% endif %}</a>{% endfor %}</section>{% endif %}
+
 <form class="search" method="GET" action="{{ url_for('products_page') }}">
     <input
         type="search"
