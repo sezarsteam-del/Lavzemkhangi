@@ -563,6 +563,8 @@ def index():
 
     with db() as conn:
 
+        banners = conn.execute("SELECT id,title,body,image_url,target_url FROM store_banners WHERE is_active=TRUE ORDER BY id DESC LIMIT 5").fetchall()
+
         categories = conn.execute("""
             SELECT
                 c.id,
@@ -657,7 +659,8 @@ def index():
         categories=categories,
         q=q,
         selected_category=selected_category,
-        category_group=category_group
+        category_group=category_group,
+        banners=banners
     )
 
 
