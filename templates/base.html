@@ -210,6 +210,7 @@
                 {% if session.get('admin') %}
 
                     <a href="{{ url_for('admin') }}">مدیریت</a>
+                    <a href="{{ url_for('category_manager') }}">مدیریت حرفه‌ای دسته‌بندی‌ها</a>
                     <a href="{{ url_for('inventory') }}">انبار</a>
                     <a href="{{ url_for('sales') }}">فروش</a>
                     <a href="{{ url_for('customer.customer_orders_admin') }}">سفارش‌های اینترنتی</a>
