@@ -1,6 +1,4 @@
-"""Optional storefront features: wishlist, comparison, verified reviews, coupons and notices.
-Payment gateways are intentionally not implemented here.
-"""
+"""Storefront features: wishlist, comparison, reviews, coupons and customer notices."""
 import re
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
@@ -26,33 +24,28 @@ def ensure_store_extras_schema():
             customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
             product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
             rating SMALLINT NOT NULL CHECK(rating BETWEEN 1 AND 5),
-            title TEXT NOT NULL DEFAULT '',
-            body TEXT NOT NULL,
+            title TEXT NOT NULL DEFAULT '', body TEXT NOT NULL,
             is_approved BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             UNIQUE(customer_id, product_id))""")
         conn.execute("""CREATE TABLE IF NOT EXISTS store_coupons (
-            id BIGSERIAL PRIMARY KEY,
-            code TEXT NOT NULL UNIQUE,
+            id BIGSERIAL PRIMARY KEY, code TEXT NOT NULL UNIQUE,
             discount_type TEXT NOT NULL CHECK(discount_type IN ('percent','fixed')),
             discount_value BIGINT NOT NULL CHECK(discount_value > 0),
             min_order_amount BIGINT NOT NULL DEFAULT 0 CHECK(min_order_amount >= 0),
-            max_discount BIGINT,
-            usage_limit INTEGER,
-            used_count INTEGER NOT NULL DEFAULT 0,
-            starts_at TIMESTAMPTZ,
-            expires_at TIMESTAMPTZ,
-            is_active BOOLEAN NOT NULL DEFAULT TRUE,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            max_discount BIGINT, usage_limit INTEGER, used_count INTEGER NOT NULL DEFAULT 0,
+            starts_at TIMESTAMPTZ, expires_at TIMESTAMPTZ,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             CHECK(discount_type <> 'percent' OR discount_value <= 100))""")
         conn.execute("""CREATE TABLE IF NOT EXISTS customer_notifications (
             id BIGSERIAL PRIMARY KEY,
             customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
             title TEXT NOT NULL, body TEXT NOT NULL,
-            is_read BOOLEAN NOT NULL DEFAULT FALSE,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""")
+            is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""")
+        conn.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS sms_notifications_enabled BOOLEAN NOT NULL DEFAULT FALSE")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews(product_id,is_approved,created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_notifications_customer ON customer_notifications(customer_id,is_read,created_at DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_coupons_active ON store_coupons(code,is_active)")
 
 def customer_required(fn):
     @wraps(fn)
@@ -70,6 +63,46 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapped
 
+def normalize_coupon_code(value):
+    return re.sub(r"[^A-Z0-9_-]", "", str(value or "").upper())[:32]
+
+def coupon_for_update(conn, code, subtotal):
+    """Lock and reserve one coupon use inside the caller's transaction."""
+    code = normalize_coupon_code(code)
+    if not code:
+        return None
+    row = conn.execute("""SELECT * FROM store_coupons
+        WHERE code=%s AND is_active=TRUE
+          AND (starts_at IS NULL OR starts_at<=NOW())
+          AND (expires_at IS NULL OR expires_at>NOW())
+          AND (usage_limit IS NULL OR used_count<usage_limit)
+        FOR UPDATE""", (code,)).fetchone()
+    if not row:
+        raise ValueError("کد تخفیف معتبر نیست یا مهلت/ظرفیت استفاده آن تمام شده است.")
+    if int(subtotal) < int(row["min_order_amount"]):
+        raise ValueError("مبلغ سفارش به حداقل مبلغ لازم برای این کد تخفیف نمی‌رسد.")
+    if row["discount_type"] == "percent":
+        discount = int(subtotal) * int(row["discount_value"]) // 100
+    else:
+        discount = int(row["discount_value"])
+    if row["max_discount"] is not None:
+        discount = min(discount, int(row["max_discount"]))
+    # store_orders.total_amount has a positive CHECK constraint; keep payable >= 1.
+    discount = min(max(0, discount), max(0, int(subtotal) - 1))
+    conn.execute("UPDATE store_coupons SET used_count=used_count+1 WHERE id=%s", (row["id"],))
+    return {"id": int(row["id"]), "code": row["code"], "discount": discount, "payable": int(subtotal)-discount}
+
+def release_coupon_reservation(conn, order_id):
+    row = conn.execute("""SELECT coupon_id,coupon_redeemed FROM store_orders
+        WHERE id=%s FOR UPDATE""", (order_id,)).fetchone()
+    if row and row["coupon_id"] and row["coupon_redeemed"]:
+        conn.execute("UPDATE store_coupons SET used_count=GREATEST(used_count-1,0) WHERE id=%s", (row["coupon_id"],))
+        conn.execute("UPDATE store_orders SET coupon_redeemed=FALSE WHERE id=%s", (order_id,))
+
+def create_customer_notification(conn, customer_id, title, body):
+    conn.execute("INSERT INTO customer_notifications(customer_id,title,body) VALUES(%s,%s,%s)",
+                 (customer_id, str(title)[:160], str(body)[:2000]))
+
 @extras_bp.get("/wishlist")
 @customer_required
 def wishlist():
@@ -86,12 +119,15 @@ def wishlist_toggle(product_id):
     with DB() as conn:
         product = conn.execute("SELECT id FROM products WHERE id=%s AND is_active=TRUE",(product_id,)).fetchone()
         if not product: abort(404)
-        exists = conn.execute("SELECT 1 FROM customer_wishlist WHERE customer_id=%s AND product_id=%s",(session["customer_id"],product_id)).fetchone()
+        exists = conn.execute("SELECT 1 FROM customer_wishlist WHERE customer_id=%s AND product_id=%s",
+                              (session["customer_id"],product_id)).fetchone()
         if exists:
-            conn.execute("DELETE FROM customer_wishlist WHERE customer_id=%s AND product_id=%s",(session["customer_id"],product_id))
+            conn.execute("DELETE FROM customer_wishlist WHERE customer_id=%s AND product_id=%s",
+                         (session["customer_id"],product_id))
             flash("محصول از علاقه‌مندی‌ها حذف شد.","success")
         else:
-            conn.execute("INSERT INTO customer_wishlist(customer_id,product_id) VALUES(%s,%s) ON CONFLICT DO NOTHING",(session["customer_id"],product_id))
+            conn.execute("INSERT INTO customer_wishlist(customer_id,product_id) VALUES(%s,%s) ON CONFLICT DO NOTHING",
+                         (session["customer_id"],product_id))
             flash("محصول به علاقه‌مندی‌ها اضافه شد.","success")
     return redirect(request.referrer or url_for("extras.wishlist"))
 
@@ -104,8 +140,15 @@ def compare():
     products=[]
     if ids:
         with DB() as conn:
-            products=conn.execute("""SELECT id,name,description,price,image_url
-                FROM products WHERE id=ANY(%s) AND is_active=TRUE ORDER BY name""",(ids,)).fetchall()
+            products=conn.execute("""SELECT p.id,p.name,p.description,p.price,p.image_url,
+                c.name AS category_name,b.name AS brand_name,
+                COALESCE(AVG(r.rating) FILTER (WHERE r.is_approved=TRUE),0) AS avg_rating,
+                COUNT(r.id) FILTER (WHERE r.is_approved=TRUE) AS review_count
+                FROM products p LEFT JOIN categories c ON c.id=p.category_id
+                LEFT JOIN brands b ON b.id=p.brand_id
+                LEFT JOIN product_reviews r ON r.product_id=p.id
+                WHERE p.id=ANY(%s) AND p.is_active=TRUE
+                GROUP BY p.id,c.name,b.name ORDER BY p.name""",(ids,)).fetchall()
     return render_template("store_compare.html", products=products, selected_ids=ids)
 
 @extras_bp.route("/products/<int:product_id>/reviews",methods=["GET","POST"])
@@ -120,17 +163,18 @@ def reviews(product_id):
                 rating=int(request.form.get("rating","0"))
                 body=request.form.get("body","").strip()
                 title=request.form.get("title","").strip()[:120]
-                if rating not in range(1,6) or not 10<=len(body)<=2000:
-                    raise ValueError
+                if rating not in range(1,6) or not 10<=len(body)<=2000: raise ValueError
                 purchased=conn.execute("""SELECT 1 FROM store_orders o JOIN store_order_items i ON i.order_id=o.id
-                    WHERE o.customer_id=%s AND i.product_id=%s LIMIT 1""",(session["customer_id"],product_id)).fetchone()
+                    WHERE o.customer_id=%s AND i.product_id=%s AND o.status IN ('paid','paid_stock_issue')
+                    LIMIT 1""",(session["customer_id"],product_id)).fetchone()
                 if not purchased:
-                    flash("ثبت نظر فقط برای مشتریانی که این کالا را سفارش داده‌اند امکان‌پذیر است.","error")
+                    flash("ثبت نظر فقط پس از پرداخت سفارش این کالا امکان‌پذیر است.","error")
                 else:
                     conn.execute("""INSERT INTO product_reviews(customer_id,product_id,rating,title,body)
                         VALUES(%s,%s,%s,%s,%s) ON CONFLICT(customer_id,product_id)
                         DO UPDATE SET rating=EXCLUDED.rating,title=EXCLUDED.title,body=EXCLUDED.body,
-                        is_approved=FALSE,created_at=NOW()""",(session["customer_id"],product_id,rating,title,body))
+                        is_approved=FALSE,created_at=NOW()""",
+                        (session["customer_id"],product_id,rating,title,body))
                     flash("نظر شما برای بررسی مدیر ثبت شد.","success")
                     return redirect(url_for("extras.reviews",product_id=product_id))
             except (ValueError,TypeError):
@@ -145,26 +189,44 @@ def reviews(product_id):
 @customer_required
 def notifications():
     with DB() as conn:
-        rows=conn.execute("SELECT * FROM customer_notifications WHERE customer_id=%s ORDER BY created_at DESC LIMIT 100",(session["customer_id"],)).fetchall()
+        rows=conn.execute("SELECT * FROM customer_notifications WHERE customer_id=%s ORDER BY created_at DESC LIMIT 100",
+                          (session["customer_id"],)).fetchall()
         conn.execute("UPDATE customer_notifications SET is_read=TRUE WHERE customer_id=%s",(session["customer_id"],))
     return render_template("store_notifications.html",notifications=rows)
+
+@extras_bp.route("/notifications/preferences",methods=["GET","POST"])
+@customer_required
+def notification_preferences():
+    if request.method=="POST":
+        enabled=request.form.get("sms_notifications_enabled")=="on"
+        with DB() as conn:
+            conn.execute("UPDATE customers SET sms_notifications_enabled=%s WHERE id=%s",
+                         (enabled,session["customer_id"]))
+        flash("تنظیمات دریافت پیامک ذخیره شد.","success")
+        return redirect(url_for("extras.notification_preferences"))
+    with DB() as conn:
+        row=conn.execute("SELECT sms_notifications_enabled FROM customers WHERE id=%s",
+                         (session["customer_id"],)).fetchone()
+    return render_template("store_notification_preferences.html",settings=row)
 
 @extras_bp.route("/admin/coupons",methods=["GET","POST"])
 @admin_required
 def coupons_admin():
     if request.method=="POST":
         try:
-            code=re.sub(r"[^A-Z0-9_-]","",request.form.get("code","").upper())[:32]
+            code=normalize_coupon_code(request.form.get("code"))
             kind=request.form.get("discount_type","percent")
             value=int(request.form.get("discount_value","0"))
             minimum=int(request.form.get("min_order_amount","0"))
             limit=request.form.get("usage_limit","").strip()
             limit=int(limit) if limit else None
-            if len(code)<3 or kind not in ("percent","fixed") or value<=0 or minimum<0 or (kind=="percent" and value>100) or (limit is not None and limit<1):
+            max_discount=request.form.get("max_discount","").strip()
+            max_discount=int(max_discount) if max_discount else None
+            if len(code)<3 or kind not in ("percent","fixed") or value<=0 or minimum<0 or (kind=="percent" and value>100) or (limit is not None and limit<1) or (max_discount is not None and max_discount<1):
                 raise ValueError
             with DB() as conn:
-                conn.execute("""INSERT INTO store_coupons(code,discount_type,discount_value,min_order_amount,usage_limit)
-                    VALUES(%s,%s,%s,%s,%s)""",(code,kind,value,minimum,limit))
+                conn.execute("""INSERT INTO store_coupons(code,discount_type,discount_value,min_order_amount,max_discount,usage_limit)
+                    VALUES(%s,%s,%s,%s,%s,%s)""",(code,kind,value,minimum,max_discount,limit))
             flash("کد تخفیف ساخته شد.","success")
         except Exception:
             flash("اطلاعات کد تخفیف نامعتبر است یا کد تکراری است.","error")
@@ -181,23 +243,19 @@ def coupon_toggle(coupon_id):
         if not row: abort(404)
     return redirect(url_for("extras.coupons_admin"))
 
-@extras_bp.get("/coupon/check")
-@customer_required
-def coupon_check():
-    code=re.sub(r"[^A-Z0-9_-]","",request.args.get("code","").upper())[:32]
-    try: amount=int(request.args.get("amount","0"))
-    except ValueError: amount=0
-    if amount<0: amount=0
-    with DB() as conn:
-        row=conn.execute("""SELECT * FROM store_coupons WHERE code=%s AND is_active=TRUE
-            AND (starts_at IS NULL OR starts_at<=NOW()) AND (expires_at IS NULL OR expires_at>NOW())
-            AND (usage_limit IS NULL OR used_count<usage_limit)""",(code,)).fetchone()
-    if not row or amount<int(row["min_order_amount"]):
-        return {"valid":False,"message":"کد تخفیف معتبر نیست یا حداقل مبلغ سفارش رعایت نشده است."},400
-    discount=(amount*int(row["discount_value"])//100 if row["discount_type"]=="percent" else int(row["discount_value"]))
-    if row["max_discount"] is not None: discount=min(discount,int(row["max_discount"]))
-    discount=min(discount,amount)
-    return {"valid":True,"discount":discount,"final_amount":amount-discount,"message":"کد تخفیف معتبر است."}
+@extras_bp.route("/admin/notifications/broadcast",methods=["POST"])
+@admin_required
+def notification_broadcast():
+    title=request.form.get("title","").strip()[:160]
+    body=request.form.get("body","").strip()[:2000]
+    if not title or not body:
+        flash("عنوان و متن اعلان را وارد کنید.","error")
+    else:
+        with DB() as conn:
+            conn.execute("""INSERT INTO customer_notifications(customer_id,title,body)
+                SELECT id,%s,%s FROM customers WHERE is_active=TRUE""",(title,body))
+        flash("اعلان برای همه مشتریان فعال ثبت شد.","success")
+    return redirect(url_for("extras.coupons_admin"))
 
 @extras_bp.get("/admin/reviews")
 @admin_required
