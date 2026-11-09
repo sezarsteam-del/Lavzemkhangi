@@ -4,6 +4,7 @@ import json
 import os
 import urllib.request
 import urllib.error
+from openpyxl import Workbook
 from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort, Response
 
@@ -303,6 +304,31 @@ def loyalty_adjust():
     except (ValueError,TypeError):
         flash("اطلاعات امتیاز معتبر نیست.","error")
     return redirect(url_for("advanced.dashboard")+"#loyalty")
+
+@advanced_bp.get("/export/<kind>.xlsx")
+@admin_required
+def export_xlsx(kind):
+    data={
+        "products":("SELECT id,name,price,stock,min_stock FROM products ORDER BY id",["شناسه","نام محصول","قیمت","موجودی","حد هشدار"]),
+        "orders":("SELECT id,customer_id,total_amount,status,created_at FROM store_orders ORDER BY id DESC",["شماره سفارش","شناسه مشتری","مبلغ","وضعیت","تاریخ"]),
+        "customers":("SELECT id,first_name,last_name,phone,is_active,created_at FROM customers ORDER BY id",["شناسه","نام","نام خانوادگی","موبایل","فعال","تاریخ"])}
+    if kind not in data: abort(404)
+    sql,headers=data[kind]
+    workbook=Workbook(write_only=True)
+    sheet=workbook.create_sheet(title={"products":"محصولات","orders":"سفارش‌ها","customers":"مشتریان"}[kind])
+    sheet.append(headers)
+    with DB() as conn:
+        for row in conn.execute(sql).fetchall():
+            sheet.append([row.get(k) for k in {
+                "products":["id","name","price","stock","min_stock"],
+                "orders":["id","customer_id","total_amount","status","created_at"],
+                "customers":["id","first_name","last_name","phone","is_active","created_at"]}[kind]])
+    output=io.BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return Response(output.getvalue(),mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition":f"attachment; filename={kind}.xlsx"})
+
 
 @advanced_bp.get("/export/<kind>.csv")
 @admin_required
