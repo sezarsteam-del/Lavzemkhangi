@@ -63,6 +63,13 @@ def ensure_customer_schema():
             postal_code TEXT NOT NULL DEFAULT '', is_default BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_customer_addresses_owner ON customer_addresses(customer_id,id)")
+        conn.execute("""CREATE TABLE IF NOT EXISTS store_abandoned_carts (
+            customer_id BIGINT PRIMARY KEY REFERENCES customers(id) ON DELETE CASCADE,
+            cart_items JSONB NOT NULL DEFAULT '{}'::jsonb,
+            last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            reminder_sent_at TIMESTAMPTZ
+        )""")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_abandoned_carts_updated ON store_abandoned_carts(last_updated DESC)")
 
 def clean_phone(value):
     value = str(value or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩","01234567890123456789"))
@@ -183,6 +190,22 @@ def customer_account():
     with DB() as conn: orders=conn.execute("SELECT id,total_amount,status,fulfillment_status,tracking_code,created_at FROM store_orders WHERE customer_id=%s ORDER BY created_at DESC LIMIT 50",(user["id"],)).fetchall()
     return render_template("customer_account.html",customer=user,orders=orders)
 
+def persist_abandoned_cart(customer_id, basket):
+    if not customer_id:
+        return
+    clean = {str(int(k)): int(v) for k, v in (basket or {}).items()
+             if str(k).isdigit() and str(v).isdigit() and 1 <= int(v) <= 99}
+    with DB() as conn:
+        if clean:
+            conn.execute("""INSERT INTO store_abandoned_carts(customer_id,cart_items,last_updated,reminder_sent_at)
+                VALUES(%s,%s::jsonb,NOW(),NULL)
+                ON CONFLICT(customer_id) DO UPDATE SET cart_items=EXCLUDED.cart_items,
+                last_updated=NOW(),reminder_sent_at=NULL""",
+                (customer_id, json.dumps(clean)))
+        else:
+            conn.execute("DELETE FROM store_abandoned_carts WHERE customer_id=%s",(customer_id,))
+
+
 @customer_bp.route("/cart",methods=["GET","POST"])
 def cart():
     basket=session.get("cart",{})
@@ -198,7 +221,9 @@ def cart():
             session["cart"]=new; flash("سبد خرید به‌روزرسانی شد.","success")
         elif action=="remove" and pid.isdigit():
             basket.pop(str(int(pid)),None); session["cart"]=basket
+        persist_abandoned_cart(session.get("customer_id"), basket)
         return redirect(url_for("customer.cart"))
+    persist_abandoned_cart(session.get("customer_id"), basket)
     items=[]; total=0
     if basket:
         ids=[int(k) for k in basket if str(k).isdigit()]
@@ -321,7 +346,8 @@ def checkout():
                 except Exception as exc:
                     fail_zarinpal_order(order["id"]); flash("ساخت درگاه پرداخت انجام نشد. مبلغی از شما کسر نشده است. "+str(exc)[:180],"error")
                     return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
-            session["cart"]={}; flash("سفارش ثبت شد؛ موجودی کالا رزرو و برای هماهنگی با فروشگاه ارسال شد.","success")
+            session["cart"]={}; persist_abandoned_cart(user["id"], {})
+            flash("سفارش ثبت شد؛ موجودی کالا رزرو و برای هماهنگی با فروشگاه ارسال شد.","success")
             return redirect(url_for("customer.customer_order_detail",order_id=order["id"]))
         except ValueError as exc: flash(str(exc),"error")
     return render_template("checkout.html",customer=user,addresses=addresses,zarinpal_enabled=zarinpal_enabled)
