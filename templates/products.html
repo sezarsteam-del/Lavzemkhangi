@@ -1,55 +1,32 @@
 {% extends "base.html" %}
 {% block title %}{% if category %}{{ category.name }}{% else %}همه محصولات{% endif %} | لوازم خانگی{% endblock %}
+{% block head %}<style>
+.catalog-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;padding:14px;margin:15px 0;background:#1e1d22;border:1px solid #51432b;border-radius:14px}
+.catalog-filters label{display:flex;flex-direction:column;gap:6px;color:#e7d7b5;font-size:12px}
+.catalog-filters input,.catalog-filters select{width:100%;min-width:0;box-sizing:border-box;padding:10px;border:1px solid #655333;border-radius:8px;background:#29262a;color:#fff;font:inherit}
+.product-extra-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.product-extra-actions a,.product-extra-actions button{padding:7px 10px;border:1px solid #80683c;border-radius:8px;background:#2b271f;color:#ead4a3;text-decoration:none;font:inherit;font-size:12px}
+</style>{% endblock %}
 {% block content %}
 <section class="category-products-page">
-    <a class="back-to-categories" href="{{ url_for('index') }}">← بازگشت به دسته‌بندی‌ها</a>
-    <div class="catalog-heading">
-        <h1 class="section-title">{% if category %}محصولات {{ category.name }}{% else %}همه محصولات{% endif %}</h1>
-        <span class="result-count">{{ products|length }} محصول</span>
-    </div>
-    <form class="search" method="GET" action="{% if category %}{{ url_for('products_page', category_id=category.id) }}{% else %}{{ url_for('products_page') }}{% endif %}">
-        <input type="search" name="q" value="{{ q }}" placeholder="جستجوی محصول در این بخش...">
-        <button type="submit">جستجو</button>
-    </form>
-    {% if products %}
-    <div class="product-list">
-        {% for product in products %}
-        <article class="product">
-            {% if product.image_url %}
-            <img class="product-image" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">
-            {% else %}
-            <div class="product-placeholder">بدون تصویر</div>
-            {% endif %}
-            <div class="product-info">
-                <div class="product-category">{{ product.category_name or 'بدون دسته‌بندی' }}</div>
-                <h3>{{ product.name }}</h3>
-                {% if product.brand_name %}<div class="product-brand">برند: {{ product.brand_name }}</div>{% endif %}
-                {% if product.description %}<p class="product-description">{{ product.description }}</p>{% endif %}
-                <div class="product-bottom">
-                    <div class="price">{{ "{:,}".format(product.price) }} تومان</div>
-                    <form method="post" action="{{ url_for('customer.cart') }}">
-                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                        <input type="hidden" name="action" value="add">
-                        <input type="hidden" name="product_id" value="{{ product.id }}">
-                        <button type="submit">افزودن به سبد خرید</button>
-                    </form>
-                </div>
-                <div class="product-extra-actions">
-                    {% if session.get('customer_id') %}
-                    <form method="post" action="{{ url_for('extras.wishlist_toggle',product_id=product.id) }}">
-                        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                        <button type="submit">♡ علاقه‌مندی</button>
-                    </form>
-                    {% endif %}
-                    <a href="{{ url_for('extras.compare',ids=product.id) }}">مقایسه</a>
-                    <a href="{{ url_for('extras.reviews',product_id=product.id) }}">امتیاز و نظرات</a>
-                </div>
-            </div>
-        </article>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty"><h3>محصولی در این دسته پیدا نشد.</h3><p>عبارت جستجو را تغییر دهید یا دسته دیگری انتخاب کنید.</p><a class="clear-search" href="{{ url_for('index') }}">بازگشت به دسته‌بندی‌ها</a></div>
-    {% endif %}
-</section>
-{% endblock %}
+<a class="back-to-categories" href="{{ url_for('index') }}">← بازگشت به دسته‌بندی‌ها</a>
+<div class="catalog-heading"><h1 class="section-title">{% if category %}محصولات {{ category.name }}{% else %}همه محصولات{% endif %}</h1><span class="result-count">{{ products|length }} محصول</span></div>
+<form class="catalog-filters" method="get">
+<label>جستجوی محصول<input type="search" name="q" value="{{ q }}" placeholder="نام یا توضیحات"></label>
+<label>برند<select name="brand"><option value="">همه برندها</option>{% for b in brands %}<option value="{{ b.id }}" {% if selected_brand|string == b.id|string %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
+<label>حداقل قیمت<input type="number" min="0" name="min_price" value="{{ min_price }}" placeholder="از تومان"></label>
+<label>حداکثر قیمت<input type="number" min="0" name="max_price" value="{{ max_price }}" placeholder="تا تومان"></label>
+<label>مرتب‌سازی<select name="sort"><option value="newest" {% if sort=='newest' %}selected{% endif %}>جدیدترین</option><option value="price_asc" {% if sort=='price_asc' %}selected{% endif %}>ارزان‌ترین</option><option value="price_desc" {% if sort=='price_desc' %}selected{% endif %}>گران‌ترین</option><option value="name" {% if sort=='name' %}selected{% endif %}>نام محصول</option></select></label>
+<button type="submit">اعمال فیلترها</button><a href="{{ url_for('products_page',category_id=category.id) if category else url_for('products_page') }}">پاک‌کردن فیلتر</a>
+</form>
+{% if products %}<div class="product-list">{% for product in products %}
+<article class="product">
+{% if product.image_url %}<img class="product-image" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">{% else %}<div class="product-placeholder">بدون تصویر</div>{% endif %}
+<div class="product-info"><div class="product-category">{{ product.category_name or 'بدون دسته‌بندی' }}</div><h3><a href="{{ url_for('product_detail',product_id=product.id) }}">{{ product.name }}</a></h3>
+{% if product.brand_name %}<div class="product-brand">برند: {{ product.brand_name }}</div>{% endif %}{% if product.description %}<p class="product-description">{{ product.description }}</p>{% endif %}
+<div class="product-bottom"><div class="price">{{ "{:,}".format(product.price) }} تومان</div>
+<form method="post" action="{{ url_for('customer.cart') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add"><input type="hidden" name="product_id" value="{{ product.id }}"><button type="submit">افزودن به سبد خرید</button></form></div>
+<div class="product-extra-actions">{% if session.get('customer_id') %}<form method="post" action="{{ url_for('extras.wishlist_toggle',product_id=product.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button type="submit">♡ علاقه‌مندی</button></form>{% endif %}
+<a href="{{ url_for('extras.compare',ids=product.id) }}">مقایسه</a><a href="{{ url_for('extras.reviews',product_id=product.id) }}">نظرات</a><a href="{{ url_for('advanced.product_questions',product_id=product.id) }}">پرسش و پاسخ</a></div>
+</div></article>{% endfor %}</div>
+{% else %}<div class="empty"><h3>محصولی پیدا نشد.</h3><p>فیلترها یا عبارت جستجو را تغییر دهید.</p></div>{% endif %}
+</section>{% endblock %}

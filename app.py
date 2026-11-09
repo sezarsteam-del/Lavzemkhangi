@@ -23,6 +23,7 @@ from flask import (
 from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
 from store_extras import extras_bp, init_store_extras, ensure_store_extras_schema
+from store_advanced import advanced_bp, assistant_bp, init_advanced_store, ensure_advanced_schema
 
 # ==================================================
 # تنظیمات اصلی
@@ -52,6 +53,8 @@ if len(SECRET_KEY) < 32:
 app.config["SECRET_KEY"] = SECRET_KEY
 app.register_blueprint(customer_bp)
 app.register_blueprint(extras_bp)
+app.register_blueprint(advanced_bp)
+app.register_blueprint(assistant_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -196,6 +199,7 @@ def db():
 # اتصال توابع حساب مشتری پس از تعریف db()
 init_customer_store(db, SECRET_KEY)
 init_store_extras(db)
+init_advanced_store(db)
 
 
 # ==================================================
@@ -443,6 +447,7 @@ def prepare_database():
                 init_db()
                 ensure_customer_schema()
                 ensure_store_extras_schema()
+                ensure_advanced_schema()
                 _schema_ready = True
 
 
@@ -559,6 +564,8 @@ def index():
 
     with db() as conn:
 
+        banners = conn.execute("SELECT id,title,body,image_url,target_url FROM store_banners WHERE is_active=TRUE ORDER BY id DESC LIMIT 5").fetchall()
+
         categories = conn.execute("""
             SELECT
                 c.id,
@@ -653,7 +660,8 @@ def index():
         categories=categories,
         q=q,
         selected_category=selected_category,
-        category_group=category_group
+        category_group=category_group,
+        banners=banners
     )
 
 
@@ -721,6 +729,20 @@ def clear_login_failures(ip_hash):
 @app.route("/category/<int:category_id>")
 def products_page(category_id=None):
     q = request.args.get("q", "").strip()
+    brand_id = request.args.get("brand", "").strip()
+    min_price_raw = request.args.get("min_price", "").strip()
+    max_price_raw = request.args.get("max_price", "").strip()
+    sort = request.args.get("sort", "newest").strip()
+    sort_sql = {"newest":"p.created_at DESC", "price_asc":"p.price ASC, p.created_at DESC",
+                "price_desc":"p.price DESC, p.created_at DESC", "name":"p.name ASC"}.get(sort, "p.created_at DESC")
+    try:
+        min_price = int(min_price_raw) if min_price_raw else None
+        max_price = int(max_price_raw) if max_price_raw else None
+        if (min_price is not None and min_price < 0) or (max_price is not None and max_price < 0) or (min_price is not None and max_price is not None and min_price > max_price):
+            raise ValueError
+    except ValueError:
+        min_price = max_price = None
+        flash("فیلتر قیمت معتبر نبود و نادیده گرفته شد.", "error")
     with db() as conn:
         if category_id is None:
             category = None
@@ -756,9 +778,59 @@ def products_page(category_id=None):
             """
             term = f"%{q}%"
             params.extend([term, term, term, term])
-        sql += " ORDER BY p.created_at DESC"
+        if brand_id.isdigit():
+            sql += " AND p.brand_id = %s"
+            params.append(int(brand_id))
+        if min_price is not None:
+            sql += " AND p.price >= %s"
+            params.append(min_price)
+        if max_price is not None:
+            sql += " AND p.price <= %s"
+            params.append(max_price)
+        sql += " ORDER BY " + sort_sql
         products = conn.execute(sql, params).fetchall()
-    return render_template("products.html", products=products, category=category, q=q)
+        brands = conn.execute("SELECT id,name FROM brands ORDER BY name").fetchall()
+    return render_template("products.html", products=products, category=category, q=q,
+        brands=brands, selected_brand=brand_id, min_price=min_price_raw,
+        max_price=max_price_raw, sort=sort)
+
+
+@app.route("/product/<int:product_id>")
+def product_detail(product_id):
+    with db() as conn:
+        product = conn.execute("""
+            SELECT p.id,p.name,p.description,p.price,p.image_url,p.category_id,
+                   c.name AS category_name,b.name AS brand_name
+            FROM products p
+            LEFT JOIN categories c ON c.id=p.category_id
+            LEFT JOIN brands b ON b.id=p.brand_id
+            WHERE p.id=%s AND p.is_active=TRUE
+        """, (product_id,)).fetchone()
+        if not product:
+            abort(404)
+        related = conn.execute("""
+            SELECT p.id,p.name,p.price,p.image_url,b.name AS brand_name
+            FROM products p LEFT JOIN brands b ON b.id=p.brand_id
+            WHERE p.is_active=TRUE AND p.category_id IS NOT DISTINCT FROM %s
+              AND p.id<>%s
+            ORDER BY p.created_at DESC LIMIT 8
+        """, (product["category_id"], product_id)).fetchall()
+        questions = conn.execute("""
+            SELECT question,answer,created_at FROM product_questions
+            WHERE product_id=%s AND is_approved=TRUE ORDER BY created_at DESC LIMIT 30
+        """, (product_id,)).fetchall()
+        reviews = conn.execute("""
+            SELECT r.rating,r.title,r.body,r.created_at,c.first_name
+            FROM product_reviews r JOIN customers c ON c.id=r.customer_id
+            WHERE r.product_id=%s AND r.is_approved=TRUE
+            ORDER BY r.created_at DESC LIMIT 20
+        """, (product_id,)).fetchall()
+        rating = conn.execute("""
+            SELECT COALESCE(AVG(rating),0) AS average,COUNT(*) AS total
+            FROM product_reviews WHERE product_id=%s AND is_approved=TRUE
+        """, (product_id,)).fetchone()
+    return render_template("product_detail.html",product=product,related=related,
+                           questions=questions,reviews=reviews,rating=rating)
 
 
 @app.route("/login", methods=["GET", "POST"])
