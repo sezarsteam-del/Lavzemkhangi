@@ -5,6 +5,7 @@
 <form method="post"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 <label for="savedAddress">انتخاب نشانی ذخیره‌شده</label><select id="savedAddress"><option value="">وارد کردن نشانی جدید</option>{% for a in addresses %}<option value="{{ a.address|e }}" {% if a.is_default %}selected{% endif %}>{{ a.title }} - {{ a.recipient_name }}</option>{% endfor %}</select>
 <label for="shippingAddress">آدرس کامل تحویل</label><textarea id="shippingAddress" name="shipping_address" rows="5" minlength="15" maxlength="1000" required></textarea>
+<label for="couponCode">کد تخفیف (اختیاری)</label><input id="couponCode" name="coupon_code" maxlength="32" placeholder="کد تخفیف را وارد کنید"><p class="hint">اعتبار و مبلغ تخفیف هنگام ثبت سفارش به‌صورت نهایی بررسی می‌شود.</p>
 <h2>روش پرداخت</h2><label class="payment-choice"><input type="radio" name="payment_method" value="manual" checked><span><strong>پرداخت پس از هماهنگی</strong><br><span class="hint">ثبت سفارش؛ فروشگاه برای هماهنگی با شما تماس می‌گیرد.</span></span></label>
 {% if zarinpal_enabled %}<label class="payment-choice"><input type="radio" name="payment_method" value="zarinpal"><span><strong>پرداخت آنلاین با زرین‌پال</strong><br><span class="hint">انتقال به درگاه زرین‌پال و تأیید پرداخت.</span></span></label>{% else %}<p class="hint">پرداخت آنلاین تا زمان ثبت شناسه پذیرنده در تنظیمات امن هاست غیرفعال است.</p>{% endif %}
 <button type="submit">ثبت سفارش و ادامه</button></form>
