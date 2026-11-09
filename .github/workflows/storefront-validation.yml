@@ -2,7 +2,7 @@ name: Storefront validation
 
 on:
   push:
-    branches: [main, feature/complete-storefront-features]
+    branches: [main, feature/complete-storefront-features, feature/all-in-one-store-platform]
   pull_request:
     branches: [main]
 
