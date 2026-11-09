@@ -440,3 +440,43 @@ def intelligence():
         top_products=top_products, low_stock=low_stock, category_mix=category_mix,
         customer_stats=customer_stats, repeat_customers=repeat_customers,
         fulfillment=fulfillment)
+
+
+# -------------------- گزارش امنیتی و تاریخچه فعالیت مدیران --------------------
+@advanced_bp.get("/audit")
+@admin_required
+def audit_log():
+    try:
+        page=max(1,min(int(request.args.get("page","1")),100000))
+    except (TypeError,ValueError):
+        page=1
+    action=request.args.get("action","").strip()[:80]
+    entity=request.args.get("entity","").strip()[:80]
+    offset=(page-1)*50
+    where=[]; params=[]
+    if action:
+        where.append("action=%s"); params.append(action)
+    if entity:
+        where.append("entity_type=%s"); params.append(entity)
+    clause=(" WHERE "+" AND ".join(where)) if where else ""
+    with DB() as conn:
+        total=conn.execute("SELECT COUNT(*) AS n FROM store_admin_audit"+clause,tuple(params)).fetchone()["n"]
+        rows=conn.execute("SELECT id,admin_name,action,entity_type,entity_id,details,created_at FROM store_admin_audit"+clause+" ORDER BY id DESC LIMIT 50 OFFSET %s",tuple(params+[offset])).fetchall()
+        actions=conn.execute("SELECT DISTINCT action FROM store_admin_audit ORDER BY action LIMIT 100").fetchall()
+        entities=conn.execute("SELECT DISTINCT entity_type FROM store_admin_audit WHERE entity_type<>'' ORDER BY entity_type LIMIT 100").fetchall()
+    return render_template("store_audit_log.html",rows=rows,page=page,total=total,
+        action=action,entity=entity,actions=actions,entities=entities)
+
+@advanced_bp.get("/audit/export.csv")
+@admin_required
+def audit_export():
+    output=io.StringIO()
+    writer=csv.writer(output)
+    writer.writerow(["id","admin","action","entity_type","entity_id","details","created_at"])
+    with DB() as conn:
+        rows=conn.execute("""SELECT id,admin_name,action,entity_type,entity_id,details,created_at
+            FROM store_admin_audit ORDER BY id DESC LIMIT 10000""").fetchall()
+        for row in rows:
+            writer.writerow([row.get(k) for k in ("id","admin_name","action","entity_type","entity_id","details","created_at")])
+    return Response("\ufeff"+output.getvalue(),mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition":"attachment; filename=store-admin-audit.csv"})
