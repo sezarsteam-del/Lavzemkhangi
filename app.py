@@ -791,6 +791,44 @@ def products_page(category_id=None):
         max_price=max_price_raw, sort=sort)
 
 
+@app.route("/product/<int:product_id>")
+def product_detail(product_id):
+    with db() as conn:
+        product = conn.execute("""
+            SELECT p.id,p.name,p.description,p.price,p.image_url,p.category_id,
+                   c.name AS category_name,b.name AS brand_name
+            FROM products p
+            LEFT JOIN categories c ON c.id=p.category_id
+            LEFT JOIN brands b ON b.id=p.brand_id
+            WHERE p.id=%s AND p.is_active=TRUE
+        """, (product_id,)).fetchone()
+        if not product:
+            abort(404)
+        related = conn.execute("""
+            SELECT p.id,p.name,p.price,p.image_url,b.name AS brand_name
+            FROM products p LEFT JOIN brands b ON b.id=p.brand_id
+            WHERE p.is_active=TRUE AND p.category_id IS NOT DISTINCT FROM %s
+              AND p.id<>%s
+            ORDER BY p.created_at DESC LIMIT 8
+        """, (product["category_id"], product_id)).fetchall()
+        questions = conn.execute("""
+            SELECT question,answer,created_at FROM product_questions
+            WHERE product_id=%s AND is_approved=TRUE ORDER BY created_at DESC LIMIT 30
+        """, (product_id,)).fetchall()
+        reviews = conn.execute("""
+            SELECT r.rating,r.title,r.body,r.created_at,c.first_name
+            FROM product_reviews r JOIN customers c ON c.id=r.customer_id
+            WHERE r.product_id=%s AND r.is_approved=TRUE
+            ORDER BY r.created_at DESC LIMIT 20
+        """, (product_id,)).fetchall()
+        rating = conn.execute("""
+            SELECT COALESCE(AVG(rating),0) AS average,COUNT(*) AS total
+            FROM product_reviews WHERE product_id=%s AND is_approved=TRUE
+        """, (product_id,)).fetchone()
+    return render_template("product_detail.html",product=product,related=related,
+                           questions=questions,reviews=reviews,rating=rating)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
