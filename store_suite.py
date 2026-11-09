@@ -393,3 +393,160 @@ def price_history(product_id):
         history = conn.execute("""SELECT old_price,new_price,changed_at FROM product_price_history
             WHERE product_id=%s ORDER BY changed_at DESC LIMIT 100""", (product_id,)).fetchall()
     return render_template("product_price_history.html", product=product, history=history)
+
+
+# -------------------- پشتیبانی آنلاین و فاکتور سفارش --------------------
+# این جداول افزایشی هستند و به داده‌های قبلی دست نمی‌زنند.
+def _ensure_support_schema(conn):
+    conn.execute("""CREATE TABLE IF NOT EXISTS store_support_conversations (
+        id BIGSERIAL PRIMARY KEY,
+        customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+        subject TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS store_support_messages (
+        id BIGSERIAL PRIMARY KEY,
+        conversation_id BIGINT NOT NULL REFERENCES store_support_conversations(id) ON DELETE CASCADE,
+        sender_type TEXT NOT NULL CHECK(sender_type IN ('customer','admin')),
+        sender_id BIGINT,
+        body TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        read_at TIMESTAMPTZ
+    )""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_support_conversations_customer ON store_support_conversations(customer_id, updated_at DESC)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_support_messages_thread ON store_support_messages(conversation_id, created_at)")
+
+
+# Schema helper is called from the existing startup migration.
+# It is intentionally idempotent and never truncates or rewrites customer data.
+_original_ensure_store_suite_schema = ensure_store_suite_schema
+def ensure_store_suite_schema():
+    _original_ensure_store_suite_schema()
+    with DB() as conn:
+        _ensure_support_schema(conn)
+
+
+@suite_bp.get("/store/support")
+@customer_required
+def customer_support():
+    customer_id = session["customer_id"]
+    with DB() as conn:
+        _ensure_support_schema(conn)
+        conversations = conn.execute("""SELECT c.*,
+            (SELECT COUNT(*) FROM store_support_messages m WHERE m.conversation_id=c.id) AS message_count
+            FROM store_support_conversations c WHERE c.customer_id=%s
+            ORDER BY c.updated_at DESC LIMIT 100""", (customer_id,)).fetchall()
+    return render_template("support_center.html", conversations=conversations, messages=[], conversation=None, admin_mode=False)
+
+
+@suite_bp.post("/store/support")
+@customer_required
+def customer_support_create():
+    subject = request.form.get("subject", "").strip()[:160]
+    body = request.form.get("body", "").strip()[:4000]
+    if len(subject) < 3 or len(body) < 5:
+        flash("عنوان و متن پیام را کامل وارد کنید.", "error")
+        return redirect(url_for("suite.customer_support"))
+    with DB() as conn:
+        _ensure_support_schema(conn)
+        row = conn.execute("""INSERT INTO store_support_conversations(customer_id,subject)
+            VALUES(%s,%s) RETURNING id""", (session["customer_id"], subject)).fetchone()
+        conn.execute("""INSERT INTO store_support_messages(conversation_id,sender_type,sender_id,body)
+            VALUES(%s,'customer',%s,%s)""", (row["id"], session["customer_id"], body))
+    flash("گفتگو با پشتیبانی ثبت شد.", "success")
+    return redirect(url_for("suite.customer_support_thread", conversation_id=row["id"]))
+
+
+@suite_bp.route("/store/support/<int:conversation_id>", methods=["GET", "POST"])
+@customer_required
+def customer_support_thread(conversation_id):
+    customer_id = session["customer_id"]
+    with DB() as conn:
+        _ensure_support_schema(conn)
+        conversation = conn.execute("""SELECT * FROM store_support_conversations
+            WHERE id=%s AND customer_id=%s""", (conversation_id, customer_id)).fetchone()
+        if not conversation:
+            abort(404)
+        if request.method == "POST":
+            body = request.form.get("body", "").strip()[:4000]
+            if conversation["status"] != "open":
+                flash("این گفتگو بسته شده است.", "error")
+            elif len(body) < 2:
+                flash("متن پیام را وارد کنید.", "error")
+            else:
+                conn.execute("""INSERT INTO store_support_messages(conversation_id,sender_type,sender_id,body)
+                    VALUES(%s,'customer',%s,%s)""", (conversation_id, customer_id, body))
+                conn.execute("UPDATE store_support_conversations SET updated_at=NOW() WHERE id=%s", (conversation_id,))
+                return redirect(url_for("suite.customer_support_thread", conversation_id=conversation_id))
+        conn.execute("""UPDATE store_support_messages SET read_at=NOW()
+            WHERE conversation_id=%s AND sender_type='admin' AND read_at IS NULL""", (conversation_id,))
+        messages = conn.execute("SELECT * FROM store_support_messages WHERE conversation_id=%s ORDER BY created_at", (conversation_id,)).fetchall()
+    return render_template("support_center.html", conversations=[], messages=messages, conversation=conversation, admin_mode=False)
+
+
+@suite_bp.get("/admin/support")
+@admin_required
+def admin_support():
+    with DB() as conn:
+        _ensure_support_schema(conn)
+        conversations = conn.execute("""SELECT s.*,c.first_name,c.last_name,c.phone,
+            (SELECT COUNT(*) FROM store_support_messages m WHERE m.conversation_id=s.id AND m.sender_type='customer' AND m.read_at IS NULL) AS unread
+            FROM store_support_conversations s JOIN customers c ON c.id=s.customer_id
+            ORDER BY CASE WHEN s.status='open' THEN 0 ELSE 1 END, s.updated_at DESC LIMIT 300""").fetchall()
+    return render_template("support_center.html", conversations=conversations, messages=[], conversation=None, admin_mode=True)
+
+
+@suite_bp.route("/admin/support/<int:conversation_id>", methods=["GET", "POST"])
+@admin_required
+def admin_support_thread(conversation_id):
+    with DB() as conn:
+        _ensure_support_schema(conn)
+        conversation = conn.execute("""SELECT s.*,c.first_name,c.last_name,c.phone
+            FROM store_support_conversations s JOIN customers c ON c.id=s.customer_id
+            WHERE s.id=%s""", (conversation_id,)).fetchone()
+        if not conversation:
+            abort(404)
+        if request.method == "POST":
+            action = request.form.get("action", "reply")
+            if action == "close":
+                conn.execute("UPDATE store_support_conversations SET status='closed',updated_at=NOW() WHERE id=%s", (conversation_id,))
+            elif action == "reopen":
+                conn.execute("UPDATE store_support_conversations SET status='open',updated_at=NOW() WHERE id=%s", (conversation_id,))
+            else:
+                body = request.form.get("body", "").strip()[:4000]
+                if len(body) < 2:
+                    flash("متن پاسخ را وارد کنید.", "error")
+                else:
+                    conn.execute("""INSERT INTO store_support_messages(conversation_id,sender_type,sender_id,body)
+                        VALUES(%s,'admin',NULL,%s)""", (conversation_id, body))
+                    conn.execute("UPDATE store_support_conversations SET status='open',updated_at=NOW() WHERE id=%s", (conversation_id,))
+            return redirect(url_for("suite.admin_support_thread", conversation_id=conversation_id))
+        conn.execute("""UPDATE store_support_messages SET read_at=NOW()
+            WHERE conversation_id=%s AND sender_type='customer' AND read_at IS NULL""", (conversation_id,))
+        messages = conn.execute("SELECT * FROM store_support_messages WHERE conversation_id=%s ORDER BY created_at", (conversation_id,)).fetchall()
+    return render_template("support_center.html", conversations=[], messages=messages, conversation=conversation, admin_mode=True)
+
+
+@suite_bp.get("/store/orders/<int:order_id>/invoice")
+def order_invoice(order_id):
+    customer_id = session.get("customer_id")
+    is_admin = bool(session.get("admin"))
+    if not customer_id and not is_admin:
+        return redirect(url_for("customer.customer_login", next=request.path))
+    with DB() as conn:
+        if is_admin:
+            order = conn.execute("""SELECT o.*,c.first_name,c.last_name,c.phone
+                FROM store_orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=%s""", (order_id,)).fetchone()
+        else:
+            order = conn.execute("""SELECT o.*,c.first_name,c.last_name,c.phone
+                FROM store_orders o JOIN customers c ON c.id=o.customer_id
+                WHERE o.id=%s AND o.customer_id=%s""", (order_id, customer_id)).fetchone()
+        if not order:
+            abort(404)
+        items = conn.execute("""SELECT product_name,quantity,unit_price,line_total
+            FROM store_order_items WHERE order_id=%s ORDER BY id""", (order_id,)).fetchall()
+    return render_template("order_invoice.html", order=order, items=items)
+
+
