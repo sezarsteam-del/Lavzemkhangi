@@ -560,6 +560,7 @@ def customer_order_admin_confirm_payment(order_id):
     if not session.get("admin"):
         flash("ابتدا وارد حساب مدیر شوید.", "error")
         return redirect(url_for("login"))
+    notify_customer=False
     with DB() as conn:
         order=conn.execute("SELECT id,customer_id,status,payment_provider,total_amount FROM store_orders WHERE id=%s FOR UPDATE",(order_id,)).fetchone()
         if not order: abort(404)
@@ -568,7 +569,13 @@ def customer_order_admin_confirm_payment(order_id):
         else:
             conn.execute("UPDATE store_orders SET status='paid',paid_at=NOW() WHERE id=%s",(order_id,))
             create_customer_notification(conn,order["customer_id"],"پرداخت سفارش تأیید شد","پرداخت سفارش شماره "+str(order_id)+" توسط فروشگاه تأیید شد.")
+            notify_customer=True
             flash("پرداخت سفارش تأیید شد.", "success")
+    if notify_customer:
+        with DB() as conn:
+            recipient=conn.execute("SELECT phone,sms_notifications_enabled FROM customers WHERE id=%s",(order["customer_id"],)).fetchone()
+        if recipient and recipient["sms_notifications_enabled"]:
+            send_customer_sms(recipient["phone"],"پرداخت سفارش شماره "+str(order_id)+" توسط فروشگاه تأیید شد.")
     return redirect(url_for("customer.customer_orders_admin"))
 
 
