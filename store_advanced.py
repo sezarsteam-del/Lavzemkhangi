@@ -69,6 +69,9 @@ def audit(conn, action, entity, entity_id, details=""):
 def shopping_assistant():
     history=session.get("shopping_assistant_history",[])
     if request.method=="POST":
+        if request.form.get("action")=="clear":
+            session.pop("shopping_assistant_history",None)
+            return redirect(url_for("assistant.shopping_assistant"))
         message=request.form.get("message","").strip()
         if not 2<=len(message)<=1500:
             flash("پیام باید بین ۲ تا ۱۵۰۰ نویسه باشد.","error")
