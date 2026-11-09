@@ -725,6 +725,20 @@ def clear_login_failures(ip_hash):
 @app.route("/category/<int:category_id>")
 def products_page(category_id=None):
     q = request.args.get("q", "").strip()
+    brand_id = request.args.get("brand", "").strip()
+    min_price_raw = request.args.get("min_price", "").strip()
+    max_price_raw = request.args.get("max_price", "").strip()
+    sort = request.args.get("sort", "newest").strip()
+    sort_sql = {"newest":"p.created_at DESC", "price_asc":"p.price ASC, p.created_at DESC",
+                "price_desc":"p.price DESC, p.created_at DESC", "name":"p.name ASC"}.get(sort, "p.created_at DESC")
+    try:
+        min_price = int(min_price_raw) if min_price_raw else None
+        max_price = int(max_price_raw) if max_price_raw else None
+        if (min_price is not None and min_price < 0) or (max_price is not None and max_price < 0) or (min_price is not None and max_price is not None and min_price > max_price):
+            raise ValueError
+    except ValueError:
+        min_price = max_price = None
+        flash("فیلتر قیمت معتبر نبود و نادیده گرفته شد.", "error")
     with db() as conn:
         if category_id is None:
             category = None
@@ -760,9 +774,21 @@ def products_page(category_id=None):
             """
             term = f"%{q}%"
             params.extend([term, term, term, term])
-        sql += " ORDER BY p.created_at DESC"
+        if brand_id.isdigit():
+            sql += " AND p.brand_id = %s"
+            params.append(int(brand_id))
+        if min_price is not None:
+            sql += " AND p.price >= %s"
+            params.append(min_price)
+        if max_price is not None:
+            sql += " AND p.price <= %s"
+            params.append(max_price)
+        sql += " ORDER BY " + sort_sql
         products = conn.execute(sql, params).fetchall()
-    return render_template("products.html", products=products, category=category, q=q)
+        brands = conn.execute("SELECT id,name FROM brands ORDER BY name").fetchall()
+    return render_template("products.html", products=products, category=category, q=q,
+        brands=brands, selected_brand=brand_id, min_price=min_price_raw,
+        max_price=max_price_raw, sort=sort)
 
 
 @app.route("/login", methods=["GET", "POST"])
