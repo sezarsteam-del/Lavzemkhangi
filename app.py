@@ -792,7 +792,7 @@ def products_page(category_id=None):
             params = []
         else:
             category = conn.execute(
-                "SELECT id, name, image_url, parent_id FROM categories WHERE id = %s AND is_active=TRUE",
+                "SELECT id, name, image_url, parent_id, description, meta_title, meta_description FROM categories WHERE id = %s AND is_active=TRUE",
                 (category_id,)
             ).fetchone()
             if not category:
@@ -837,9 +837,11 @@ def products_page(category_id=None):
         subcategories = conn.execute("""SELECT id,name,image_url FROM categories
             WHERE parent_id=%s AND is_active=TRUE ORDER BY sort_order,name""",
             (category_id,)).fetchall() if category_id is not None else []
+        parent_category = conn.execute("SELECT id,name FROM categories WHERE id=%s",(category["parent_id"],)).fetchone() if category and category["parent_id"] else None
     return render_template("products.html", products=products, category=category, q=q,
         brands=brands, selected_brand=brand_id, min_price=min_price_raw,
-        max_price=max_price_raw, sort=sort, subcategories=subcategories)
+        max_price=max_price_raw, sort=sort, subcategories=subcategories,
+        parent_category=parent_category)
 
 
 @app.route("/product/<int:product_id>")
