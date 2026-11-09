@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}مدیریت حرفه‌ای دسته‌بندی‌ها | لوازم خانگی{% endblock %}
+{% block head %}
+<style>
+.taxonomy{max-width:1240px;margin:25px auto;padding:16px;color:#eee}
+.tax-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.tax-head h1{margin:0}.tax-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:18px 0}
+.tax-stat,.tax-panel,.tax-row{background:#201e23;border:1px solid #51432b;border-radius:14px;padding:15px}
+.tax-stat strong{display:block;font-size:24px;color:#e6c98c;margin-top:8px}
+.tax-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tax-form label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#e7d7b5}
+.tax-form input,.tax-form select,.tax-form textarea{box-sizing:border-box;width:100%;padding:10px;border-radius:8px;border:1px solid #655333;background:#29262a;color:#fff;font:inherit}
+.tax-form textarea{min-height:75px}.tax-form button,.tax-action{border:1px solid #927543;background:#5c4827;color:#fff;border-radius:8px;padding:9px 13px;font:inherit;cursor:pointer;text-decoration:none}
+.tax-list{display:grid;gap:10px;margin-top:15px}.tax-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+.tax-row small{display:block;color:#b7aa94;margin-top:5px}.tax-actions{display:flex;gap:7px;flex-wrap:wrap}.tax-actions form{margin:0}
+.tax-child{margin-right:22px;border-right:3px solid #80683c}
+@media(max-width:650px){.tax-row{grid-template-columns:1fr}.tax-actions>*{flex:1}.tax-actions button{width:100%}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="taxonomy">
+<header class="tax-head"><div><h1>مدیریت حرفه‌ای دسته‌بندی‌ها</h1><p>ساختار چندسطحی، مدیریت زیردسته‌ها و تنظیمات سئو</p></div><a class="tax-action" href="{{ url_for('admin') }}">بازگشت به پنل مدیریت</a></header>
+<div class="tax-stats">
+<div class="tax-stat">کل دسته‌ها<strong>{{ categories|length }}</strong></div>
+<div class="tax-stat">دسته‌های فعال<strong>{{ categories|selectattr('is_active')|list|length }}</strong></div>
+<div class="tax-stat">محصولات متصل<strong>{{ categories|sum(attribute='product_count') }}</strong></div>
+</div>
+<div class="tax-panel"><h2>ایجاد دسته یا زیردسته جدید</h2>
+<form class="tax-form" method="post" action="{{ url_for('category_manager_add') }}">
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+<label>نام دسته‌بندی<input name="name" maxlength="150" required placeholder="مثلاً یخچال ساید بای ساید"></label>
+<label>دسته مادر<select name="parent_id"><option value="">دسته اصلی (بدون مادر)</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></label>
+<label>آدرس تصویر<input type="url" name="image_url" placeholder="https://..."></label>
+<label>ترتیب نمایش<input type="number" name="sort_order" min="0" value="0"></label>
+<label>عنوان سئو<input name="meta_title" maxlength="180" placeholder="عنوان مناسب گوگل"></label>
+<label>توضیحات سئو<input name="meta_description" maxlength="300" placeholder="توضیح کوتاه برای موتور جستجو"></label>
+<label style="grid-column:1/-1">توضیحات دسته<textarea name="description" placeholder="معرفی دسته‌بندی و محصولات آن"></textarea></label>
+<button type="submit">افزودن دسته‌بندی</button>
+</form></div>
+<div class="tax-panel" style="margin-top:18px"><h2>فهرست دسته‌بندی‌ها</h2>
+<div class="tax-list">
+{% for c in categories %}
+<article class="tax-row {% if c.parent_id %}tax-child{% endif %}">
+<div><strong>{% if c.parent_id %}↳ {% endif %}{{ c.name }}</strong><small>{{ c.parent_name or 'دسته اصلی' }} · {{ c.product_count }} محصول · {{ c.child_count }} زیردسته · {% if c.is_active %}فعال{% else %}غیرفعال{% endif %}</small>
+<details style="margin-top:9px"><summary>ویرایش اطلاعات و سئو</summary>
+<form class="tax-form" method="post" action="{{ url_for('category_manager_edit',category_id=c.id) }}" style="margin-top:12px">
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+<label>نام<input name="name" value="{{ c.name }}" required maxlength="150"></label>
+<label>دسته مادر<select name="parent_id"><option value="">دسته اصلی</option>{% for p in categories %}{% if p.id != c.id %}<option value="{{ p.id }}" {% if c.parent_id==p.id %}selected{% endif %}>{{ p.name }}</option>{% endif %}{% endfor %}</select></label>
+<label>تصویر<input type="url" name="image_url" value="{{ c.image_url or '' }}"></label>
+<label>ترتیب<input type="number" min="0" name="sort_order" value="{{ c.sort_order }}"></label>
+<label>عنوان سئو<input name="meta_title" value="{{ c.meta_title or '' }}"></label>
+<label>توضیحات سئو<input name="meta_description" value="{{ c.meta_description or '' }}"></label>
+<label style="grid-column:1/-1">توضیحات<textarea name="description">{{ c.description or '' }}</textarea></label>
+<button type="submit">ذخیره تغییرات</button>
+</form></details></div>
+<div class="tax-actions">
+<form method="post" action="{{ url_for('category_manager_toggle',category_id=c.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tax-action">{% if c.is_active %}غیرفعال‌سازی{% else %}فعال‌سازی{% endif %}</button></form>
+<form method="post" action="{{ url_for('category_manager_delete',category_id=c.id) }}" onsubmit="return confirm('دسته‌بندی فقط در صورت نداشتن محصول و زیردسته حذف می‌شود. ادامه می‌دهید؟')"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="tax-action">حذف</button></form>
+</div></article>
+{% else %}<p>هنوز دسته‌بندی‌ای وجود ندارد.</p>{% endfor %}
+</div></div></section>
+{% endblock %}

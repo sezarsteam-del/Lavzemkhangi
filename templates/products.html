@@ -1,6 +1,8 @@
 {% extends "base.html" %}
-{% block title %}{% if category %}{{ category.name }}{% else %}همه محصولات{% endif %} | لوازم خانگی{% endblock %}
-{% block head %}<style>
+{% block title %}{% if category and category.meta_title %}{{ category.meta_title }}{% elif category %}{{ category.name }}{% else %}همه محصولات{% endif %} | لوازم خانگی{% endblock %}
+{% block head %}
+{% if category and category.meta_description %}<meta name="description" content="{{ category.meta_description|e }}">{% elif category and category.description %}<meta name="description" content="{{ category.description[:300]|e }}">{% endif %}
+<style>
 .catalog-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;padding:14px;margin:15px 0;background:#1e1d22;border:1px solid #51432b;border-radius:14px}
 .catalog-filters label{display:flex;flex-direction:column;gap:6px;color:#e7d7b5;font-size:12px}
 .catalog-filters input,.catalog-filters select{width:100%;min-width:0;box-sizing:border-box;padding:10px;border:1px solid #655333;border-radius:8px;background:#29262a;color:#fff;font:inherit}
@@ -9,7 +11,12 @@
 {% block content %}
 <section class="category-products-page">
 <a class="back-to-categories" href="{{ url_for('index') }}">← بازگشت به دسته‌بندی‌ها</a>
+{% if parent_category %}<p style="margin:8px 0;color:#c9b88f"><a href="{{ url_for('products_page',category_id=parent_category.id) }}" style="color:inherit">{{ parent_category.name }}</a> / {{ category.name }}</p>{% endif %}
 <div class="catalog-heading"><h1 class="section-title">{% if category %}محصولات {{ category.name }}{% else %}همه محصولات{% endif %}</h1><span class="result-count">{{ products|length }} محصول</span></div>
+{% if category and category.description %}<p class="category-description">{{ category.description }}</p>{% endif %}
+{% if subcategories %}<nav class="subcategory-nav" aria-label="زیردسته‌ها" style="display:flex;gap:9px;flex-wrap:wrap;margin:12px 0 18px">
+{% for sub in subcategories %}<a href="{{ url_for('products_page',category_id=sub.id) }}" style="padding:9px 13px;border:1px solid #80683c;border-radius:10px;color:#ead4a3;text-decoration:none;background:#29262a">{{ sub.name }}</a>{% endfor %}
+</nav>{% endif %}
 <form class="catalog-filters" method="get">
 <label>جستجوی محصول<input type="search" name="q" value="{{ q }}" placeholder="نام یا توضیحات"></label>
 <label>برند<select name="brand"><option value="">همه برندها</option>{% for b in brands %}<option value="{{ b.id }}" {% if selected_brand|string == b.id|string %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>

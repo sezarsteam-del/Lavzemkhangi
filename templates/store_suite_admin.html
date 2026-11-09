@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}مرکز خدمات و امور مالی{% endblock %}
+{% block content %}
+<style>
+.suite{max-width:1200px;margin:24px auto;color:var(--text,#eee)}.suite h1,.suite h2{margin:12px 0}.suite-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.suite-card,.suite-panel{padding:16px;border:1px solid #655333;border-radius:14px;background:#211f24;margin:14px 0}.suite-card strong{display:block;font-size:24px;color:#e8c77e}.suite-form{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.suite input,.suite select,.suite textarea{padding:10px;border-radius:8px;border:1px solid #80683d;background:#17161a;color:#fff;max-width:100%}.suite button{padding:10px 15px;border:0;border-radius:8px;background:#98743c;color:white}.suite table{width:100%;border-collapse:collapse;min-width:650px}.suite th,.suite td{padding:9px;border-bottom:1px solid #51432b;text-align:right}.suite-scroll{overflow:auto}
+</style>
+<main class="suite">
+<h1>مرکز خدمات، ضمانت و امور مالی</h1>
+<p>مدیریت خدمات پس از فروش، مرجوعی، سریال کالا و هزینه‌ها</p>
+<div class="suite-grid">
+<div class="suite-card">کل ضمانت‌ها<strong>{{ stats.warranties }}</strong></div>
+<div class="suite-card">ضمانت معتبر<strong>{{ stats.active_warranties }}</strong></div>
+<div class="suite-card">درخواست خدمات باز<strong>{{ stats.tickets }}</strong></div>
+<div class="suite-card">مرجوعی در انتظار<strong>{{ stats.returns }}</strong></div>
+<div class="suite-card">هزینه‌های این ماه<strong>{{ "{:,}".format(stats.expenses) }} تومان</strong></div>
+<div class="suite-card">مانده خالص دفتر اعتبار<strong>{{ "{:,}".format(stats.credits) }} تومان</strong></div>
+</div>
+<section class="suite-panel" id="warranties"><h2>ثبت ضمانت کالا</h2><form class="suite-form" method="post" action="{{ url_for('suite.add_warranty') }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input name="customer_id" type="number" min="1" placeholder="شناسه مشتری" required><input name="product_id" type="number" min="1" placeholder="شناسه محصول" required><input name="order_id" type="number" min="1" placeholder="شناسه سفارش (اختیاری)"><input name="serial_number" placeholder="شماره سریال یکتا" required><input name="warranty_provider" placeholder="شرکت گارانتی"><input name="starts_on" type="date"><input name="ends_on" type="date" required><input name="notes" placeholder="توضیحات"><button>ثبت ضمانت</button></form><div class="suite-scroll"><table><tr><th>مشتری</th><th>محصول</th><th>سریال</th><th>گارانتی</th><th>پایان</th></tr>{% for w in warranties %}<tr><td>{{ w.first_name }} {{ w.last_name }}</td><td>{{ w.product_name }}</td><td>{{ w.serial_number }}</td><td>{{ w.warranty_provider }}</td><td>{{ w.ends_on|jalali }}</td></tr>{% else %}<tr><td colspan="5">ضمانتی ثبت نشده است.</td></tr>{% endfor %}</table></div></section>
+<section class="suite-panel" id="expenses"><h2>ثبت هزینه</h2>
+<form class="suite-form" method="post" action="{{ url_for('suite.add_expense') }}">
+<input name="title" placeholder="عنوان هزینه" required><input name="category" placeholder="دسته هزینه">
+<input name="amount" type="number" min="1" placeholder="مبلغ تومان" required><input name="expense_date" type="date">
+<input name="notes" placeholder="توضیحات"><button>ثبت هزینه</button></form>
+<div class="suite-scroll"><table><tr><th>عنوان</th><th>دسته</th><th>مبلغ</th><th>تاریخ</th></tr>
+{% for x in expenses %}<tr><td>{{ x.title }}</td><td>{{ x.category }}</td><td>{{ "{:,}".format(x.amount) }}</td><td>{{ x.expense_date|jalali }}</td></tr>{% else %}<tr><td colspan="4">هزینه‌ای ثبت نشده است.</td></tr>{% endfor %}</table></div>
+</section>
+<section class="suite-panel"><h2>ثبت دفتر اعتبار مشتری</h2><form class="suite-form" method="post" action="{{ url_for('suite.adjust_credit') }}">
+<input name="customer_id" type="number" min="1" placeholder="شناسه مشتری" required>
+<input name="amount" type="number" placeholder="مبلغ؛ مثبت برای بستانکاری و منفی برای بدهکاری" required>
+<input name="reason" placeholder="علت تراکنش" required><button>ثبت تراکنش</button></form>
+</section>
+<section class="suite-panel" id="serials"><h2>ثبت سریال کالا</h2><form class="suite-form" method="post" action="{{ url_for('suite.add_serial') }}">
+<input name="product_id" type="number" min="1" placeholder="شناسه محصول" required>
+<input name="serial_number" placeholder="شماره سریال یکتا" required><button>ثبت سریال</button></form>
+<div class="suite-scroll"><table><tr><th>محصول</th><th>سریال</th><th>وضعیت</th></tr>{% for x in serials %}<tr><td>{{ x.product_name }}</td><td>{{ x.serial_number }}</td><td>{{ x.status }}</td></tr>{% else %}<tr><td colspan="3">سریالی ثبت نشده است.</td></tr>{% endfor %}</table></div>
+</section>
+<section class="suite-panel" id="tickets"><h2>درخواست‌های خدمات پس از فروش</h2><div class="suite-scroll"><table><tr><th>مشتری</th><th>محصول</th><th>موضوع</th><th>وضعیت</th><th>به‌روزرسانی</th></tr>
+{% for x in tickets %}<tr><td>{{ x.first_name }} {{ x.last_name }}<br>{{ x.phone }}</td><td>{{ x.product_name or '—' }}</td><td>{{ x.subject }}<br>{{ x.description }}</td><td>{{ x.status }}</td><td><form method="post" action="{{ url_for('suite.update_ticket',ticket_id=x.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><select name="status">{% for st,lab in [('new','جدید'),('reviewing','در بررسی'),('scheduled','زمان‌بندی'),('in_progress','در حال انجام'),('resolved','حل‌شده'),('rejected','ردشده')] %}<option value="{{ st }}" {% if x.status==st %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select><input name="admin_note" placeholder="یادداشت مدیر" value="{{ x.admin_note }}"><button>ذخیره</button></form></td></tr>{% else %}<tr><td colspan="5">درخواستی وجود ندارد.</td></tr>{% endfor %}</table></div></section>
+<section class="suite-panel" id="returns"><h2>درخواست‌های مرجوعی</h2><div class="suite-scroll"><table><tr><th>مشتری</th><th>محصول</th><th>تعداد</th><th>علت</th><th>وضعیت</th><th>عملیات</th></tr>
+{% for x in returns %}<tr><td>{{ x.first_name }} {{ x.last_name }}<br>{{ x.phone }}</td><td>{{ x.product_name }}</td><td>{{ x.quantity }}</td><td>{{ x.reason }}</td><td>{{ x.status }}</td><td><form method="post" action="{{ url_for('suite.update_return',return_id=x.id) }}"><input type="hidden" name="_csrf" value="{{ csrf_token() }}"><select name="status">{% for st,lab in [('submitted','ثبت‌شده'),('reviewing','در بررسی'),('approved','تأیید'),('rejected','رد'),('received','دریافت کالا'),('refunded','بازپرداخت')] %}<option value="{{ st }}" {% if x.status==st %}selected{% endif %}>{{ lab }}</option>{% endfor %}</select><input name="admin_note" placeholder="یادداشت" value="{{ x.admin_note }}"><button>ذخیره</button></form></td></tr>{% else %}<tr><td colspan="6">درخواستی وجود ندارد.</td></tr>{% endfor %}</table></div></section>
+</main>{% endblock %}

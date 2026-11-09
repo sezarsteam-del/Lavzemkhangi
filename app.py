@@ -24,6 +24,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
 from store_extras import extras_bp, init_store_extras, ensure_store_extras_schema
 from store_advanced import advanced_bp, assistant_bp, init_advanced_store, ensure_advanced_schema
+from store_suite import suite_bp, init_store_suite, ensure_store_suite_schema
 
 # ==================================================
 # تنظیمات اصلی
@@ -55,6 +56,7 @@ app.register_blueprint(customer_bp)
 app.register_blueprint(extras_bp)
 app.register_blueprint(advanced_bp)
 app.register_blueprint(assistant_bp)
+app.register_blueprint(suite_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -200,6 +202,7 @@ def db():
 init_customer_store(db, SECRET_KEY)
 init_store_extras(db)
 init_advanced_store(db)
+init_store_suite(db)
 
 
 # ==================================================
@@ -223,6 +226,35 @@ def init_db():
             )
         """)
         conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT")
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES categories(id) ON DELETE RESTRICT")
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''")
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS slug TEXT")
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE")
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS meta_title TEXT")
+        conn.execute("ALTER TABLE categories ADD COLUMN IF NOT EXISTS meta_description TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_categories_parent_active ON categories(parent_id, is_active, sort_order)")
+        conn.execute("UPDATE categories SET slug = 'category-' || id WHERE slug IS NULL OR slug = ''")
+
+        # دسته‌بندی‌های پایه لوازم خانگی؛ فقط موارد فاقد نام ایجاد می‌شوند.
+        category_seed = {
+            "یخچال و فریزر": ["یخچال فریزر", "ساید بای ساید", "فریزر", "یخچال دوقلو", "یخچال کوچک"],
+            "شست‌وشو و نظافت": ["ماشین لباسشویی", "ماشین ظرفشویی", "جاروبرقی", "جارو شارژی", "بخارشوی و زمین‌شوی"],
+            "پخت‌وپز و آشپزی": ["اجاق گاز", "فر و مایکروویو", "هود", "سرخ‌کن و هواپز", "توستر و آون توستر"],
+            "تهویه و سرمایش و گرمایش": ["کولر گازی", "پنکه", "بخاری و هیتر", "آب‌سردکن", "تصفیه هوا"],
+            "لوازم برقی آشپزخانه": ["چای‌ساز و کتری برقی", "قهوه‌ساز و اسپرسوساز", "مخلوط‌کن", "آبمیوه‌گیری", "غذاساز", "گوشت‌کوب برقی", "پلوپز و آرام‌پز"],
+            "صوتی و تصویری": ["تلویزیون", "سینمای خانگی", "اسپیکر", "ساندبار"],
+            "لوازم خانه و شخصی": ["اتو و اتو بخار", "سشوار و حالت‌دهنده", "ترازو", "لامپ و روشنایی", "لوازم جانبی"]
+        }
+        for root_name, children in category_seed.items():
+            conn.execute("INSERT INTO categories (name, slug, sort_order) VALUES (%s, %s, 0) ON CONFLICT (name) DO NOTHING",
+                         (root_name, root_name.replace(" ", "-")))
+            root = conn.execute("SELECT id FROM categories WHERE name=%s", (root_name,)).fetchone()
+            if root:
+                for child_name in children:
+                    conn.execute("""INSERT INTO categories (name, parent_id, slug)
+                        VALUES (%s, %s, %s) ON CONFLICT (name) DO NOTHING""",
+                        (child_name, root["id"], child_name.replace(" ", "-")))
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS brands (
@@ -448,6 +480,7 @@ def prepare_database():
                 ensure_customer_schema()
                 ensure_store_extras_schema()
                 ensure_advanced_schema()
+                ensure_store_suite_schema()
                 _schema_ready = True
 
 
@@ -567,17 +600,20 @@ def index():
         banners = conn.execute("SELECT id,title,body,image_url,target_url FROM store_banners WHERE is_active=TRUE ORDER BY id DESC LIMIT 5").fetchall()
 
         categories = conn.execute("""
-            SELECT
-                c.id,
-                c.name,
-                c.image_url,
-                COUNT(p.id) AS product_count
+            WITH RECURSIVE category_tree(root_id, id) AS (
+                SELECT id, id FROM categories WHERE parent_id IS NULL AND is_active=TRUE
+                UNION ALL
+                SELECT tree.root_id, child.id FROM categories child
+                JOIN category_tree tree ON child.parent_id=tree.id
+                WHERE child.is_active=TRUE
+            )
+            SELECT c.id, c.name, c.image_url, COUNT(p.id) AS product_count
             FROM categories c
-            LEFT JOIN products p
-                ON p.category_id = c.id
-               AND p.is_active = TRUE
-            GROUP BY c.id, c.name, c.image_url
-            ORDER BY product_count DESC, c.name ASC
+            LEFT JOIN category_tree tree ON tree.root_id=c.id
+            LEFT JOIN products p ON p.category_id=tree.id AND p.is_active=TRUE
+            WHERE c.parent_id IS NULL AND c.is_active=TRUE
+            GROUP BY c.id, c.name, c.image_url, c.sort_order
+            ORDER BY c.sort_order, product_count DESC, c.name ASC
         """).fetchall()
 
         sql = """
@@ -756,7 +792,7 @@ def products_page(category_id=None):
             params = []
         else:
             category = conn.execute(
-                "SELECT id, name, image_url FROM categories WHERE id = %s",
+                "SELECT id, name, image_url, parent_id, description, meta_title, meta_description FROM categories WHERE id = %s AND is_active=TRUE",
                 (category_id,)
             ).fetchone()
             if not category:
@@ -766,7 +802,15 @@ def products_page(category_id=None):
                 FROM products p
                 LEFT JOIN categories c ON c.id = p.category_id
                 LEFT JOIN brands b ON b.id = p.brand_id
-                WHERE p.is_active = TRUE AND p.category_id = %s
+                WHERE p.is_active = TRUE AND p.category_id IN (
+                    WITH RECURSIVE category_tree(id) AS (
+                        SELECT id FROM categories WHERE id=%s AND is_active=TRUE
+                        UNION ALL
+                        SELECT child.id FROM categories child
+                        JOIN category_tree parent ON child.parent_id=parent.id
+                        WHERE child.is_active=TRUE
+                    ) SELECT id FROM category_tree
+                )
             """
             params = [category_id]
         if q:
@@ -790,9 +834,14 @@ def products_page(category_id=None):
         sql += " ORDER BY " + sort_sql
         products = conn.execute(sql, params).fetchall()
         brands = conn.execute("SELECT id,name FROM brands ORDER BY name").fetchall()
+        subcategories = conn.execute("""SELECT id,name,image_url FROM categories
+            WHERE parent_id=%s AND is_active=TRUE ORDER BY sort_order,name""",
+            (category_id,)).fetchall() if category_id is not None else []
+        parent_category = conn.execute("SELECT id,name FROM categories WHERE id=%s",(category["parent_id"],)).fetchone() if category and category["parent_id"] else None
     return render_template("products.html", products=products, category=category, q=q,
         brands=brands, selected_brand=brand_id, min_price=min_price_raw,
-        max_price=max_price_raw, sort=sort)
+        max_price=max_price_raw, sort=sort, subcategories=subcategories,
+        parent_category=parent_category)
 
 
 @app.route("/product/<int:product_id>")
@@ -1302,6 +1351,123 @@ def delete_category(category_id):
             )
 
     return redirect(url_for("admin"))
+
+
+@app.route("/admin/categories")
+@admin_required
+def category_manager():
+    with db() as conn:
+        categories = conn.execute("""
+            SELECT c.id,c.name,c.parent_id,c.image_url,c.description,c.slug,
+                   c.sort_order,c.is_active,c.meta_title,c.meta_description,
+                   parent.name AS parent_name,COUNT(DISTINCT p.id) AS product_count,
+                   (SELECT COUNT(*) FROM categories child WHERE child.parent_id=c.id) AS child_count
+            FROM categories c
+            LEFT JOIN categories parent ON parent.id=c.parent_id
+            LEFT JOIN products p ON p.category_id=c.id
+            GROUP BY c.id,parent.name
+            ORDER BY COALESCE(c.parent_id,c.id),c.parent_id NULLS FIRST,c.sort_order,c.name
+        """).fetchall()
+    return render_template("admin_categories.html", categories=categories)
+
+
+@app.route("/admin/categories/add", methods=["POST"])
+@admin_required
+def category_manager_add():
+    name=request.form.get("name","").strip()
+    parent_raw=request.form.get("parent_id","").strip()
+    image_url=request.form.get("image_url","").strip()
+    description=request.form.get("description","").strip()
+    meta_title=request.form.get("meta_title","").strip()
+    meta_description=request.form.get("meta_description","").strip()
+    try:
+        parent_id=int(parent_raw) if parent_raw else None
+        sort_order=int(request.form.get("sort_order","0") or 0)
+        if not name or len(name)>150 or sort_order<0: raise ValueError
+        if image_url and not image_url.lower().startswith(("https://","http://")): raise ValueError
+    except ValueError:
+        flash("اطلاعات دسته‌بندی معتبر نیست.", "error")
+        return redirect(url_for("category_manager"))
+    with db() as conn:
+        if parent_id is not None and not conn.execute("SELECT id FROM categories WHERE id=%s AND is_active=TRUE",(parent_id,)).fetchone():
+            flash("دسته‌بندی مادر انتخاب‌شده معتبر نیست.", "error")
+            return redirect(url_for("category_manager"))
+        try:
+            conn.execute("""INSERT INTO categories
+                (name,parent_id,image_url,description,slug,sort_order,meta_title,meta_description)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (name,parent_id,image_url or None,description,name.replace(" ","-"),sort_order,
+                 meta_title or name,meta_description or description[:300]))
+            flash("دسته‌بندی با موفقیت اضافه شد.", "success")
+        except psycopg.errors.UniqueViolation:
+            flash("این نام دسته‌بندی قبلاً ثبت شده است.", "error")
+    return redirect(url_for("category_manager"))
+
+
+@app.route("/admin/categories/<int:category_id>/edit", methods=["POST"])
+@admin_required
+def category_manager_edit(category_id):
+    name=request.form.get("name","").strip()
+    parent_raw=request.form.get("parent_id","").strip()
+    image_url=request.form.get("image_url","").strip()
+    description=request.form.get("description","").strip()
+    meta_title=request.form.get("meta_title","").strip()
+    meta_description=request.form.get("meta_description","").strip()
+    try:
+        parent_id=int(parent_raw) if parent_raw else None
+        sort_order=int(request.form.get("sort_order","0") or 0)
+        if not name or len(name)>150 or sort_order<0 or parent_id==category_id: raise ValueError
+        if image_url and not image_url.lower().startswith(("https://","http://")): raise ValueError
+    except ValueError:
+        flash("اطلاعات دسته‌بندی معتبر نیست یا انتخاب مادر باعث چرخه می‌شود.", "error")
+        return redirect(url_for("category_manager"))
+    with db() as conn:
+        if parent_id is not None:
+            descendants=conn.execute("""WITH RECURSIVE tree(id) AS (
+                SELECT id FROM categories WHERE parent_id=%s
+                UNION ALL SELECT c.id FROM categories c JOIN tree t ON c.parent_id=t.id
+            ) SELECT id FROM tree""",(category_id,)).fetchall()
+            if parent_id==category_id or any(int(x["id"])==parent_id for x in descendants):
+                flash("انتخاب این دسته به‌عنوان مادر باعث ایجاد چرخه می‌شود.", "error")
+                return redirect(url_for("category_manager"))
+            if not conn.execute("SELECT id FROM categories WHERE id=%s",(parent_id,)).fetchone():
+                flash("دسته‌بندی مادر پیدا نشد.", "error")
+                return redirect(url_for("category_manager"))
+        try:
+            conn.execute("""UPDATE categories SET name=%s,parent_id=%s,image_url=%s,
+                description=%s,slug=%s,sort_order=%s,meta_title=%s,meta_description=%s
+                WHERE id=%s""",
+                (name,parent_id,image_url or None,description,name.replace(" ","-"),
+                 sort_order,meta_title or name,meta_description or description[:300],category_id))
+            flash("دسته‌بندی به‌روزرسانی شد.", "success")
+        except psycopg.errors.UniqueViolation:
+            flash("نام دسته‌بندی دیگری با این نام وجود دارد.", "error")
+    return redirect(url_for("category_manager"))
+
+
+@app.route("/admin/categories/<int:category_id>/toggle", methods=["POST"])
+@admin_required
+def category_manager_toggle(category_id):
+    with db() as conn:
+        conn.execute("UPDATE categories SET is_active=NOT is_active WHERE id=%s",(category_id,))
+    flash("وضعیت نمایش دسته‌بندی تغییر کرد.", "success")
+    return redirect(url_for("category_manager"))
+
+
+@app.route("/admin/categories/<int:category_id>/delete", methods=["POST"])
+@admin_required
+def category_manager_delete(category_id):
+    with db() as conn:
+        row=conn.execute("""SELECT
+            (SELECT COUNT(*) FROM products WHERE category_id=%s) AS products,
+            (SELECT COUNT(*) FROM categories WHERE parent_id=%s) AS children""",
+            (category_id,category_id)).fetchone()
+        if row["products"] or row["children"]:
+            flash("برای حذف، ابتدا محصولات و زیردسته‌ها را منتقل یا حذف کنید.", "error")
+        else:
+            conn.execute("DELETE FROM categories WHERE id=%s",(category_id,))
+            flash("دسته‌بندی حذف شد.", "success")
+    return redirect(url_for("category_manager"))
 
 
 # ==================================================
