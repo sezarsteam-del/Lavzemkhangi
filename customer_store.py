@@ -70,7 +70,7 @@ def ensure_customer_schema():
             reminder_sent_at TIMESTAMPTZ
         )""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_abandoned_carts_updated ON store_abandoned_carts(last_updated DESC)")
-        conn.execute("ALTER TABLE customer_loyalty_ledger ADD COLUMN IF NOT EXISTS source_order_id BIGINT UNIQUE REFERENCES store_orders(id) ON DELETE SET NULL")
+
 
 def clean_phone(value):
     value = str(value or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩","01234567890123456789"))
