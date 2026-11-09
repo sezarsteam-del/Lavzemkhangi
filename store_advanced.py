@@ -45,6 +45,7 @@ def ensure_advanced_schema():
             id BIGSERIAL PRIMARY KEY, customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
             points INTEGER NOT NULL CHECK(points<>0), reason TEXT NOT NULL DEFAULT '',
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())""")
+        conn.execute("ALTER TABLE customer_loyalty_ledger ADD COLUMN IF NOT EXISTS source_order_id BIGINT UNIQUE REFERENCES store_orders(id) ON DELETE SET NULL")
         conn.execute("""CREATE TABLE IF NOT EXISTS store_admin_audit (
             id BIGSERIAL PRIMARY KEY, admin_name TEXT NOT NULL DEFAULT 'admin', action TEXT NOT NULL,
             entity_type TEXT NOT NULL DEFAULT '', entity_id BIGINT, details TEXT NOT NULL DEFAULT '',
