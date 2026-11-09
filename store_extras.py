@@ -374,3 +374,22 @@ def stock_alert_delete(product_id):
             (session["customer_id"],product_id))
     flash("اعلان موجودشدن کالا حذف شد.","success")
     return redirect(url_for("extras.stock_alerts"))
+
+
+@extras_bp.post("/notifications/<int:notification_id>/delete")
+@customer_required
+def notification_delete(notification_id):
+    with DB() as conn:
+        conn.execute("DELETE FROM customer_notifications WHERE id=%s AND customer_id=%s",
+                     (notification_id,session["customer_id"]))
+    flash("اعلان حذف شد.","success")
+    return redirect(url_for("extras.notifications"))
+
+@extras_bp.post("/notifications/clear")
+@customer_required
+def notifications_clear():
+    with DB() as conn:
+        conn.execute("DELETE FROM customer_notifications WHERE customer_id=%s",
+                     (session["customer_id"],))
+    flash("اعلان‌های حساب شما پاک شدند.","success")
+    return redirect(url_for("extras.notifications"))
