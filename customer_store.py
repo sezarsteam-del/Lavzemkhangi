@@ -555,6 +555,23 @@ def customer_order_admin_status(order_id):
     return redirect(url_for("customer.customer_orders_admin"))
 
 
+@customer_bp.route("/admin/customer-orders/<int:order_id>/confirm-payment", methods=["POST"])
+def customer_order_admin_confirm_payment(order_id):
+    if not session.get("admin"):
+        flash("ابتدا وارد حساب مدیر شوید.", "error")
+        return redirect(url_for("login"))
+    with DB() as conn:
+        order=conn.execute("SELECT id,customer_id,status,payment_provider,total_amount FROM store_orders WHERE id=%s FOR UPDATE",(order_id,)).fetchone()
+        if not order: abort(404)
+        if order["status"]!="pending_confirmation" or order["payment_provider"]!="manual":
+            flash("این سفارش در انتظار تأیید پرداخت دستی نیست.", "error")
+        else:
+            conn.execute("UPDATE store_orders SET status='paid',paid_at=NOW() WHERE id=%s",(order_id,))
+            create_customer_notification(conn,order["customer_id"],"پرداخت سفارش تأیید شد","پرداخت سفارش شماره "+str(order_id)+" توسط فروشگاه تأیید شد.")
+            flash("پرداخت سفارش تأیید شد.", "success")
+    return redirect(url_for("customer.customer_orders_admin"))
+
+
 @customer_bp.route("/account/password/reset", methods=["GET", "POST"])
 def customer_password_reset():
     if request.method == "POST":
