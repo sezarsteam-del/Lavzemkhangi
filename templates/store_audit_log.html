@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}گزارش فعالیت مدیران{% endblock %}
+{% block head %}<style>
+.audit{max-width:1150px;margin:24px auto;color:var(--text,#eee)}.audit h1{color:#e8c77e}
+.audit-panel{padding:16px;border:1px solid #705b37;border-radius:14px;background:#211f24;margin:14px 0}
+.audit form{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.audit label{display:grid;gap:6px}
+.audit select,.audit input{padding:10px;border:1px solid #79613b;border-radius:8px;background:#171619;color:white}
+.audit button,.audit .action{padding:10px 15px;border:0;border-radius:8px;background:#b38b48;color:#17130c;text-decoration:none}
+.audit-scroll{overflow:auto}.audit table{border-collapse:collapse;width:100%;min-width:760px}.audit th,.audit td{text-align:right;padding:10px;border-bottom:1px solid #51452f}
+.audit small{color:#c7b99d}.audit-pager{display:flex;justify-content:space-between;margin-top:14px}
+</style>{% endblock %}
+{% block content %}<main class="audit">
+<h1>تاریخچه فعالیت مدیران</h1>
+<p>این گزارش برای پیگیری تغییرات ثبت‌شده در عملیات مدیریتی است.</p>
+<section class="audit-panel">
+<form method="get">
+<label>نوع فعالیت<select name="action"><option value="">همه فعالیت‌ها</option>{% for x in actions %}<option value="{{ x.action }}" {% if action==x.action %}selected{% endif %}>{{ x.action }}</option>{% endfor %}</select></label>
+<label>بخش مرتبط<select name="entity"><option value="">همه بخش‌ها</option>{% for x in entities %}<option value="{{ x.entity_type }}" {% if entity==x.entity_type %}selected{% endif %}>{{ x.entity_type }}</option>{% endfor %}</select></label>
+<button type="submit">اعمال فیلتر</button><a class="action" href="{{ url_for('advanced.audit_export') }}">خروجی CSV</a>
+</form>
+</section>
+<section class="audit-panel">
+<p>تعداد کل رویدادهای منطبق: <strong>{{ total }}</strong></p>
+<div class="audit-scroll"><table><thead><tr><th>شناسه</th><th>مدیر</th><th>عملیات</th><th>بخش</th><th>شناسه رکورد</th><th>جزئیات</th><th>زمان</th></tr></thead><tbody>
+{% for x in rows %}<tr><td>{{ x.id }}</td><td>{{ x.admin_name }}</td><td>{{ x.action }}</td><td>{{ x.entity_type }}</td><td>{{ x.entity_id or '—' }}</td><td>{{ x.details }}</td><td>{{ x.created_at }}</td></tr>{% else %}<tr><td colspan="7">رویدادی برای نمایش وجود ندارد.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="audit-pager">
+{% if page>1 %}<a href="{{ url_for('advanced.audit_log',page=page-1,action=action,entity=entity) }}">صفحه قبل</a>{% else %}<span></span>{% endif %}
+<small>صفحه {{ page }} · حداکثر ۵۰ ردیف در هر صفحه</small>
+{% if page*50<total %}<a href="{{ url_for('advanced.audit_log',page=page+1,action=action,entity=entity) }}">صفحه بعد</a>{% endif %}
+</div>
+</section>
+<p><a href="{{ url_for('advanced.dashboard') }}">بازگشت به مدیریت پیشرفته</a></p>
+</main>{% endblock %}
