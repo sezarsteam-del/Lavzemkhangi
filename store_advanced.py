@@ -5,6 +5,7 @@ import os
 import secrets
 import urllib.request
 import urllib.error
+from datetime import date, datetime
 from urllib.parse import urlparse
 from openpyxl import Workbook
 from functools import wraps
@@ -345,10 +346,18 @@ def export_xlsx(kind):
     sheet.append(headers)
     with DB() as conn:
         for row in conn.execute(sql).fetchall():
-            sheet.append([row.get(k) for k in {
+            values=[]
+            for key in {
                 "products":["id","name","price","stock","min_stock"],
                 "orders":["id","customer_id","total_amount","status","created_at"],
-                "customers":["id","first_name","last_name","phone","is_active","created_at"]}[kind]])
+                "customers":["id","first_name","last_name","phone","is_active","created_at"]}[kind]:
+                value=row.get(key)
+                if isinstance(value, datetime):
+                    value=value.isoformat()
+                elif isinstance(value, date):
+                    value=value.isoformat()
+                values.append(value)
+            sheet.append(values)
     output=io.BytesIO()
     workbook.save(output)
     output.seek(0)
