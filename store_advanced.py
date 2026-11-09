@@ -79,9 +79,14 @@ def dashboard():
         banners = conn.execute("SELECT * FROM store_banners ORDER BY id DESC").fetchall()
         customers = conn.execute("SELECT id,first_name,last_name,phone FROM customers WHERE is_active ORDER BY id DESC LIMIT 500").fetchall()
         low_stock = conn.execute("SELECT name,stock,min_stock FROM products WHERE is_active AND stock<=min_stock ORDER BY stock LIMIT 100").fetchall()
+        abandoned_carts = conn.execute("""SELECT ac.customer_id,ac.cart_items,ac.last_updated,
+            c.first_name,c.last_name,c.phone
+            FROM store_abandoned_carts ac JOIN customers c ON c.id=ac.customer_id
+            WHERE ac.last_updated<NOW()-INTERVAL '1 hour'
+            ORDER BY ac.last_updated DESC LIMIT 100""").fetchall()
     return render_template("advanced_store_admin.html", stats=stats, suppliers=suppliers, products=products,
         purchases=purchases, shipments=shipments, orders=orders, questions=questions, banners=banners,
-        customers=customers, low_stock=low_stock)
+        customers=customers, low_stock=low_stock, abandoned_carts=abandoned_carts)
 
 @advanced_bp.post("/suppliers")
 @admin_required
@@ -213,6 +218,22 @@ def question_answer(question_id):
             audit(conn,"question_answered","question",question_id)
         flash("پاسخ منتشر شد.","success")
     return redirect(url_for("advanced.dashboard")+"#questions")
+
+@advanced_bp.post("/abandoned-carts/<int:customer_id>/remind")
+@admin_required
+def abandoned_cart_remind(customer_id):
+    with DB() as conn:
+        cart=conn.execute("SELECT customer_id FROM store_abandoned_carts WHERE customer_id=%s AND last_updated<NOW()-INTERVAL '1 hour'",(customer_id,)).fetchone()
+        if not cart:
+            flash("سبد رهاشده‌ای برای این مشتری پیدا نشد.","error")
+        else:
+            conn.execute("INSERT INTO customer_notifications(customer_id,title,body) VALUES(%s,%s,%s)",
+                (customer_id,"یادآوری سبد خرید","سبد خرید شما هنوز تکمیل نشده است. در صورت تمایل می‌توانید خرید خود را ادامه دهید."))
+            conn.execute("UPDATE store_abandoned_carts SET reminder_sent_at=NOW() WHERE customer_id=%s",(customer_id,))
+            audit(conn,"abandoned_cart_reminder","customer",customer_id)
+            flash("یادآوری داخل حساب مشتری ثبت شد.","success")
+    return redirect(url_for("advanced.dashboard")+"#abandoned-carts")
+
 
 @advanced_bp.post("/loyalty")
 @admin_required
