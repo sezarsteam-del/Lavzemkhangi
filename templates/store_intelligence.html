@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}هوشمندی فروشگاه{% endblock %}
+{% block head %}<style>
+.intel{max-width:1250px;margin:24px auto;color:var(--text,#eee)}.intel h1,.intel h2{color:#e8c77e}
+.intel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.intel-card,.intel-panel{padding:16px;border:1px solid #705b37;border-radius:14px;background:#211f24;margin:12px 0}
+.intel-card span{display:block;color:#cdbd9e}.intel-card strong{display:block;font-size:23px;margin-top:8px;color:#f1d69a}
+.intel table{width:100%;border-collapse:collapse;min-width:560px}.intel th,.intel td{padding:10px;border-bottom:1px solid #55472e;text-align:right}
+.intel-scroll{overflow:auto}.intel-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.intel a{color:#e8c77e}@media(max-width:600px){.intel-card{padding:12px}}
+</style>{% endblock %}
+{% block content %}<main class="intel">
+<h1>مرکز هوشمندی و تحلیل فروشگاه</h1>
+<p>گزارش فقط خواندنی؛ این صفحه قیمت، موجودی یا سفارش‌ها را تغییر نمی‌دهد.</p>
+<div class="intel-grid">
+<div class="intel-card"><span>سفارش‌های امروز</span><strong>{{ kpis.orders_today }}</strong></div>
+<div class="intel-card"><span>سفارش‌های این ماه</span><strong>{{ kpis.orders_month }}</strong></div>
+<div class="intel-card"><span>فروش امروز</span><strong>{{ "{:,}".format(kpis.revenue_today) }} تومان</strong></div>
+<div class="intel-card"><span>فروش این ماه</span><strong>{{ "{:,}".format(kpis.revenue_month) }} تومان</strong></div>
+<div class="intel-card"><span>در انتظار اقدام</span><strong>{{ kpis.pending_orders }}</strong></div>
+<div class="intel-card"><span>سفارش لغوشده</span><strong>{{ kpis.cancelled_orders }}</strong></div>
+<div class="intel-card"><span>مشتریان فعال</span><strong>{{ customer_stats.total_customers }}</strong></div>
+<div class="intel-card"><span>مشتریان جدید در ۳۰ روز</span><strong>{{ customer_stats.new_customers }}</strong></div>
+<div class="intel-card"><span>مشتریان با خرید تکراری</span><strong>{{ repeat_customers }}</strong></div>
+</div>
+<div class="intel-cols">
+<section class="intel-panel"><h2>روند فروش ماهانه</h2><div class="intel-scroll"><table><tr><th>ماه</th><th>سفارش</th><th>فروش</th></tr>{% for x in monthly %}<tr><td>{{ x.month }}</td><td>{{ x.orders }}</td><td>{{ "{:,}".format(x.revenue) }} تومان</td></tr>{% else %}<tr><td colspan="3">داده‌ای نیست.</td></tr>{% endfor %}</table></div></section>
+<section class="intel-panel"><h2>وضعیت ارسال سفارش‌ها</h2><div class="intel-scroll"><table><tr><th>مرحله</th><th>تعداد</th></tr>{% for x in fulfillment %}<tr><td>{{ x.status }}</td><td>{{ x.count }}</td></tr>{% else %}<tr><td colspan="2">داده‌ای نیست.</td></tr>{% endfor %}</table></div></section>
+<section class="intel-panel"><h2>محصولات پرفروش ۹۰ روز اخیر</h2><div class="intel-scroll"><table><tr><th>محصول</th><th>تعداد</th><th>فروش</th></tr>{% for x in top_products %}<tr><td>{{ x.product_name }}</td><td>{{ x.units }}</td><td>{{ "{:,}".format(x.revenue) }} تومان</td></tr>{% else %}<tr><td colspan="3">فروشی ثبت نشده است.</td></tr>{% endfor %}</table></div></section>
+<section class="intel-panel"><h2>فروش بر اساس دسته‌بندی</h2><div class="intel-scroll"><table><tr><th>دسته</th><th>محصول</th><th>فروش</th></tr>{% for x in category_mix %}<tr><td>{{ x.category }}</td><td>{{ x.products }}</td><td>{{ "{:,}".format(x.revenue) }} تومان</td></tr>{% else %}<tr><td colspan="3">داده‌ای نیست.</td></tr>{% endfor %}</table></div></section>
+<section class="intel-panel"><h2>هشدار موجودی انبار</h2><div class="intel-scroll"><table><tr><th>محصول</th><th>موجودی</th><th>حد هشدار</th><th>کسری</th></tr>{% for x in low_stock %}<tr><td>{{ x.name }}</td><td>{{ x.stock }}</td><td>{{ x.min_stock }}</td><td>{{ x.shortage }}</td></tr>{% else %}<tr><td colspan="4">موجودی بحرانی ثبت نشده است.</td></tr>{% endfor %}</table></div></section>
+</div>
+<p><a href="{{ url_for('advanced.dashboard') }}">بازگشت به مدیریت پیشرفته</a></p>
+</main>{% endblock %}
