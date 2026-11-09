@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}تاریخچه قیمت {{ product.name }}{% endblock %}
+{% block content %}<main style="max-width:900px;margin:25px auto;color:#eee"><h1>تاریخچه قیمت: {{ product.name }}</h1><p>قیمت فعلی: {{ "{:,}".format(product.price) }} تومان</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th>قیمت قبلی</th><th>قیمت جدید</th><th>زمان تغییر</th></tr>{% for x in history %}<tr><td>{{ "{:,}".format(x.old_price) }}</td><td>{{ "{:,}".format(x.new_price) }}</td><td>{{ x.changed_at|jalali }}</td></tr>{% else %}<tr><td colspan="3">از زمان فعال‌سازی این قابلیت تغییری ثبت نشده است.</td></tr>{% endfor %}</table></div></main>{% endblock %}
