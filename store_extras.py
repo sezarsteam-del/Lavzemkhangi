@@ -53,7 +53,13 @@ def ensure_store_extras_schema():
 def customer_required(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        if not session.get("customer_id"):
+        customer_id=session.get("customer_id")
+        if not customer_id:
+            return redirect(url_for("customer.customer_login", next=request.path))
+        with DB() as conn:
+            active=conn.execute("SELECT id FROM customers WHERE id=%s AND is_active=TRUE",(customer_id,)).fetchone()
+        if not active:
+            session.pop("customer_id",None)
             return redirect(url_for("customer.customer_login", next=request.path))
         return fn(*args, **kwargs)
     return wrapped
@@ -149,7 +155,7 @@ def wishlist_toggle(product_id):
             conn.execute("INSERT INTO customer_wishlist(customer_id,product_id) VALUES(%s,%s) ON CONFLICT DO NOTHING",
                          (session["customer_id"],product_id))
             flash("محصول به علاقه‌مندی‌ها اضافه شد.","success")
-    return redirect(request.referrer or url_for("extras.wishlist"))
+    return redirect(url_for("extras.wishlist"))
 
 @extras_bp.get("/compare")
 def compare():
