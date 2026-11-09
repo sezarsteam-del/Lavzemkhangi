@@ -18,6 +18,11 @@ jobs:
         run: pip install -r requirements.txt
       - name: Compile Python sources
         run: python -m compileall -q .
+      - name: Import Flask application and register routes
+        env:
+          SECRET_KEY: "ci-only-secret-key-with-more-than-32-characters"
+          DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci"
+        run: python -c "import app; print('Registered routes:', len(app.app.url_map._rules))"
       - name: Run coupon unit tests
         run: python -m unittest discover -s tests -v
       - name: Parse Jinja templates
