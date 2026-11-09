@@ -144,6 +144,7 @@ def dashboard():
             c.first_name,c.last_name,c.phone
             FROM store_abandoned_carts ac JOIN customers c ON c.id=ac.customer_id
             WHERE ac.last_updated<NOW()-INTERVAL '1 hour'
+              AND (ac.reminder_sent_at IS NULL OR ac.reminder_sent_at<NOW()-INTERVAL '7 days')
             ORDER BY ac.last_updated DESC LIMIT 100""").fetchall()
     return render_template("advanced_store_admin.html", stats=stats, suppliers=suppliers, products=products,
         purchases=purchases, shipments=shipments, orders=orders, questions=questions, banners=banners,
@@ -288,7 +289,8 @@ def question_answer(question_id):
 @admin_required
 def abandoned_cart_remind(customer_id):
     with DB() as conn:
-        cart=conn.execute("SELECT customer_id FROM store_abandoned_carts WHERE customer_id=%s AND last_updated<NOW()-INTERVAL '1 hour'",(customer_id,)).fetchone()
+        cart=conn.execute("SELECT customer_id FROM store_abandoned_carts WHERE customer_id=%s AND last_updated<NOW()-INTERVAL '1 hour'
+            AND (reminder_sent_at IS NULL OR reminder_sent_at<NOW()-INTERVAL '7 days')",(customer_id,)).fetchone()
         if not cart:
             flash("سبد رهاشده‌ای برای این مشتری پیدا نشد.","error")
         else:
