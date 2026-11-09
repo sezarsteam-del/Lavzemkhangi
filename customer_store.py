@@ -546,7 +546,7 @@ def customer_order_admin_status(order_id):
             flash("وضعیت سفارش به‌روزرسانی شد.", "success")
     if notify_customer:
         with DB() as conn:
-                recipient=conn.execute("SELECT phone,sms_notifications_enabled FROM customers WHERE id=%s",(order["customer_id"],)).fetchone()
+            recipient=conn.execute("SELECT phone,sms_notifications_enabled FROM customers WHERE id=%s",(order["customer_id"],)).fetchone()
     if notify_customer and recipient and recipient["sms_notifications_enabled"]:
         labels={"awaiting_confirmation":"در انتظار تأیید","processing":"در حال آماده‌سازی","ready_to_ship":"آماده ارسال","shipped":"ارسال‌شده","delivered":"تحویل‌شده"}
         sms_text="وضعیت سفارش "+str(order_id)+" تغییر کرد: "+labels[status]
