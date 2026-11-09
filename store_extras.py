@@ -303,12 +303,26 @@ def notification_preferences():
 @extras_bp.post("/admin/notifications/broadcast")
 @admin_required
 def notification_broadcast():
-    title=request.form.get("title","").strip()[:160]; body=request.form.get("body","").strip()[:2000]
-    if not title or not body: flash("عنوان و متن اعلان را وارد کنید.","error")
+    title=request.form.get("title","").strip()[:160]
+    body=request.form.get("body","").strip()[:2000]
+    send_sms=request.form.get("send_sms")=="on"
+    if not title or not body:
+        flash("عنوان و متن اعلان را وارد کنید.","error")
     else:
-        with DB() as conn: conn.execute("INSERT INTO customer_notifications(customer_id,title,body) SELECT id,%s,%s FROM customers WHERE is_active=TRUE",(title,body))
-        flash("اعلان برای همه مشتریان فعال ثبت شد.","success")
+        with DB() as conn:
+            conn.execute("INSERT INTO customer_notifications(customer_id,title,body) SELECT id,%s,%s FROM customers WHERE is_active=TRUE",(title,body))
+            recipients=conn.execute("SELECT phone FROM customers WHERE is_active=TRUE AND sms_notifications_enabled=TRUE").fetchall() if send_sms else []
+        sent=0
+        for recipient in recipients:
+            if send_customer_sms(recipient["phone"],title+" - "+body):
+                sent+=1
+        message="اعلان داخل حساب مشتریان ثبت شد."
+        if send_sms:
+            message+=" پیامک به "+str(sent)+" نفر از "+str(len(recipients))+" مشتری دارای رضایت ارسال شد."
+        flash(message,"success")
     return redirect(url_for("extras.coupons_admin"))
+
+
 @extras_bp.get("/admin/reviews")
 @admin_required
 def reviews_admin():
