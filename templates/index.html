@@ -92,7 +92,7 @@
             <div><span class="lh-section-label">EXPLORE CATEGORIES</span><h2>دسته‌بندی محصولات</h2><p>برای شروع، گروه کالای موردنظرتان را انتخاب کنید.</p></div>
         </div>
         <div class="lh-category-grid">
-            {% for category in categories %}
+            {% for category in categories[:4] %}
             <a class="lh-category {% if selected_category|string == category.id|string %}selected{% endif %}" href="{{ url_for('products_page', category_id=category.id) }}">
                 {% if category.image_url %}
                     <img src="{{ category.image_url }}" alt="{{ category.name }}" loading="lazy">
