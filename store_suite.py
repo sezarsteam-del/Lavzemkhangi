@@ -617,3 +617,27 @@ def admin_system_health():
         product_count=product_count,
         order_count=order_count,
     )
+
+
+@suite_bp.get("/admin/stock-watch")
+@admin_required
+def admin_stock_watch():
+    with DB() as conn:
+        products = conn.execute("""
+            SELECT p.id, p.name, p.stock, p.min_stock, p.price,
+                   COALESCE(c.name, 'بدون دسته‌بندی') AS category_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            WHERE COALESCE(p.is_active, TRUE) = TRUE
+              AND p.stock <= p.min_stock
+            ORDER BY
+              CASE WHEN p.stock <= 0 THEN 0 ELSE 1 END,
+              (p.min_stock - p.stock) DESC,
+              p.name
+        """).fetchall()
+        summary = {
+            "out": sum(1 for p in products if p["stock"] <= 0),
+            "low": sum(1 for p in products if p["stock"] > 0),
+            "total": len(products),
+        }
+    return render_template("admin_stock_watch.html", products=products, summary=summary)
