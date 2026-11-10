@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}هشدار کمبود موجودی{% endblock %}
+{% block content %}
+<main class="stock-watch" dir="rtl">
+  <header>
+    <h1>⚠️ پایش کمبود موجودی انبار</h1>
+    <p>فقط محصولات فعال که موجودی آن‌ها به حداقل تعریف‌شده رسیده یا از آن کمتر شده است.</p>
+    <a href="{{ url_for('admin') }}">← بازگشت به پنل مدیریت</a>
+  </header>
+  <section class="stock-stats">
+    <article><span>کل موارد نیازمند بررسی</span><strong>{{ summary.total }}</strong></article>
+    <article><span>ناموجود</span><strong>{{ summary.out }}</strong></article>
+    <article><span>موجودی زیر حداقل</span><strong>{{ summary.low }}</strong></article>
+  </section>
+  <section class="stock-panel">
+    {% if products %}
+    <div class="table-scroll"><table>
+      <thead><tr><th>محصول</th><th>دسته‌بندی</th><th>موجودی فعلی</th><th>حداقل مجاز</th><th>کسری تا حداقل</th><th>قیمت</th></tr></thead>
+      <tbody>
+      {% for p in products %}
+      <tr class="{{ 'out' if p.stock <= 0 else 'low' }}">
+        <td>{{ p.name }}</td><td>{{ p.category_name }}</td>
+        <td>{{ p.stock }}</td><td>{{ p.min_stock }}</td>
+        <td>{{ [p.min_stock - p.stock, 0]|max }}</td>
+        <td>{{ "{:,}".format(p.price) }} تومان</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+      <div class="empty">فعلاً محصول فعالی در محدوده هشدار موجودی وجود ندارد.</div>
+    {% endif %}
+  </section>
+</main>
+<style>
+.stock-watch{max-width:1100px;margin:24px auto;padding:16px;color:#253449}
+.stock-watch header{margin-bottom:22px}.stock-watch h1{font-size:24px}.stock-watch p{color:#718096;line-height:1.8}
+.stock-watch a{color:#315b91;text-decoration:none}
+.stock-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:20px 0}
+.stock-stats article,.stock-panel{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:17px}
+.stock-stats span{display:block;color:#64748b;font-size:13px}.stock-stats strong{display:block;font-size:25px;margin-top:9px}
+.table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{text-align:right;padding:13px 11px;border-bottom:1px solid #edf0f4;font-size:13px}
+th{background:#f7f9fc;color:#475569}tr.out td:first-child{color:#b42318;font-weight:bold}tr.low td:first-child{color:#a15c00;font-weight:bold}
+.empty{text-align:center;padding:30px;color:#64748b}
+</style>
+{% endblock %}
