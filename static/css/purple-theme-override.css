@@ -23,3 +23,46 @@ input:focus, select:focus, textarea:focus { border-color:#7652a8 !important; out
 .footer { background:#30243e !important; color:#f5effb !important; border-top:1px solid #7652a8 !important; }
 .footer *, .footer a, .footer strong { color:#e4d6f3 !important; }
 .notice { border-color:#cdbbe2 !important; }
+
+/* FINAL SITE-WIDE LIGHT SAGE THEME — remove dark/black surfaces */
+:root{
+ color-scheme:light;
+ --dark:#294c37;--text:#405b49;--muted:#718574;
+ --background:#f4f8f1;--surface:#ffffff;--border:#dce8d9;
+ --primary:#548b62;--primary-dark:#3d704d;
+}
+html,body,body main.container{background:#f4f8f1!important;color:#405b49!important}
+body{background:linear-gradient(180deg,#f8faf5 0%,#edf4eb 100%)!important}
+header,header.topbar,.topbar,.site-header,.topbar-inner{background:linear-gradient(110deg,#477b55,#6b9b72)!important;color:#fff!important;border-color:#d5e5d4!important}
+header *, .topbar *, .site-header *{color:#fff!important}
+.menu-toggle,.home-button,.topbar button,.topbar .btn{background:#356b47!important;color:#fff!important;border-color:#d8e8d8!important}
+.top-navigation,.top-navigation.open{background:#fff!important;border:1px solid #dce8d9!important;box-shadow:0 14px 32px rgba(48,88,56,.13)!important}
+.top-navigation a,.top-navigation .logout-link{color:#355b40!important}
+.top-navigation a:hover,.top-navigation .logout-link:hover{background:#edf5eb!important;color:#244b30!important}
+button,input[type=submit],.btn,.button,.search button,.global-hero-link,.product-card button,.product-actions button{background:linear-gradient(135deg,#6b9d73,#477b55)!important;color:#fff!important;border-color:#477b55!important}
+button:hover,input[type=submit]:hover,.btn:hover{background:#356b47!important;color:#fff!important}
+a,.back-to-categories,.catalog-heading,.section-title{color:#477b55!important}
+h1,h2,h3,h4,.section-title{color:#31563b!important}
+input,select,textarea{background:#fff!important;color:#344d39!important;border-color:#d3e2d0!important}
+input::placeholder,textarea::placeholder{color:#89988a!important}
+.global-home-hero,.hero,.lh-hero{background:linear-gradient(125deg,#e5f0e3,#f8faf5 70%,#dcebd9)!important;border:1px solid #cbdcc8!important;box-shadow:0 12px 30px rgba(49,86,59,.08)!important}
+.global-home-hero h1,.global-home-hero h2,.hero h1,.hero p,.lh-hero h1,.lh-hero p{color:#31563b!important}
+.lh-hero .lh-kicker,.lh-section-label{color:#477b55!important}
+.lh-btn-secondary{background:#fff!important;color:#355b40!important;border-color:#b9d0b9!important}
+.lh-visual img{background:#e8f0e5!important;border-color:#cbdcc8!important}
+.lh-visual-caption{background:rgba(54,96,62,.9)!important;color:#fff!important}
+.lh-benefit,.lh-category,.lh-search,.lh-promo,.product,.product-card,.card,.form-card,.category-card,.category-dropdown,.catalog-section,.category-products-page,.featured-product-card,.featured-products-section,.empty,.empty-state,.modal-content,.dropdown-menu{background:#fff!important;color:#405b49!important;border-color:#dce8d9!important;box-shadow:0 8px 24px rgba(49,86,59,.06)!important}
+.lh-benefit strong,.lh-category strong,.lh-section-head h2,.lh-promo strong,.category-title,.category-name,.product h3,.product h3 a{color:#31563b!important}
+.lh-benefit small,.lh-category small,.lh-section-head p,.lh-promo p,.muted,.hint{color:#718574!important}
+.lh-benefit-icon,.category-icon,.main-category-icon,.category-total,.result-count,.badge,.tag,.stock-badge{background:#e8f1e5!important;color:#477b55!important}
+.lh-category:hover,.lh-category.selected,.category-card:hover,.category-card.selected{background:#edf5eb!important;border-color:#83ad87!important}
+.lh-search{background:#fff!important;border-color:#dce8d9!important}
+.lh-search input{background:#f9fbf7!important;color:#344d39!important}
+.product-image,.product-placeholder{background:#f1f6ee!important}
+table{background:#fff!important;color:#405b49!important}
+th{background:#e8f1e5!important;color:#355b40!important}
+td{background:#fff!important;color:#405b49!important;border-color:#e1eae0!important}
+tr:hover td{background:#f5f9f2!important}
+.footer{background:linear-gradient(110deg,#477b55,#356b47)!important;color:#fff!important;border-top:1px solid #c9ddc8!important}
+.footer *, .footer a,.footer strong,.footer-inner small{color:#fff!important}
+.notice{background:#edf5eb!important;color:#355b40!important;border-color:#83ad87!important}
