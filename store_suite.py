@@ -3,6 +3,8 @@ customer credit ledger, expenses and serial-number tracking.
 All schema changes are additive; existing catalog/order records are preserved.
 """
 from functools import wraps
+import os
+import time
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 
 suite_bp = Blueprint("suite", __name__)
@@ -571,3 +573,71 @@ def customer_price_alert_delete(product_id):
             (session["customer_id"],product_id))
     flash("هشدار قیمت حذف شد.","success")
     return redirect(url_for("suite.customer_price_alerts"))
+
+
+@suite_bp.get("/admin/system-health")
+@admin_required
+def admin_system_health():
+    checks = []
+    started = time.perf_counter()
+    db_latency = None
+    db_time = ""
+    product_count = None
+    order_count = None
+    try:
+        with DB() as conn:
+            row = conn.execute("SELECT CURRENT_TIMESTAMP AS db_time, to_regclass('public.products') AS products_table, to_regclass('public.store_orders') AS orders_table").fetchone()
+            db_latency = round((time.perf_counter() - started) * 1000, 1)
+            db_time = str(row["db_time"])
+            if row["products_table"]:
+                product_count = conn.execute("SELECT COUNT(*) AS n FROM products").fetchone()["n"]
+            if row["orders_table"]:
+                order_count = conn.execute("SELECT COUNT(*) AS n FROM store_orders").fetchone()["n"]
+        checks.append({"name": "اتصال پایگاه داده", "ok": True, "detail": f"پاسخ‌گویی موفق · {db_latency} میلی‌ثانیه"})
+    except Exception:
+        checks.append({"name": "اتصال پایگاه داده", "ok": False, "detail": "اتصال ناموفق؛ تنظیمات اتصال و وضعیت پایگاه داده بررسی شود."})
+
+    required = [
+        ("DATABASE_URL", bool(os.environ.get("DATABASE_URL", "").strip())),
+        ("SECRET_KEY", len(os.environ.get("SECRET_KEY", "").strip()) >= 32),
+        ("ADMIN_PASSWORD", bool(os.environ.get("ADMIN_PASSWORD", "").strip())),
+    ]
+    for name, configured in required:
+        checks.append({
+            "name": f"تنظیم امن {name}",
+            "ok": configured,
+            "detail": "تنظیم شده است" if configured else "تنظیم نشده یا نامعتبر است"
+        })
+
+    return render_template(
+        "admin_health.html",
+        checks=checks,
+        db_time=db_time,
+        db_latency=db_latency,
+        product_count=product_count,
+        order_count=order_count,
+    )
+
+
+@suite_bp.get("/admin/stock-watch")
+@admin_required
+def admin_stock_watch():
+    with DB() as conn:
+        products = conn.execute("""
+            SELECT p.id, p.name, p.stock, p.min_stock, p.price,
+                   COALESCE(c.name, 'بدون دسته‌بندی') AS category_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            WHERE COALESCE(p.is_active, TRUE) = TRUE
+              AND p.stock <= p.min_stock
+            ORDER BY
+              CASE WHEN p.stock <= 0 THEN 0 ELSE 1 END,
+              (p.min_stock - p.stock) DESC,
+              p.name
+        """).fetchall()
+        summary = {
+            "out": sum(1 for p in products if p["stock"] <= 0),
+            "low": sum(1 for p in products if p["stock"] > 0),
+            "total": len(products),
+        }
+    return render_template("admin_stock_watch.html", products=products, summary=summary)

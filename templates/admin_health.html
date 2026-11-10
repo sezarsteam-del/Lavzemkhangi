@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}سلامت و عیب‌یابی سایت{% endblock %}
+{% block content %}
+<main class="admin-page" dir="rtl">
+  <header class="admin-header">
+    <h1>🩺 سلامت و عیب‌یابی سایت</h1>
+    <p>وضعیت سرویس‌ها و تنظیمات ضروری، بدون نمایش اطلاعات محرمانه</p>
+    <a href="{{ url_for('admin') }}">← بازگشت به پنل مدیریت</a>
+  </header>
+  <section class="health-grid">
+    {% for item in checks %}
+    <article class="health-card">
+      <div class="health-status {{ 'ok' if item.ok else 'bad' }}">{{ 'سالم' if item.ok else 'نیازمند بررسی' }}</div>
+      <h2>{{ item.name }}</h2>
+      <p>{{ item.detail }}</p>
+    </article>
+    {% endfor %}
+  </section>
+  <section class="health-summary">
+    <h2>آمار پایه سامانه</h2>
+    <p>تعداد محصولات: <strong>{{ product_count if product_count is not none else 'در دسترس نیست' }}</strong></p>
+    <p>تعداد سفارش‌ها: <strong>{{ order_count if order_count is not none else 'در دسترس نیست' }}</strong></p>
+    <p>زمان پایگاه داده: <strong>{{ db_time or 'در دسترس نیست' }}</strong></p>
+    {% if db_latency is not none %}<p>زمان پاسخ پایگاه داده: <strong>{{ db_latency }} ms</strong></p>{% endif %}
+  </section>
+</main>
+<style>
+.admin-page{max-width:1100px;margin:24px auto;padding:16px;color:#243247}
+.admin-header{margin-bottom:22px}.admin-header h1{font-size:25px}.admin-header p{color:#718096;line-height:1.8}
+.admin-header a{display:inline-block;margin-top:10px;color:#315b91;text-decoration:none}
+.health-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.health-card,.health-summary{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:18px}
+.health-card h2{font-size:16px;margin:12px 0 8px}.health-card p,.health-summary p{font-size:13px;color:#64748b;line-height:1.8}
+.health-status{display:inline-block;border-radius:20px;padding:5px 10px;font-size:12px;font-weight:bold}
+.health-status.ok{background:#e8f7ee;color:#187344}.health-status.bad{background:#fff1f0;color:#b42318}
+.health-summary{margin-top:18px}.health-summary h2{font-size:18px}
+</style>
+{% endblock %}
