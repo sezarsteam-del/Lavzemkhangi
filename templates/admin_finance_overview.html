@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}خلاصه مالی ماه{% endblock %}
+{% block content %}
+<main class="finance" dir="rtl">
+<header><h1>💰 خلاصه مالی ماه جاری</h1><p>گزارش سفارش‌های پرداخت‌شده و هزینه‌های ثبت‌شده از ابتدای ماه جاری</p><a href="{{ url_for('admin') }}">← بازگشت به مدیریت</a></header>
+<section class="finance-grid">
+<article><span>فروش ثبت‌شده</span><strong>{{ "{:,}".format(sales.sales_total) }} تومان</strong><small>{{ sales.order_count }} سفارش پرداخت‌شده</small></article>
+<article><span>هزینه‌های ثبت‌شده</span><strong>{{ "{:,}".format(expenses.expense_total) }} تومان</strong><small>{{ expenses.expense_count }} مورد هزینه</small></article>
+<article><span>مانده فروش پس از هزینه‌ها</span><strong>{{ "{:,}".format(operating_difference) }} تومان</strong><small>قبل از بهای خرید کالا، مالیات و سایر هزینه‌های ثبت‌نشده</small></article>
+</section>
+<section class="finance-panel"><h2>آخرین هزینه‌های ثبت‌شده</h2>
+{% if recent %}<div class="scroll"><table><thead><tr><th>تاریخ</th><th>عنوان</th><th>دسته</th><th>مبلغ</th></tr></thead><tbody>
+{% for item in recent %}<tr><td>{{ item.expense_date }}</td><td>{{ item.title }}</td><td>{{ item.category }}</td><td>{{ "{:,}".format(item.amount) }} تومان</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p>هنوز هزینه‌ای ثبت نشده است.</p>{% endif %}
+</section>
+</main>
+<style>
+.finance{max-width:1050px;margin:24px auto;padding:16px;color:#253449}.finance header{margin-bottom:22px}.finance h1{font-size:24px}.finance header p{color:#718096;line-height:1.8}.finance a{color:#315b91;text-decoration:none}
+.finance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:20px 0}.finance-grid article,.finance-panel{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:18px}.finance-grid span,.finance-grid small{display:block;color:#64748b;font-size:13px}.finance-grid strong{display:block;font-size:22px;margin:12px 0;overflow-wrap:anywhere}.finance-grid small{line-height:1.7}.finance-panel h2{font-size:18px}.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:550px}th,td{text-align:right;padding:12px;border-bottom:1px solid #edf0f4;font-size:13px}th{background:#f7f9fc}
+</style>
+{% endblock %}
