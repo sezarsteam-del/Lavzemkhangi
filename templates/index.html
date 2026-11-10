@@ -1,758 +1,202 @@
 {% extends "base.html" %}
 
-{% block title %}لوازم خانگی | لیست قیمت محصولات{% endblock %}
+{% block title %}لوازم خانگی | فروشگاه آنلاین{% endblock %}
 
 {% block head %}
 <style>
-     .hero {
-        position:relative; overflow:hidden;
-        background:linear-gradient(115deg,#090909 0%,#211d16 58%,#574324 100%);
-        color:#fff; padding:34px 30px; border-radius:24px; margin-bottom:24px;
-        box-shadow:0 18px 42px rgba(16,33,60,.17);
-        border:1px solid rgba(215,184,111,.24);
-    }
-    .hero:after{content:"";position:absolute;width:240px;height:240px;border:1px solid rgba(230,189,130,.28);border-radius:50%;left:-65px;top:-115px;box-shadow:0 0 0 28px rgba(255,255,255,.025),0 0 0 58px rgba(255,255,255,.02)}
-    .hero:before{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:#e6bd82;left:22%;bottom:22px;box-shadow:28px -35px 0 rgba(230,189,130,.45),55px -4px 0 rgba(230,189,130,.25)}
-    .hero h1,.hero p{position:relative;z-index:1}
-    .hero h1{color:#fff;font-size:27px;letter-spacing:-.4px}
-    .hero p{max-width:560px;color:#e2e8f0;font-size:14px;line-height:2.1}
-
-    .hero h1 {
-        font-size: 22px;
-        margin: 0 0 8px;
-    }
-
-    .hero p {
-        color: #eee5d5;
-        margin: 0;
-        font-size: 13px;
-    }
-
-    /* جستجو */
-    .search {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 18px;
-    }
-
-    .search input {
-        flex: 1;
-        min-width: 0;
-    }
-
-    /* منوی دسته بندی */
-    .category-section {
-        margin: 18px 0 25px;
-    }
-
-     .category-dropdown {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 8px 24px rgba(23,43,77,.055);
-    }
-
-    .category-summary {
-        list-style: none;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 15px;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .category-summary::-webkit-details-marker {
-        display: none;
-    }
-
-    .category-summary:hover {
-        background: #f8fafc;
-    }
-
-    .category-summary-right {
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        min-width: 0;
-    }
-
-    .main-category-icon {
-        width: 42px;
-        height: 42px;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f8efe2;
-        border-radius: 11px;
-    }
-
-    .main-category-icon svg {
-        width: 23px;
-        height: 23px;
-        fill: none;
-        stroke: #b27a3c;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    .category-title {
-        font-size: 14px;
-        font-weight: bold;
-        color: #1e293b;
-    }
-
-    .category-subtitle {
-        font-size: 11px;
-        color: #94a3b8;
-        margin-top: 4px;
-    }
-
-    .category-summary-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-    }
-
-    .category-total {
-        font-size: 11px;
-        color: #172b4d;
-        background: #f8efe2;
-        padding: 5px 9px;
-        border-radius: 20px;
-    }
-
-    .category-chevron {
-        color: #64748b;
-        font-size: 19px;
-        transition: transform .2s;
-    }
-
-    .category-dropdown[open] .category-chevron {
-        transform: rotate(180deg);
-    }
-
-    /* کارت های دسته بندی */
-    .category-content {
-        border-top: 1px solid #edf0f5;
-        padding: 12px;
-        background: #fafcff;
-    }
-
-    .category-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 9px;
-    }
-
-    .category-card {
-        min-width: 0;
-        min-height: 48px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        background: white;
-        border: 1px solid #e5eaf1;
-        border-radius: 13px;
-        text-decoration: none;
-        transition: .2s;
-    }
-
-    .category-card:hover {
-        border-color: #d8bd98;
-        background: #fcf8f1;
-    }
-
-    .category-card.selected {
-        background: #eff6ff;
-        border-color: #c58b45;
-    }
-
-    .category-icon {
-        width: 32px;
-        height: 32px;
-        flex: 0 0 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #eff6ff;
-        border-radius: 9px;
-    }
-
-    .category-icon svg {
-        width: 20px;
-        height: 20px;
-        fill: none;
-        stroke: #b27a3c;
-        stroke-width: 1.8;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    .category-name {
-        font-size: 11px;
-        font-weight: bold;
-        color: #334155;
-        line-height: 1.7;
-        overflow-wrap: anywhere;
-    }
-
-    .category-card.selected .category-name {
-        color: #172b4d;
-    }
-
-    /* محصولات */
-    .catalog-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .result-count {
-        color: #64748b;
-        font-size: 12px;
-    }
-
-     .product {
-        position: relative;
-        border-radius:20px;
-        box-shadow:0 7px 23px rgba(23,43,77,.055);
-    }
-    .product:hover{box-shadow:0 16px 34px rgba(23,43,77,.11);transform:translateY(-4px)}
-    .catalog-heading{padding-bottom:12px;border-bottom:1px solid #e4e8ef;margin-bottom:15px}
-    .result-count{background:#edf1f7;color:#34445d;padding:6px 12px;border-radius:30px}
-    .product-bottom{border-top:1px solid #edf0f5}
-    .product h3 a{color:#17243a}
-    .product h3 a:hover{color:#a96e2e}
-
-     .product-image {
-        height: 205px;
-        padding: 10px;
-        object-fit: contain;
-        background: #f8fafc;
-    }
-
-    .product-info {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    .product-brand {
-        color: #64748b;
-        font-size: 11px;
-    }
-
-    .product-description {
-        color: #64748b;
-        font-size: 12px;
-        margin: 5px 0;
-    }
-
-    .stock-badge {
-        display: inline-block;
-        width: fit-content;
-        padding: 4px 9px;
-        border-radius: 20px;
-        font-size: 10px;
-        margin-top: 5px;
-    }
-
-    .stock-available {
-        color: #166534;
-        background: #dcfce7;
-    }
-
-    .stock-low {
-        color: #92400e;
-        background: #fef3c7;
-    }
-
-    .stock-empty {
-        color: #991b1b;
-        background: #fee2e2;
-    }
-
-    .product-bottom {
-        border-top: 1px solid #edf0f5;
-        margin-top: 10px;
-        padding-top: 10px;
-    }
-
-    .empty {
-        background: white;
-        padding: 35px 15px;
-        border-radius: 14px;
-        text-align: center;
-        color: #64748b;
-    }
-
-    .clear-search {
-        color: #2563eb;
-        font-size: 12px;
-        display: inline-block;
-        margin-top: 12px;
-    }
-
-    @media(max-width: 600px) {
-        .hero {padding:25px 18px;border-radius:19px}
-        .hero h1 {font-size:20px}
-        .hero p{font-size:12px}
-
-        .category-summary {
-            padding: 12px;
-        }
-
-        .category-content {
-            padding: 9px;
-        }
-
-        .category-grid {
-            gap: 7px;
-        }
-
-        .category-card {
-            min-height: 45px;
-            padding: 6px;
-            gap: 6px;
-        }
-
-        .category-icon {
-            width: 29px;
-            height: 29px;
-            flex-basis: 29px;
-        }
-
-        .category-icon svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .category-name {
-            font-size: 10px;
-        }
-
-        .category-title {
-            font-size: 13px;
-        }
-
-        .category-subtitle {
-            font-size: 10px;
-        }
-
-        .product-image {
-            height: 135px;
-        }
-
-        .search {
-            flex-direction: column;
-        }
-
-        .search button {
-            width: 100%;
-        }
-    }
-
-/* Colorful storefront home page theme */
-.hero{background:linear-gradient(112deg,#124d82 0%,#1687bd 58%,#36b8c7 100%)!important;color:#fff;border:0;border-radius:24px;box-shadow:0 18px 38px rgba(18,91,139,.19)}
-.hero:after{border-color:rgba(255,255,255,.28);box-shadow:0 0 0 28px rgba(255,255,255,.07),0 0 0 58px rgba(255,255,255,.04)}
-.hero:before{background:#ffcf70;box-shadow:28px -35px 0 rgba(255,255,255,.45),55px -4px 0 rgba(255,207,112,.55)}
-.hero h1{color:#fff!important;font-size:26px}.hero p{color:#e9f8ff!important}
-.category-dropdown{border-color:#d9e8f3;box-shadow:0 8px 24px rgba(23,77,120,.07)}
-.category-summary:hover{background:#f2f9ff}
-.main-category-icon{background:#fff0e9}.main-category-icon svg{stroke:#ed6848}
-.category-title{color:#194b70}.category-subtitle{color:#8197a8}
-.category-total{color:#1769aa;background:#e8f4ff}
-.category-content{border-color:#e5eef5;background:#f6fbff}
-.category-card{border-color:#dfebf4;background:#fff}
-.category-card:hover{border-color:#ff9b70;background:#fff7f2}
-.category-card.selected{background:#e8f4ff;border-color:#2693d1}
-.category-icon{background:#fff0e9}.category-icon svg{stroke:#e96848}
-.category-name{color:#36536c}.category-card.selected .category-name{color:#1769aa}
-.catalog-heading{border-color:#dce8f1}
-.result-count{background:#e8f4ff;color:#1769aa}
-.product{border-radius:20px}.product-image{background:linear-gradient(145deg,#f8fcff,#edf7fd)}
-.product h3 a{color:#193d5b}.product h3 a:hover{color:#e85d43}
-.product-description,.product-brand{color:#71879a}
-.stock-available{color:#166534;background:#dcfce7}.stock-low{color:#92400e;background:#fef3c7}.stock-empty{color:#991b1b;background:#fee2e2}
-.clear-search{color:#1769aa}
-@media(max-width:600px){.hero{padding:25px 18px}.hero h1{font-size:20px}}
-
-
-/* Lavzemkhangi Global appliance photography layout */
-.global-home-hero{
- display:grid!important;grid-template-columns:1fr 1.05fr;align-items:center;gap:24px;
- min-height:310px;padding:28px 32px!important;
- background:radial-gradient(ellipse at 15% 20%,rgba(194,151,78,.18),transparent 38%),linear-gradient(115deg,#09090c 0%,#1b1916 58%,#3b2d1c 100%)!important;
- border:1px solid rgba(214,173,104,.34)!important;box-shadow:0 22px 55px rgba(0,0,0,.3)!important;
+/* صفحه اصلی جدید لوازم خانگی */
+.home-page{--home-gold:#d7b36b;--home-gold-light:#f0d79e;--home-ink:#f8f3e9;--home-muted:#b9ad9a;direction:rtl}
+.home-hero{position:relative;isolation:isolate;display:grid;grid-template-columns:1.02fr .98fr;align-items:center;gap:clamp(18px,4vw,48px);min-height:360px;padding:clamp(24px,4vw,54px);margin:0 0 28px;overflow:hidden;border:1px solid rgba(215,179,107,.3);border-radius:28px;background:radial-gradient(circle at 78% 20%,rgba(181,132,58,.2),transparent 34%),linear-gradient(125deg,#101014 0%,#1d1b19 58%,#352817 100%);box-shadow:0 24px 60px rgba(0,0,0,.26)}
+.home-hero:before{content:"";position:absolute;z-index:-1;width:360px;height:360px;left:-160px;top:-190px;border:1px solid rgba(215,179,107,.25);border-radius:50%;box-shadow:0 0 0 35px rgba(215,179,107,.035),0 0 0 75px rgba(215,179,107,.025)}
+.home-hero-copy{position:relative;z-index:2}
+.home-eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:15px;color:var(--home-gold-light);font-size:10px;font-weight:900;letter-spacing:2px}
+.home-eyebrow:before{content:"";width:24px;height:1px;background:var(--home-gold)}
+.home-hero h1{max-width:600px;margin:0 0 13px;color:#fff!important;font-size:clamp(26px,3.4vw,43px);line-height:1.65;font-weight:950}
+.home-hero p{max-width:520px;margin:0 0 24px;color:#d6cbbb;font-size:14px;line-height:2.2}
+.home-hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:11px}
+.home-primary-link,.home-secondary-link{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:45px;padding:0 19px;border-radius:12px;text-decoration:none;font-size:12px;font-weight:900;transition:.2s}
+.home-primary-link{background:linear-gradient(135deg,#f0d79e,#b78a43);color:#17130b!important;box-shadow:0 9px 25px rgba(183,138,67,.2)}
+.home-primary-link:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.home-secondary-link{border:1px solid rgba(240,215,158,.35);color:#f3e8d5!important;background:rgba(255,255,255,.035)}
+.home-secondary-link:hover{background:rgba(215,179,107,.12);border-color:var(--home-gold)}
+.home-hero-visual{position:relative;min-width:0}
+.home-hero-image{height:275px;overflow:hidden;border:1px solid rgba(240,215,158,.3);border-radius:22px;background:linear-gradient(145deg,#37312a,#17171b);box-shadow:0 22px 48px rgba(0,0,0,.38)}
+.home-hero-image img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.home-image-caption{position:absolute;right:16px;bottom:15px;left:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.13);border-radius:13px;background:rgba(12,12,14,.78);backdrop-filter:blur(12px);color:#f5ead7;font-size:11px}
+.home-image-caption strong{color:var(--home-gold-light);font-size:12px}
+.home-trust-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 32px}
+.home-trust-item{display:flex;align-items:center;gap:12px;min-width:0;padding:15px 16px;border:1px solid #3b352c;border-radius:15px;background:linear-gradient(145deg,#1d1c20,#17171b)}
+.home-trust-icon{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:12px;background:#342a1d;color:var(--home-gold-light);font-size:19px}
+.home-trust-item strong{display:block;color:#f2e8d8;font-size:12px}
+.home-trust-item small{display:block;margin-top:3px;color:#aaa092;font-size:10px;line-height:1.7}
+.home-section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 15px}
+.home-section-kicker{display:block;margin-bottom:3px;color:var(--home-gold);font-size:10px;font-weight:900;letter-spacing:1px}
+.home-section-head h2{margin:0;color:#f5eee2;font-size:20px;font-weight:900}
+.home-section-head p{margin:5px 0 0;color:#aaa092;font-size:11px}
+.home-category-section{margin:0 0 34px}
+.home-category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.home-category-card{display:flex;align-items:center;gap:11px;min-width:0;min-height:74px;padding:12px;border:1px solid #39343a;border-radius:15px;background:#1b1b20;color:#f4ead8;text-decoration:none;transition:.2s}
+.home-category-card:hover,.home-category-card.active{transform:translateY(-2px);border-color:#b68d4b;background:linear-gradient(135deg,#29231a,#1d1b19)}
+.home-category-icon{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:12px;background:#342a1d;color:#e2c17d;font-size:18px}
+.home-category-text{min-width:0}
+.home-category-text strong{display:block;overflow-wrap:anywhere;font-size:11px;line-height:1.8}
+.home-category-text small{display:block;margin-top:2px;color:#a99e8d;font-size:9px}
+.home-search-panel{display:flex;align-items:center;gap:10px;margin:0 0 25px;padding:12px;border:1px solid #39343a;border-radius:17px;background:#1a1a20}
+.home-search-panel input{min-width:0;flex:1;height:46px;padding:0 15px;border:1px solid #494237;border-radius:12px;background:#111115;color:#f7f0e5;font-size:12px}
+.home-search-panel input::placeholder{color:#9f9587}
+.home-search-panel button{min-width:105px;height:46px;border-radius:12px;font-size:12px}
+.home-catalog{scroll-margin-top:105px}
+.home-catalog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;padding-bottom:13px;border-bottom:1px solid #39343a}
+.home-catalog-heading h2{margin:0;color:#f5eee2;font-size:20px}
+.home-result-count{padding:6px 11px;border:1px solid #51432b;border-radius:30px;background:#342a1d;color:#e4c27d;font-size:10px;white-space:nowrap}
+.home-product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.home-product-card{display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid #39343a;border-radius:19px;background:#1b1b21;box-shadow:0 9px 25px rgba(0,0,0,.14);transition:transform .22s,border-color .22s,box-shadow .22s}
+.home-product-card:hover{transform:translateY(-4px);border-color:#a98549;box-shadow:0 17px 34px rgba(0,0,0,.28)}
+.home-product-image-wrap{position:relative;display:grid;place-items:center;height:205px;padding:13px;background:radial-gradient(circle at 50% 45%,#302d29,#202026 70%)}
+.home-product-image{width:100%;height:100%;object-fit:contain}
+.home-product-placeholder{display:grid;place-items:center;width:100%;height:100%;color:#a99e8d;font-size:12px}
+.home-product-info{display:flex;flex:1;flex-direction:column;padding:15px}
+.home-product-category{color:#d1ad6b;font-size:10px}
+.home-product-title{margin:6px 0 5px;font-size:13px;line-height:1.9}
+.home-product-title a{color:#f7f0e5;text-decoration:none}
+.home-product-title a:hover{color:#e6c783}
+.home-product-brand,.home-product-description{color:#aaa092;font-size:10px;line-height:1.9}
+.home-product-description{display:-webkit-box;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:5px 0}
+.home-product-bottom{margin-top:auto;padding-top:12px}
+.home-product-price{margin-bottom:11px;color:#e6c783;font-size:17px;font-weight:950}
+.home-product-actions{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.home-product-actions a,.home-product-actions button{min-height:34px;padding:7px 10px;border:1px solid #51432b;border-radius:9px;background:#29251e;color:#e9d5ad;font-size:10px;text-decoration:none}
+.home-product-actions a:hover,.home-product-actions button:hover{background:#3a2e1d;border-color:#c7a15a}
+.home-cart-form button{width:100%;min-height:39px;border-radius:10px;font-size:11px}
+.home-empty{padding:38px 16px;border:1px dashed #51432b;border-radius:17px;background:#1b1b20;text-align:center;color:#c5b9a7}
+.home-empty h3{color:#f4ead8}
+.home-clear-link{display:inline-block;margin-top:10px;color:#e3c27e;font-size:11px}
+@media(max-width:900px){.home-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){
+ .home-hero{grid-template-columns:1fr;gap:17px;min-height:0;padding:21px 17px;border-radius:21px}
+ .home-hero-visual{order:-1}.home-hero-image{height:190px}.home-image-caption{right:9px;bottom:9px;left:9px;padding:9px 11px}
+ .home-hero h1{font-size:24px}.home-hero p{font-size:12px;margin-bottom:17px}
+ .home-trust-row{gap:7px;margin-bottom:25px}
+ .home-trust-item{flex-direction:column;align-items:flex-start;gap:7px;padding:10px 9px}
+ .home-trust-icon{width:32px;height:32px;flex-basis:32px;font-size:16px}
+ .home-trust-item strong{font-size:10px}.home-trust-item small{font-size:9px}
+ .home-section-head h2,.home-catalog-heading h2{font-size:17px}
+ .home-category-grid{gap:8px}.home-category-card{min-height:63px;padding:8px;gap:7px}
+ .home-category-icon{width:32px;height:32px;flex-basis:32px;font-size:15px}
+ .home-category-text strong{font-size:10px}
+ .home-search-panel{padding:9px;gap:7px}.home-search-panel input{height:43px;padding:0 10px;font-size:11px}.home-search-panel button{height:43px;min-width:76px;padding:0 10px}
+ .home-product-grid{gap:10px}.home-product-image-wrap{height:142px;padding:8px}.home-product-info{padding:10px}
+ .home-product-title{font-size:11px}.home-product-price{font-size:14px}
+ .home-product-actions{gap:5px}.home-product-actions a,.home-product-actions button{padding:6px 7px;font-size:9px}
+ .home-cart-form button{min-height:35px;font-size:10px}
 }
-.global-home-hero:before,.global-home-hero:after{pointer-events:none}
-.global-hero-copy{position:relative;z-index:2}
-.global-hero-kicker{display:inline-block;color:#e3c27e;font-size:10px;letter-spacing:2.8px;font-weight:900;margin-bottom:12px}
-.global-home-hero h1{font-size:clamp(24px,3vw,38px)!important;line-height:1.55;margin:0 0 10px!important;color:#fff!important}
-.global-home-hero p{font-size:14px!important;color:#e5dac7!important;line-height:2;margin:0 0 20px!important}
-.global-hero-link{display:inline-flex;align-items:center;gap:12px;padding:10px 18px;border-radius:11px;background:linear-gradient(135deg,#e7c987,#b18440);color:#17120b!important;text-decoration:none;font-weight:900;font-size:12px;box-shadow:0 8px 22px rgba(190,145,67,.2)}
-.global-hero-photo{height:245px;min-width:0;border-radius:18px;overflow:hidden;border:1px solid rgba(226,192,126,.35);background:#17171b;box-shadow:0 16px 38px rgba(0,0,0,.35)}
-.global-hero-photo img{width:100%;height:100%;display:block;object-fit:cover;object-position:center}
-.appliance-showcase{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:0 0 25px}
-.appliance-tile{position:relative;display:block;min-width:0;height:145px;overflow:hidden;border-radius:16px;border:1px solid #51432b;background:#19191f;text-decoration:none;box-shadow:0 10px 26px rgba(0,0,0,.22)}
-.appliance-tile:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.86))}
-.appliance-tile img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .35s ease}
-.appliance-tile:hover img{transform:scale(1.06)}
-.appliance-tile span{position:absolute;z-index:1;right:13px;bottom:11px;color:#fff;font-weight:800;font-size:12px;text-shadow:0 2px 8px #000}
-html[dir="ltr"] .appliance-tile span{right:auto;left:13px}
-.category-dropdown{background:#19191f!important;border-color:#39343a!important}
-.category-summary:hover{background:#242127!important}
-.category-title,.category-name{color:#f1e7d6!important}
-.category-subtitle{color:#b2a797!important}
-.category-content{background:#17171c!important;border-color:#39343a!important}
-.category-card{background:#202027!important;border-color:#39343a!important}
-.category-card:hover,.category-card.selected{background:#342a1d!important;border-color:#c7a15a!important}
-.category-total,.category-icon,.main-category-icon{background:#342a1d!important;color:#e4c27d!important}
-.category-total{color:#e4c27d!important}
-.catalog-heading{border-color:#39343a!important}
-.result-count{background:#342a1d!important;color:#e4c27d!important}
-.product-image,.product-placeholder{background:linear-gradient(145deg,#25242a,#17171c)!important}
-.product{background:#19191f!important;border-color:#39343a!important}
-.product h3 a{color:#f5eee2!important}
-.product-description,.product-brand,.product-category{color:#b2a797!important}
-.product-bottom{border-color:#39343a!important}
-.stock-available{color:#b8e5ca!important;background:#183126!important}
-.stock-low{color:#f5d58e!important;background:#3b2d18!important}
-.stock-empty{color:#ffc2b9!important;background:#3a211f!important}
-@media(max-width:760px){
- .global-home-hero{grid-template-columns:1fr!important;padding:23px 18px!important;gap:16px;min-height:0}
- .global-hero-photo{height:190px;order:-1}
- .global-home-hero h1{font-size:23px!important}
- .appliance-showcase{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
- .appliance-tile{height:125px}
-}
-
+@media(max-width:370px){.home-product-grid{grid-template-columns:1fr}.home-product-image-wrap{height:190px}.home-trust-item small{font-size:8px}}
 </style>
 {% endblock %}
 
 {% block content %}
-
-<section class="hero global-home-hero">
-    <div class="global-hero-copy">
-        <span class="global-hero-kicker">LAVZEMKHANGI GLOBAL</span>
-        <h1 data-global-i18n="homeTitle">به فروشگاه لوازم خانگی خوش آمدید</h1>
-        <p><span data-global-i18n="homeIntro">مشاهده محصولات و خرید آسان لوازم خانگی</span></p>
-        <a class="global-hero-link" href="#catalog">مشاهده محصولات <span aria-hidden="true">←</span></a>
-    </div>
-    <div class="global-hero-photo">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dmchighres.png"
-             alt="مجموعه لوازم خانگی شامل یخچال، ماشین لباسشویی، فر و اجاق" fetchpriority="high">
-    </div>
-</section>
-
-<section class="appliance-showcase" aria-label="دسته‌های لوازم خانگی">
-    <a class="appliance-tile" href="#catalog">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dff456/original.png" alt="یخچال و لوازم خانگی مدرن" loading="lazy">
-        <span>یخچال و فریزر</span>
-    </a>
-    <a class="appliance-tile" href="#catalog">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/daw408newimages/DAW408B%2001%202000%20X%202000px.png" alt="ماشین لباسشویی و خشک‌کن" loading="lazy">
-        <span>شست‌وشو و نظافت</span>
-    </a>
-    <a class="appliance-tile" href="#catalog">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dbo499/dboprod.png" alt="اجاق، فر و لوازم آشپزخانه" loading="lazy">
-        <span>آشپزخانه</span>
-    </a>
-    <a class="appliance-tile" href="#catalog">
-        <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dwd258/original%20%286%29.png" alt="تجهیزات و لوازم مدرن خانه" loading="lazy">
-        <span>لوازم خانه</span>
-    </a>
-</section>
-
-<form class="search" method="GET" action="{{ url_for('index') }}">
-    <input
-        type="search"
-        name="q"
-        value="{{ q }}"
-        placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..." data-global-placeholder="searchPlaceholder"
-    >
-
-    {% if selected_category %}
-        <input
-            type="hidden"
-            name="category"
-            value="{{ selected_category }}"
-        >
-    {% endif %}
-
-    <button type="submit" data-global-i18n="searchButton">جستجو</button>
-</form>
-
-<!-- منوی کشویی دسته بندی -->
-<section class="category-section">
-
-    <details class="category-dropdown">
-
-        <summary class="category-summary">
-
-            <div class="category-summary-right">
-
-                <div class="main-category-icon">
-                    <svg viewBox="0 0 24 24">
-                        <rect x="3" y="3" width="18" height="18" rx="3"/>
-                        <path d="M8 8h8M8 12h8M8 16h5"/>
-                    </svg>
-                </div>
-
-                <div>
-                    <div class="category-title">
-                        <span data-global-i18n="categoryHeading">دسته‌بندی محصولات</span>
-                    </div>
-
-                    <div class="category-subtitle">
-                        <span data-global-i18n="categoryHint">برای مشاهده دسته‌ها کلیک کنید</span>
-                    </div>
-                </div>
-
+<div class="home-page">
+    <section class="home-hero" aria-label="معرفی فروشگاه">
+        <div class="home-hero-copy">
+            <span class="home-eyebrow">LAVZEMKHANGI · HOME APPLIANCES</span>
+            <h1 data-global-i18n="homeTitle">خانه‌ای زیباتر، با انتخابی هوشمندانه</h1>
+            <p data-global-i18n="homeIntro">جدیدترین لوازم خانگی را با بررسی مشخصات، مقایسه محصولات و خریدی آسان انتخاب کنید.</p>
+            <div class="home-hero-actions">
+                <a class="home-primary-link" href="#catalog">مشاهده محصولات <span aria-hidden="true">←</span></a>
+                <a class="home-secondary-link" href="{{ url_for('contact') }}">ارتباط با ما</a>
             </div>
-
-            <div class="category-summary-left">
-                <span class="category-total">
-                    {{ categories|length }} دسته
-                </span>
-
-                <span class="category-chevron">⌄</span>
-            </div>
-
-        </summary>
-
-        <div class="category-content">
-
-            <div class="category-grid">
-
-                <!-- همه محصولات -->
-                <a
-                    class="category-card {% if not selected_category %}selected{% endif %}"
-                    href="{{ url_for('index', q=q) }}"
-                >
-                    <span class="category-icon">
-                        <svg viewBox="0 0 24 24">
-                            <rect x="3" y="3" width="18" height="18" rx="3"/>
-                            <path d="M8 8h8M8 12h8M8 16h5"/>
-                        </svg>
-                    </span>
-
-                    <span class="category-name" data-global-i18n="allProducts">همه محصولات</span>
-                </a>
-
-                {% for category in categories %}
-
-                    <a
-                        class="category-card {% if selected_category|string == category.id|string %}selected{% endif %}"
-                        href="{{ url_for('index', category=category.id, q=q) }}"
-                    >
-
-                        <span class="category-icon">
-
-                            {% set name = category.name %}
-
-                            {% if 'تلویزیون' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="3" y="4" width="18" height="13" rx="2"/>
-                                    <path d="M8 21h8M12 17v4"/>
-                                </svg>
-
-                            {% elif 'یخچال' in name or 'فریزر' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="6" y="2" width="12" height="20" rx="2"/>
-                                    <path d="M6 10h12M9 6v2M9 13v3"/>
-                                </svg>
-
-                            {% elif 'لباسشویی' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="4" y="2" width="16" height="20" rx="2"/>
-                                    <circle cx="12" cy="13" r="5"/>
-                                    <path d="M8 6h.01M11 6h.01"/>
-                                </svg>
-
-                            {% elif 'ظرفشویی' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="4" y="2" width="16" height="20" rx="2"/>
-                                    <path d="M4 7h16M8 4h.01M12 4h.01M8 13h8"/>
-                                </svg>
-
-                            {% elif 'جارو' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M9 3l5 2-5 11-5-2z"/>
-                                    <path d="M14 5l5 2M9 16l-2 4M3 21h15"/>
-                                </svg>
-
-                            {% elif 'کولر' in name or 'تهویه' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="2" y="5" width="20" height="10" rx="2"/>
-                                    <path d="M6 10h12M7 19l2-2M15 17l2 2"/>
-                                </svg>
-
-                            {% elif 'چای' in name or 'قهوه' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M5 8h12v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/>
-                                    <path d="M17 10h2a2 2 0 0 1 0 4h-2M8 3v2M12 2v3"/>
-                                </svg>
-
-                            {% elif 'آشپزخانه' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M4 12h16l-2 8H6z"/>
-                                    <path d="M7 12V5M12 12V3M17 12V5"/>
-                                </svg>
-
-                            {% elif 'اجاق' in name or 'گاز' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                    <circle cx="8" cy="9" r="2"/>
-                                    <circle cx="16" cy="9" r="2"/>
-                                    <path d="M7 16h10"/>
-                                </svg>
-
-                            {% elif 'مایکرو' in name or 'ماکرو' in name %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="2" y="5" width="20" height="14" rx="2"/>
-                                    <rect x="5" y="8" width="12" height="8" rx="1"/>
-                                    <path d="M19 9v.01M19 12v.01M19 15v.01"/>
-                                </svg>
-
-                            {% else %}
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="3" y="3" width="18" height="18" rx="3"/>
-                                    <path d="M8 8h8M8 12h8M8 16h5"/>
-                                </svg>
-                            {% endif %}
-
-                        </span>
-
-                        <span class="category-name">
-                            {{ category.name }}
-                        </span>
-
-                    </a>
-
-                {% endfor %}
-
-            </div>
-
         </div>
-
-    </details>
-
-</section>
-
-<!-- لیست محصولات -->
-<section id="catalog">
-
-    <div class="catalog-heading">
-        <h2 class="section-title">لیست قیمت محصولات</h2>
-
-        <span class="result-count">
-            {{ products|length }} محصول
-        </span>
-    </div>
-
-    {% if products %}
-
-        <div class="product-list">
-
-            {% for product in products %}
-
-                <article class="product">
-
-                    {% if product.image_url %}
-                        <img
-                            class="product-image"
-                            src="{{ product.image_url }}"
-                            alt="{{ product.name }}"
-                            loading="lazy"
-                        >
-                    {% else %}
-                        <div class="product-placeholder">
-                            بدون تصویر
-                        </div>
-                    {% endif %}
-
-                    <div class="product-info">
-
-                        <div class="product-category">
-                            {{ product.category_name or 'بدون دسته‌بندی' }}
-                        </div>
-
-                        <h3><a href="{{ url_for('features.product_detail',product_id=product.id) }}">{{ product.name }}</a></h3>
-
-                        {% if product.brand_name %}
-                            <div class="product-brand">
-                                برند: {{ product.brand_name }}
-                            </div>
-                        {% endif %}
-
-                        {% if product.description %}
-                            <p class="product-description">
-                                {{ product.description }}
-                            </p>
-                        {% endif %}
-
-                        <div class="product-bottom">
-
-                            <div class="price">
-                                {{ "{:,}".format(product.price) }} تومان
-                            </div>
-                            <div style="display:flex;flex-wrap:wrap;gap:7px;margin:10px 0">
-                                <a class="btn secondary" href="{{ url_for('features.product_detail',product_id=product.id) }}">جزئیات و نظرات</a>
-                                <form method="post" action="{{ url_for('features.compare_add',product_id=product.id) }}">
-                                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                                    <button class="secondary" type="submit">مقایسه</button>
-                                </form>
-                                {% if session.get('customer_id') %}
-                                <form method="post" action="{{ url_for('features.wishlist_toggle',product_id=product.id) }}">
-                                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                                    <button class="secondary" type="submit">♡ ذخیره</button>
-                                </form>
-                                {% endif %}
-                            </div>
-                            <form method="post" action="{{ url_for('customer.cart') }}">
-                                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="add">
-                                <input type="hidden" name="product_id" value="{{ product.id }}">
-                                <button type="submit">افزودن به سبد خرید</button>
-                            </form>
-
-
-                        </div>
-
-                    </div>
-
-                </article>
-
-            {% endfor %}
-
+        <div class="home-hero-visual">
+            <div class="home-hero-image">
+                <img src="https://www.defy.co.za/content/dam/defy/za/midnight-collection-images/dmchighres.png" alt="مجموعه لوازم خانگی مدرن" fetchpriority="high">
+            </div>
+            <div class="home-image-caption"><span>انتخابی برای خانه امروز</span><strong>کیفیت · زیبایی · کارایی</strong></div>
         </div>
+    </section>
 
-    {% else %}
+    <section class="home-trust-row" aria-label="مزایای خرید">
+        <div class="home-trust-item"><span class="home-trust-icon">◇</span><div><strong>انتخاب آگاهانه</strong><small>مشاهده جزئیات و مقایسه محصولات</small></div></div>
+        <div class="home-trust-item"><span class="home-trust-icon">▤</span><div><strong>قیمت‌های شفاف</strong><small>بررسی قیمت محصولات پیش از خرید</small></div></div>
+        <div class="home-trust-item"><span class="home-trust-icon">✓</span><div><strong>خرید آسان</strong><small>افزودن کالا به سبد خرید در چند مرحله</small></div></div>
+    </section>
 
-        <div class="empty">
-            <h3>محصولی پیدا نشد!</h3>
-
-            <p>
-                عبارت جستجو یا دسته‌بندی انتخاب‌شده را بررسی کنید.
-            </p>
-
-            <a class="clear-search" href="{{ url_for('index') }}">
-                مشاهده همه محصولات
+    <section class="home-category-section" aria-label="دسته‌بندی محصولات">
+        <div class="home-section-head">
+            <div><span class="home-section-kicker">دسته‌بندی‌ها</span><h2>از کجا شروع کنیم؟</h2><p>دسته موردنظرتان را انتخاب کنید</p></div>
+        </div>
+        <div class="home-category-grid">
+            <a class="home-category-card {% if not selected_category %}active{% endif %}" href="{{ url_for('index', q=q) }}">
+                <span class="home-category-icon">▦</span><span class="home-category-text"><strong>همه محصولات</strong><small>مشاهده کل فروشگاه</small></span>
             </a>
+            {% for category in categories %}
+            <a class="home-category-card {% if selected_category|string == category.id|string %}active{% endif %}" href="{{ url_for('index', category=category.id, q=q) }}">
+                <span class="home-category-icon">⌂</span><span class="home-category-text"><strong>{{ category.name }}</strong><small>مشاهده محصولات</small></span>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <form class="home-search-panel" method="GET" action="{{ url_for('index') }}" role="search">
+        <input type="search" name="q" value="{{ q }}" placeholder="نام محصول، برند یا دسته‌بندی را جستجو کنید..." data-global-placeholder="searchPlaceholder" aria-label="جستجوی محصولات">
+        {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+        <button type="submit" data-global-i18n="searchButton">جستجو</button>
+    </form>
+
+    <section class="home-catalog" id="catalog">
+        <div class="home-catalog-heading">
+            <div><span class="home-section-kicker">فروشگاه لوازم خانگی</span><h2>محصولات فروشگاه</h2></div>
+            <span class="home-result-count">{{ products|length }} محصول</span>
         </div>
 
-    {% endif %}
-
-</section>
-
+        {% if products %}
+        <div class="home-product-grid">
+            {% for product in products %}
+            <article class="home-product-card">
+                <div class="home-product-image-wrap">
+                    {% if product.image_url %}
+                    <img class="home-product-image" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">
+                    {% else %}
+                    <div class="home-product-placeholder">تصویری برای این محصول ثبت نشده</div>
+                    {% endif %}
+                </div>
+                <div class="home-product-info">
+                    <div class="home-product-category">{{ product.category_name or 'بدون دسته‌بندی' }}</div>
+                    <h3 class="home-product-title"><a href="{{ url_for('features.product_detail',product_id=product.id) }}">{{ product.name }}</a></h3>
+                    {% if product.brand_name %}<div class="home-product-brand">برند: {{ product.brand_name }}</div>{% endif %}
+                    {% if product.description %}<p class="home-product-description">{{ product.description }}</p>{% endif %}
+                    <div class="home-product-bottom">
+                        <div class="home-product-price">{{ "{:,}".format(product.price) }} تومان</div>
+                        <div class="home-product-actions">
+                            <a href="{{ url_for('features.product_detail',product_id=product.id) }}">جزئیات و نظرات</a>
+                            <form method="post" action="{{ url_for('features.compare_add',product_id=product.id) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                <button type="submit">مقایسه</button>
+                            </form>
+                            {% if session.get('customer_id') %}
+                            <form method="post" action="{{ url_for('features.wishlist_toggle',product_id=product.id) }}">
+                                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                                <button type="submit">♡ ذخیره</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        <form class="home-cart-form" method="post" action="{{ url_for('customer.cart') }}">
+                            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+                            <button type="submit">افزودن به سبد خرید</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="home-empty">
+            <h3>محصولی پیدا نشد!</h3>
+            <p>عبارت جستجو یا دسته‌بندی انتخاب‌شده را بررسی کنید.</p>
+            <a class="home-clear-link" href="{{ url_for('index') }}">مشاهده همه محصولات</a>
+        </div>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}
