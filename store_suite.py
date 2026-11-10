@@ -641,3 +641,36 @@ def admin_stock_watch():
             "total": len(products),
         }
     return render_template("admin_stock_watch.html", products=products, summary=summary)
+
+
+@suite_bp.get("/admin/finance-overview")
+@admin_required
+def admin_finance_overview():
+    with DB() as conn:
+        sales = conn.execute("""
+            SELECT COUNT(*) AS order_count,
+                   COALESCE(SUM(total_amount), 0) AS sales_total
+            FROM store_orders
+            WHERE status = 'paid'
+              AND created_at >= date_trunc('month', CURRENT_DATE)
+        """).fetchone()
+        expenses = conn.execute("""
+            SELECT COUNT(*) AS expense_count,
+                   COALESCE(SUM(amount), 0) AS expense_total
+            FROM store_expenses
+            WHERE expense_date >= date_trunc('month', CURRENT_DATE)::date
+              AND expense_date <= CURRENT_DATE
+        """).fetchone()
+        recent = conn.execute("""
+            SELECT expense_date, title, category, amount
+            FROM store_expenses
+            ORDER BY expense_date DESC, id DESC
+            LIMIT 10
+        """).fetchall()
+    sales_total = int(sales["sales_total"] or 0)
+    expense_total = int(expenses["expense_total"] or 0)
+    return render_template(
+        "admin_finance_overview.html",
+        sales=sales, expenses=expenses, recent=recent,
+        operating_difference=sales_total-expense_total,
+    )
