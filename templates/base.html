@@ -196,5 +196,63 @@
 </script>
 
 {% block scripts %}{% endblock %}
+
+<!-- دستیار هوشمند فروشگاه -->
+<style>
+#lav-ai-launch{position:fixed;z-index:9998;right:22px;bottom:24px;border:1px solid #c9a45d;border-radius:999px;padding:13px 19px;background:linear-gradient(135deg,#e8ce91,#b88b43);color:#17120a;font:800 14px Vazirmatn,sans-serif;box-shadow:0 10px 30px #0005;cursor:pointer}
+#lav-ai-panel{position:fixed;z-index:9999;right:22px;bottom:86px;width:min(370px,calc(100vw - 28px));height:min(530px,calc(100dvh - 120px));display:none;flex-direction:column;overflow:hidden;border:1px solid #b99552;border-radius:19px;background:#151419;color:#f8f2e7;box-shadow:0 18px 60px #0009;font-family:Vazirmatn,sans-serif}
+#lav-ai-panel.open{display:flex}
+#lav-ai-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:linear-gradient(120deg,#282117,#171519);border-bottom:1px solid #4b3d29}
+#lav-ai-head strong{font-size:14px;color:#f0d69c}
+#lav-ai-head small{display:block;color:#c8bda9;font-size:10px;margin-top:3px}
+#lav-ai-close{border:0;background:transparent;color:#eee;font-size:23px;cursor:pointer}
+#lav-ai-messages{flex:1;overflow:auto;padding:13px;display:flex;flex-direction:column;gap:10px}
+.lav-ai-msg{max-width:88%;padding:10px 12px;border-radius:13px;font-size:12px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere}
+.lav-ai-msg.bot{align-self:flex-start;background:#27242a;border:1px solid #403a3d}
+.lav-ai-msg.user{align-self:flex-end;background:#49391f;color:#fff0cd}
+#lav-ai-form{display:flex;gap:7px;padding:11px;border-top:1px solid #403a3d;background:#1d1b20}
+#lav-ai-input{min-width:0;flex:1;border:1px solid #51483b;border-radius:11px;background:#29262b;color:white;padding:11px;font:12px Vazirmatn,sans-serif;outline:none}
+#lav-ai-send{border:0;border-radius:11px;padding:0 15px;background:#d2b16d;color:#21190e;font:800 12px Vazirmatn,sans-serif;cursor:pointer}
+#lav-ai-send:disabled{opacity:.5;cursor:wait}
+@media(max-width:600px){ #lav-ai-launch{right:13px;bottom:82px;padding:11px 15px}#lav-ai-panel{right:10px;bottom:137px;width:calc(100vw - 20px);height:min(68dvh,530px)}}
+</style>
+<button id="lav-ai-launch" type="button" aria-controls="lav-ai-panel" aria-expanded="false">✦ مشاور هوشمند خرید</button>
+<section id="lav-ai-panel" dir="rtl" aria-label="دستیار هوشمند فروشگاه">
+  <header id="lav-ai-head"><div><strong>مشاور هوشمند لوازم خانگی</strong><small>پاسخ‌گویی و راهنمای انتخاب محصول</small></div><button id="lav-ai-close" type="button" aria-label="بستن">×</button></header>
+  <div id="lav-ai-messages" aria-live="polite"><div class="lav-ai-msg bot">سلام! 👋 برای انتخاب لوازم خانگی، مقایسه محصولات یا اطلاع از قیمت‌های ثبت‌شده فروشگاه چه کمکی از من برمی‌آید؟</div></div>
+  <form id="lav-ai-form"><input id="lav-ai-input" maxlength="2500" autocomplete="off" placeholder="پیامتان را بنویسید..." aria-label="پیام شما"><button id="lav-ai-send" type="submit">ارسال</button></form>
+</section>
+<script>
+(function(){
+  const launch=document.getElementById('lav-ai-launch');
+  const panel=document.getElementById('lav-ai-panel');
+  const close=document.getElementById('lav-ai-close');
+  const form=document.getElementById('lav-ai-form');
+  const input=document.getElementById('lav-ai-input');
+  const send=document.getElementById('lav-ai-send');
+  const messages=document.getElementById('lav-ai-messages');
+  if(!launch||!panel||!form)return;
+  const history=[];
+  function toggle(open){panel.classList.toggle('open',open);launch.setAttribute('aria-expanded',String(open));if(open)input.focus();}
+  function add(text,role){const el=document.createElement('div');el.className='lav-ai-msg '+role;el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight;return el;}
+  launch.addEventListener('click',()=>toggle(!panel.classList.contains('open')));
+  close.addEventListener('click',()=>toggle(false));
+  form.addEventListener('submit',async function(event){
+    event.preventDefault();
+    const message=input.value.trim();
+    if(!message||send.disabled)return;
+    add(message,'user');history.push({role:'user',content:message});input.value='';send.disabled=true;send.textContent='...';
+    const pending=add('در حال بررسی و آماده‌سازی پاسخ...','bot');
+    try{
+      const response=await fetch('/api/assistant/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history.slice(-10)})});
+      const data=await response.json();
+      if(!response.ok||!data.ok)throw new Error(data.error||'پاسخ دریافت نشد.');
+      pending.textContent=data.reply;history.push({role:'assistant',content:data.reply});
+    }catch(error){pending.textContent=error.message||'ارتباط برقرار نشد. لطفاً دوباره تلاش کنید.';history.pop();}
+    finally{send.disabled=false;send.textContent='ارسال';input.focus();messages.scrollTop=messages.scrollHeight;}
+  });
+})();
+</script>
+
 </body>
 </html>

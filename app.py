@@ -24,6 +24,8 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from customer_store import customer_bp, init_customer_store, ensure_customer_schema
 from store_features import features_bp, init_features, ensure_features_schema, run_price_alerts
 from android_api import android_api_bp, init_android_api, ensure_android_api_schema
+from chatgpt_api import chatgpt_bp, init_chatgpt_api
+from ai_assistant import ai_assistant_bp, init_ai_assistant
 
 # ==================================================
 # تنظیمات اصلی
@@ -54,6 +56,8 @@ app.config["SECRET_KEY"] = SECRET_KEY
 app.register_blueprint(customer_bp)
 app.register_blueprint(features_bp)
 app.register_blueprint(android_api_bp)
+app.register_blueprint(chatgpt_bp)
+app.register_blueprint(ai_assistant_bp)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = (
@@ -199,6 +203,8 @@ def db():
 init_customer_store(db, SECRET_KEY)
 init_features(db)
 init_android_api(db, SECRET_KEY)
+init_chatgpt_api(db)
+init_ai_assistant(db)
 
 
 # ==================================================
@@ -485,8 +491,16 @@ def add_security_headers(response):
 def check_csrf():
 
     if request.method == "POST":
-        # Native Android API uses JSON bodies and bearer tokens, not browser sessions.
-        if request.path.startswith("/api/android/v1/") and request.is_json:
+        # Machine APIs authenticate with Bearer tokens in their own endpoint guards.
+        # Browser form routes continue to require the session CSRF token.
+        if (
+            request.is_json
+            and (
+                request.path.startswith("/api/android/v1/")
+                or request.path.startswith("/api/chatgpt/v1/")
+                or request.path.startswith("/api/assistant/")
+            )
+        ):
             return
 
         if request.path in ("/internal/sms/run", "/internal/price-alerts/run"):
